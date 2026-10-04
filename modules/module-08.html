@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Module 8: Application Identity (App-ID) | Perimeter Security</title>
+<meta name="description" content="So far your rules have allowed any application, as long as the zones matched. That is a port-based firewall wearing a next-generation badge. This module teaches App-ID properly: how the firewall names traffic, what its labels mean when it can&#x27;t, and how to move a rulebase from ports to applications without breaking the business.">
+<link rel="stylesheet" href="../assets/css/site.css">
+<script src="../assets/js/prefs.js"></script>
+</head>
+<body data-root=".." data-module="8" data-page="">
+<a class="skip-link" href="#main">Skip to main content</a>
+<header id="site-header"></header>
+
+<main id="main" class="page">
+<div class="module-hero">
+<p class="kicker">Module 8 of 16, week 5. Corresponds to EDU-210 Module 8.</p>
+<h1>Application Identity (App-ID)</h1>
+<p class="lede">So far your rules have allowed any application, as long as the zones matched. That is a port-based firewall wearing a next-generation badge. This module teaches App-ID properly: how the firewall names traffic, what its labels mean when it can&#x27;t, and how to move a rulebase from ports to applications without breaking the business.</p>
+<ul class="facts"><li>About 4 hours plus Lab 7</li><li>6 reading sections</li><li>2 simulations</li><li>4 activities</li><li>Lab 7 in NDG Online</li><li>10-question self-check</li></ul>
+<!-- Overview video: add data-embed="https://...embed-url" for an inline player,
+     or data-link="https://..." to link out (e.g. a Screencast page). -->
+<div class="video-slot" data-title="Module 8 overview video" data-embed="" data-link="">
+<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="1" y="6" width="38" height="28" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="16,13 28,20 16,27" fill="currentColor"/></svg>
+<p><strong>Module overview video.</strong> Your instructor's walkthrough of this module will appear here.</p>
+</div>
+</div>
+
+<div class="objectives">
+<h2>By the end of this module you should be able to</h2>
+<ol><li>Explain how App-ID identifies applications and why that reduces the attack surface compared with port-based rules.</li><li>Interpret the labels App-ID gives traffic it cannot identify: incomplete, insufficient-data, not-applicable, and unknown.</li><li>Explain application shifts, dependencies, and implicitly allowed applications.</li><li>Build policy with applications, application groups, application filters, and tags.</li><li>Choose a strategy for unknown and encrypted application traffic.</li><li>Migrate port-based rules to application-based rules with Policy Optimizer, and keep App-ID current with content updates.</li></ol>
+</div>
+
+<h2>Plan your time</h2>
+<div class="table-wrap" style="max-width:860px"><table>
+<caption class="visually-hidden">Suggested time for each part of the module</caption>
+<thead><tr><th scope="col">Part</th><th scope="col">What's in it</th><th scope="col">Minutes</th></tr></thead>
+<tbody><tr><td>Part A: How App-ID works</td><td>Sections 8.1–8.3, Simulation 8.1, Activities 8.1–8.2</td><td>75</td></tr><tr><td>Part B: App-ID in policy</td><td>Sections 8.4–8.6, Simulation 8.2, Activities 8.3–8.4</td><td>75</td></tr><tr><td>Lab 7 in NDG Online</td><td>Lab companion, then the lab</td><td>75–90</td></tr><tr><td>Wrap-up</td><td>Summary, key terms, self-check quiz</td><td>20</td></tr></tbody></table></div>
+<p class="box-note">Week 5 also includes Module 9 (User-ID) and Lab 11.</p>
+
+<div class="module-layout">
+<nav class="module-rail" aria-label="This module">
+<h2>This module</h2>
+<div class="progress-wrap"><span class="label" id="rail-meter-label">0 sections complete</span>
+<div class="meter" role="progressbar" aria-labelledby="rail-meter-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="rail-meter"></span></div></div>
+<ol id="rail-list"></ol>
+<p><a href="#self-check">Jump to the self-check quiz</a></p>
+</nav>
+<article>
+
+<div class="part-head"><p class="part-n">Part A</p><h2>How App-ID works</h2><p>Naming traffic by what it is, not by the port it uses.</p></div>
+
+<section class="unit" id="s-what" data-section="what" data-label="8.1 What App-ID does" data-part="Part A: How App-ID works">
+<header><span class="sec-n">8.1</span><h2>What App-ID does</h2></header>
+<p class="intro">An application, to the firewall, is anything whose traffic can be labeled, monitored, and controlled.</p>
+<p>That definition is broader than "program." Gmail, Google Docs, and Google Calendar are separate applications even though they come from one company and one browser. Slack, Netflix, and Zoom are applications. So are DNS, SSH, and the update service the firewall itself uses. Each has an entry in the App-ID database at <span class="path" data-path="Objects > Applications"></span>, with its category, subcategory, technology, a risk rating from 1 to 5, characteristics such as "evasive" or "tunnels other applications," its standard ports, and the applications it depends on. Palo Alto Networks also publishes the database online as Applipedia.</p>
+<h3>How identification works</h3>
+<p><dfn data-term="app-id">App-ID</dfn> runs on every session and tries, in order:</p>
+<ol>
+<li><strong>Application signatures</strong>: patterns in the traffic that match a known application.</li>
+<li><strong>Decryption</strong>, if the traffic is encrypted and a Decryption policy rule says to decrypt it (Module 13), so the signatures can see inside.</li>
+<li><strong>Protocol decoders</strong>: understanding a protocol such as HTTP well enough to find the application riding inside it.</li>
+<li><strong>Behavioral heuristics</strong>: recognizing applications that deliberately avoid signatures, such as some peer-to-peer and proxy tools.</li>
+</ol>
+<p>If none of these match, the traffic is labeled unknown. Whatever the result, App-ID keeps watching the session, because the application can change partway through (Section 8.3).</p>
+<h3>Why it beats port-based rules</h3>
+<p>A port-based rule that allows udp/53 for DNS allows anything on udp/53. BitTorrent configured to use port 53 sails through, and the logs say "port 53 allowed." An application-based rule that allows dns checks the traffic itself: DNS passes, BitTorrent on port 53 is identified as bittorrent and denied, and the logs say so.</p>
+<p>The difference is starker for brand-new threats. A traditional intrusion prevention system is a negative model: it blocks what it has a signature for, so a zero-day command-and-control channel with no signature yet is allowed. App-ID policy is a <strong>positive model</strong>: you list what to allow. The zero-day channel is not DNS, not web-browsing, not anything you allowed, so it is denied even though nobody has seen it before.</p>
+<div class="callout think"><p class="c-title">Think of it this way</p>
+<p>A blocklist at a club door turns away people whose photos are on file. A guest list lets in only people whose names are on it. App-ID policy is a guest list. A stranger with no photo on file still doesn't get in.</p></div>
+<div class="activity" data-activity="tf" data-id="m8-a1">
+<p class="box-kicker">Activity 8.1</p><h3>Fact or myth: App-ID basics</h3>
+<p class="box-note">About 3 minutes.</p>
+<script type="application/json">{"items":[
+{"text":"A rule that allows the application dns also allows BitTorrent running on udp/53.","answer":false,"why":"App-ID identifies the traffic as bittorrent, which the dns rule does not allow."},
+{"text":"App-ID stops inspecting a session once it has identified the application.","answer":false,"why":"It keeps monitoring for application shifts for the life of the session."},
+{"text":"Listing the applications to allow can block a threat that has no signature yet.","answer":true,"why":"Positive enforcement denies everything not listed, known or unknown."},
+{"text":"Each application in Objects > Applications has a risk rating.","answer":true,"why":"Risk runs from 1 (lowest) to 5, alongside category, technology, and characteristics."}
+]}</script>
+</div>
+</section>
+
+<section class="unit" id="s-labels" data-section="labels" data-label="8.2 Labels for unidentified traffic" data-part="Part A: How App-ID works">
+<header><span class="sec-n">8.2</span><h2>Labels for traffic App-ID can't name</h2></header>
+<p class="intro">The Traffic log's Application column sometimes shows something that isn't an application. Each of those labels tells you exactly how far the session got.</p>
+<h3>TCP</h3>
+<p>TCP gives App-ID a sequence to watch: SYN, SYN-ACK, ACK, then data.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Label</th><th scope="col">What happened</th></tr></thead>
+<tbody>
+<tr><td><code>not-applicable</code></td><td>Security policy dropped the traffic before App-ID identified it, for example on the zone-and-port pre-check.</td></tr>
+<tr><td><code>incomplete</code></td><td>The three-way handshake never completed, or it completed and then no data was sent.</td></tr>
+<tr><td><code>insufficient-data</code></td><td>Some payload arrived, but not enough to identify anything.</td></tr>
+<tr><td><code>unknown-tcp</code></td><td>Plenty of data, but nothing matched.</td></tr>
+<tr><td><code>unknown-p2p</code></td><td>Unidentified traffic that behaves like peer-to-peer.</td></tr>
+</tbody></table></div>
+<h3>UDP</h3>
+<p>UDP has no handshake; App-ID starts on the first packet, which already carries data. So the labels are simpler: <code>not-applicable</code> if policy dropped it first, <code>unknown-udp</code> for unidentified UDP, and <code>unknown-p2p</code> for peer-to-peer behavior.</p>
+<div class="callout field"><p class="c-title">In the field</p>
+<p>A burst of <code>incomplete</code> sessions to many ports from one source is a scan: the scanner sends SYNs and never finishes. <code>insufficient-data</code> is usually harmless noise. <code>unknown-tcp</code> and <code>unknown-udp</code> that you are allowing deserve a look every time (Section 8.5).</p></div>
+<div class="sim" id="sim-8-1">
+<p class="box-kicker">Simulation 8.1</p><h3>Label the session</h3>
+<p class="box-note">Read what happened in each session and choose the label App-ID would put in the Traffic log. Aim for a streak of 5.</p>
+<p class="lab-q" style="font-size:var(--step-1);margin:0.4rem 0 0.8rem" aria-live="polite"></p>
+<div class="btn-row lab-opts" role="group" aria-label="Labels"></div>
+<p class="lab-fb" aria-live="polite"></p>
+<div class="btn-row"><button type="button" class="btn-primary" data-next>Next session</button><span class="lab-streak act-result" style="align-self:center"></span></div>
+</div>
+</section>
+
+<section class="unit" id="s-shifts" data-section="shifts" data-label="8.3 Shifts and dependencies" data-part="Part A: How App-ID works">
+<header><span class="sec-n">8.3</span><h2>Shifts, dependencies, and implicit applications</h2></header>
+<p class="intro">Applications are layered and they change mid-session. Policy has to account for both.</p>
+<h3>Application shifts</h3>
+<p>Many sessions start as one application and become another. A browser connects to a site and App-ID first sees web-browsing; as the page loads it recognizes the site's own application (generic-app-base, say); when the user opens the site's chat window it shifts again to generic-app-chat. Each time the application changes, the firewall checks Security policy again with the new application. A rule that allows the base application but not the chat function lets the page load and blocks the chat.</p>
+<h3>Dependencies</h3>
+<p>Some applications need others to work. Office on demand, for example, depends on ms-office365-base and sharepoint-online. If a rule allows office-on-demand but no rule allows its dependencies, the application half-works and users call the help desk. Two places help:</p>
+<ul>
+<li>Before writing the rule, look at the application in <span class="path" data-path="Objects > Applications"></span>; its Depends On list shows what else must be allowed. When you add an application to a rule, the rule dialog offers its dependencies too.</li>
+<li>After writing it, read the commit results. A commit checks whether every application's dependencies are allowed by some rule and reports unresolved dependencies per rule, with links to fix them.</li>
+</ul>
+<h3>Implicitly allowed applications</h3>
+<p>Many applications are built on others and allow them implicitly. facebook-base, for instance, implicitly allows the web-browsing and ssl it starts as, so you don't add those to the rule. The application's entry lists what it implicitly uses.</p>
+<div class="callout myth"><p class="c-title">Common misconception</p>
+<p>"If I allow facebook-base I've allowed all of Facebook." Facebook's chat, posting, file-sharing, and other functions are separate applications. That granularity is the point: you can allow reading while blocking posting.</p></div>
+<div class="activity" data-activity="sort" data-id="m8-a2">
+<p class="box-kicker">Activity 8.2</p><h3>Shift, dependency, or implicit?</h3>
+<p class="box-note">About 4 minutes.</p>
+<script type="application/json">{"buckets":["Application shift","Dependency","Implicitly allowed"],"items":[
+{"text":"A session identified as ssl becomes ms-office365-base as soon as App-ID sees more of it.","answer":"Application shift","why":"The application label changes during the session and policy is re-evaluated."},
+{"text":"office-on-demand won't work unless sharepoint-online is also allowed.","answer":"Dependency","why":"A required application that must be allowed by some rule."},
+{"text":"A rule allowing facebook-base doesn't need web-browsing or ssl added.","answer":"Implicitly allowed","why":"The parent applications are allowed automatically."},
+{"text":"A commit warns that a rule's application needs another application no rule allows.","answer":"Dependency","why":"Unresolved dependencies are reported at commit."},
+{"text":"A user opens chat inside a website whose base application is allowed, and the chat is blocked.","answer":"Application shift","why":"The chat function is a different application, identified mid-session."}
+]}</script>
+</div>
+</section>
+
+<div class="part-head"><p class="part-n">Part B</p><h2>App-ID in policy</h2><p>The objects that make application policy practical, the traffic App-ID can't name, and getting from ports to applications.</p></div>
+
+<section class="unit" id="s-objects" data-section="objects" data-label="8.4 Groups, filters, tags" data-part="Part B: App-ID in policy">
+<header><span class="sec-n">8.4</span><h2>Application groups, filters, and tags</h2></header>
+<p class="intro">Thousands of applications, one readable rulebase.</p>
+<ul>
+<li>An <dfn data-term="application-group">application group</dfn>, at <span class="path" data-path="Objects > Application Groups"></span>, is a static list you maintain: for example, paloalto-apps for the firewall's own services, or Allowed-Corp-Apps for approved business tools.</li>
+<li>An <dfn data-term="application-filter">application filter</dfn>, at <span class="path" data-path="Objects > Application Filters"></span>, is dynamic. You choose attributes (category, subcategory, technology, risk, characteristics, or tags) and every matching application is included. When a content update adds a new App-ID that matches, it joins the filter automatically. A filter such as "file-sharing, risk 4 or 5" stays current without you touching it.</li>
+<li>Groups can contain filters, and both can be used in Security, QoS, and Policy-Based Forwarding rules.</li>
+</ul>
+<p>Palo Alto Networks also assigns <strong>predefined tags</strong> to applications, updated with content (such as Enterprise VoIP or Web App), and you can add custom tags. Tags become filter criteria, so "everything tagged Enterprise VoIP" is one object.</p>
+<h3>Positive enforcement in practice</h3>
+<p>Write rules that say what to allow, by application, group, or filter, rather than by port. Leave service as application-default. Let interzone-default (or your own deny rule) catch everything else. When a web-based application is blocked, the <strong>Application Block Page</strong>, enabled at <span class="path" data-path="Device > Response Pages"></span>, tells the user why, instead of leaving them with a page that silently fails to load.</p>
+<div class="activity" data-activity="sort" data-id="m8-a3">
+<p class="box-kicker">Activity 8.3</p><h3>Group or filter?</h3>
+<p class="box-note">About 3 minutes.</p>
+<script type="application/json">{"buckets":["Application group","Application filter"],"items":[
+{"text":"Block every high-risk file-sharing application, including ones released next month.","answer":"Application filter","why":"Filters pick up new matching App-IDs automatically."},
+{"text":"Allow exactly the five collaboration tools the company pays for.","answer":"Application group","why":"A fixed, deliberate list."},
+{"text":"Allow every application Palo Alto Networks tags as Enterprise VoIP.","answer":"Application filter","why":"Tags are filter criteria."},
+{"text":"Allow the Palo Alto Networks services the firewall needs for updates.","answer":"Application group","why":"A known, fixed set: this is the paloalto-apps group in Lab 7."}
+]}</script>
+</div>
+</section>
+
+<section class="unit" id="s-unknown" data-section="unknown" data-label="8.5 Unknown and encrypted traffic" data-part="Part B: App-ID in policy">
+<header><span class="sec-n">8.5</span><h2>Unknown and encrypted traffic</h2></header>
+<p class="intro">What to do when App-ID can't see, or can't see in.</p>
+<h3>Unknown applications</h3>
+<p>Allowed traffic labeled <dfn data-term="unknown-tcp">unknown-tcp, unknown-udp, or unknown-p2p</dfn> is a gap in your visibility, and attackers like gaps. Check the Traffic log for it regularly. If it is really HTTP or HTTPS, App-ID would have called it web-browsing or ssl, so unknown means something genuinely unrecognized. Your options:</p>
+<ul>
+<li><strong>Block it.</strong> A rule denying unknown-tcp, unknown-udp, and unknown-p2p is a strong default, but it can block more than intended, such as an in-house application nobody told you about. Watch the logs after enabling it.</li>
+<li><strong>Write a custom application</strong> with your own signature at <span class="path" data-path="Objects > Applications > Add"></span>, so a known internal application gets a real name and can be allowed specifically.</li>
+<li><strong>Use an Application Override policy</strong> at <span class="path" data-path="Policies > Application Override"></span> to label traffic on a given port and address as a custom application. Use this sparingly: overridden traffic skips App-ID's normal identification and is not inspected for threats.</li>
+<li><strong>Ask Palo Alto Networks</strong> for a new App-ID if the application is commercial and common.</li>
+</ul>
+<h3>Encrypted traffic</h3>
+<p>Without decryption, App-ID still gets clues from TLS: the server name a client requests (SNI), and the name in the server's certificate. That is often enough to tell twitter from facebook. But when many sites share one address and certificate, and to see anything about what happens inside the session, the firewall must decrypt (Module 13). Then App-ID applies its full set of signatures, decoders, and heuristics to the decrypted traffic.</p>
+<p>application-default understands encryption for a handful of applications (web-browsing, smtp, ftp, ldap, pop3, and imap): it matches each on its standard cleartext port and, once decrypted, on its secure port.</p>
+<h3>Non-standard ports</h3>
+<p>Because App-ID ignores the port when identifying, you can write rules that use it deliberately: block ssh tunnels on any port, allow ms-rdp only on application-default, or allow mysql only on the one non-standard port your database team uses, by naming a custom service.</p>
+<div class="callout exam"><p class="c-title">Exam tip</p>
+<p>"Traffic was identified as unknown-tcp" and "traffic was labeled incomplete" mean very different things. Unknown means data flowed and nothing matched. Incomplete means App-ID never had data to look at.</p></div>
+</section>
+
+<section class="unit" id="s-migrate" data-section="migrate" data-label="8.6 Migrating and updating" data-part="Part B: App-ID in policy">
+<header><span class="sec-n">8.6</span><h2>Migrating to App-ID rules, and keeping App-ID current</h2></header>
+<p class="intro">Most firewalls inherit port-based rules. Policy Optimizer turns them into application rules using what the firewall has actually seen.</p>
+<h3>Three phases</h3>
+<ol>
+<li><strong>Migrate the legacy rules as they are.</strong> Bring the old firewall's port-based policy onto the new firewall, test, cut over, and let it run while the firewall logs which applications each rule really carries. (Palo Alto Networks' Expedition tool can automate parts of this.)</li>
+<li><strong>Add application-based rules above the port-based ones.</strong> At <span class="path" data-path="Policies > Security > Policy Optimizer > Rules Without App Controls"></span>, any rule whose application is any is listed. Its Apps Seen count and Compare view show which applications matched it. Use that list to build application rules, highest-value rules first: those passing the most data, the most sessions, the most applications, and the most stable traffic.</li>
+<li><strong>Remove the port-based rules.</strong> After about 60 days, check their hit counts. Disable rules with no new hits (disabled rules appear in gray italics; tag them if you like), and delete them after about 90 days.</li>
+</ol>
+<h3>Four ways to convert a rule</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Option</th><th scope="col">What it does</th><th scope="col">When to use it</th></tr></thead>
+<tbody>
+<tr><td>Create Cloned Rule</td><td>Copies the rule with only the applications you select, placed above the original. Prompts for dependencies.</td><td>The safest choice, especially when the rule carries many applications.</td></tr>
+<tr><td>Add to This Rule</td><td>Replaces the port-based rule's any with the applications you select.</td><td>Riskier: any legitimate application you forget stops working.</td></tr>
+<tr><td>Add to Existing Rule</td><td>Adds the applications to another rule that already exists.</td><td>When an application rule for that traffic already exists.</td></tr>
+<tr><td>Match Usage</td><td>Copies every application in Apps Seen into the rule.</td><td>Only when the rule matches a small number of applications, all legitimate.</td></tr>
+</tbody></table></div>
+<p>Whichever you choose, set the converted rule's service to application-default yourself; Policy Optimizer leaves it as it was.</p>
+<div class="sim" id="sim-8-2">
+<p class="box-kicker">Simulation 8.2</p><h3>Convert a port-based rule</h3>
+<p class="box-note">Legacy-Ports-Rule allows Users to Internet on tcp/80 and tcp/443 with application any. Here is what Policy Optimizer saw on it over 30 days. Pick the applications to keep and a conversion method.</p>
+<div class="sim-grid">
+<div class="table-wrap"><table><caption class="visually-hidden">Applications seen on the port-based rule</caption><thead><tr><th scope="col">Apps Seen</th><th scope="col">Sessions</th></tr></thead><tbody></tbody></table></div>
+<div>
+<div class="field"><label for="po-method">Conversion method</label><select id="po-method"><option value="clone">Create Cloned Rule</option><option value="add">Add to This Rule</option><option value="existing">Add to Existing Rule</option><option value="match">Match Usage</option></select></div>
+<button type="button" class="btn-primary" data-run>Convert</button>
+<div class="po-out" aria-live="polite" style="margin-top:0.8rem"></div>
+</div>
+</div>
+<div class="try-this"><h4>Try this</h4><ol>
+<li>Try Match Usage. Why is it a poor choice for this rule?</li>
+<li>Select only ssl and web-browsing and use Add to This Rule. What breaks?</li>
+<li>Find the selection and method that produce a clean conversion.</li>
+</ol></div>
+</div>
+<h3>Keeping App-ID current</h3>
+<p>New App-IDs arrive in Applications and Threats content updates (Module 2). A new App-ID can change how existing traffic is labeled: something your rule allowed as ssl might now be identified as a specific application your rule doesn't list. To avoid surprises, review the new and modified App-IDs in each content release before installing it, and consider installing with new App-IDs disabled, checking their policy impact, and then enabling them.</p>
+<div class="activity" data-activity="order" data-id="m8-a4">
+<p class="box-kicker">Activity 8.4</p><h3>Put the migration in order</h3>
+<p class="box-note">About 3 minutes.</p>
+<script type="application/json">{"items":["Migrate the legacy port-based rules and cut over","Let traffic run while the firewall logs applications per rule","Review Rules Without App Controls and Apps Seen","Create application-based rules above the port-based rules","After about 60 days, disable port-based rules with no new hits","After about 90 days, delete them"],"why":"Collect evidence first, convert from evidence, and remove old rules only after they stop matching."}</script>
+</div>
+</section>
+
+<section class="unit" id="s-lab" data-section="lab" data-label="Lab 7 companion" data-part="Lab">
+<header><span class="sec-n">Lab</span><h2>Lab 7 companion: Controlling application usage with App-ID</h2></header>
+<div class="lab">
+<dl class="lab-meta">
+<dt>Where</dt><dd>NDG Online, PAN-OS 11.0 Firewall Essentials, Lab 7</dd>
+<dt>Time</dt><dd>About 75 to 90 minutes</dd>
+<dt>Graded</dt><dd>Yes. Submit as directed in Canvas.</dd>
+<dt>Uses</dt><dd>Sections 8.1 to 8.6</dd>
+</dl>
+<h3>What you will do</h3>
+<p>Replace the any-application rules from Lab 5 with App-ID-based rules. You start by finding out why a new rule for the firewall's own update traffic never matches, then generate a mix of application traffic, research applications in the App-ID database, narrow two rules to specific applications and their dependencies, and turn on the Application Block Page so blocked users see an explanation.</p>
+<p>The guide has two versions of the same lab: High-Level Lab Steps (Task 1) and Detailed Lab Steps (Task 2). Do one, not both. If this is your first time on a Palo Alto Networks firewall, use the detailed steps; if you try the high-level steps and get stuck, switch to the detailed steps at the same task.</p>
+<h3>Before you start</h3>
+<ul class="checklist" data-save="lab7-pre"><li><input type="checkbox" id="l7p1"><label for="l7p1">I can explain why an any-application rule above a specific rule shadows it (Module 6, 6.3).</label></li><li><input type="checkbox" id="l7p2"><label for="l7p2">I know the difference between an application group and an application filter (8.4).</label></li><li><input type="checkbox" id="l7p3"><label for="l7p3">I know what an application dependency is and where the commit reports it (8.3).</label></li><li><input type="checkbox" id="l7p4"><label for="l7p4">I tried Simulation 8.2 with at least two conversion methods.</label></li></ul>
+<h3>Your lab network</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Users_Net once Lab 4 builds the zones)</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.0/24</code></td><td>Firewall ethernet1/1 is .20; the ISP router is .1</td></tr>
+</tbody></table></div>
+<p class="box-note">Usernames and passwords are in the Lab Settings table on page 5 of each lab guide.</p>
+<h3>The lab at a glance</h3>
+<p>What you build, in order.</p>
+<ol><li><strong>Every lab starts the same way.</strong> On the client desktop, open Firefox to <code>https://192.168.1.254</code>, log in with the credentials in your lab guide, then go to <span class="path" data-path="Device > Setup > Operations"></span> and click <em>Load named configuration snapshot</em>. Choose <code>edu-210-11.0a-07.xml</code>, open the Tasks window (lower right) to confirm the load completed, and then <strong>commit</strong>. Loading only changes the candidate (Module 3); skipping the commit is the most common reason a lab "doesn't match" the guide. If the login page doesn't appear right away, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li><strong>Application group paloalto-apps</strong> at <span class="path" data-path="Objects > Application Groups"></span> containing the Palo Alto Networks service applications listed in the guide (updates, DNS security, WildFire cloud, PAN-DB cloud, User-ID agent).</li><li><strong>Rule Allow-PANW-Apps</strong>: source zone Users_Net, source address 192.168.1.254 (the firewall's own management address), destination Internet, application paloalto-apps, application-default, log at session end. Commit.</li><li><strong>Test with Check Now</strong> under Device > Dynamic Updates and filter the Traffic log for paloalto-updates. The traffic matches a different rule. Find out why in the commit's Rule Shadow tab (Tasks window), then narrow Users_to_Internet to dns, ping, ssl, and web-browsing. Commit and test again.</li><li><strong>Generate traffic</strong> with the App Generator icon on the client, then read the Application, Action, and Rule columns in the Traffic log.</li><li><strong>Research one application</strong> (dailymotion, yammer-base, or scribd-base) at <span class="path" data-path="Objects > Applications"></span>: category, risk, characteristics, and whether you'd allow it.</li><li><strong>Narrow both rules</strong>: Users_to_Extranet to the seven applications in the guide, and Users_to_Internet to its list plus their dependencies. Commit, rerun the generator, and filter the Traffic log for denied sessions.</li><li><strong>Application Block Page</strong>: browse to http://www.shutterfly.com and note what happens, enable the page at <span class="path" data-path="Device > Response Pages"></span>, commit, and try again.</li></ol>
+<h3>Watch out for</h3>
+<ul><li><strong>Why the firewall's own traffic hits a Security rule.</strong> In this lab the management interface (192.168.1.254) uses the vRouter as its gateway, and the vRouter sends internet traffic back through ethernet1/2. So the firewall's update traffic arrives on Users_Net like any user's and is matched by Security policy. That is a lab shortcut; in production the management network has its own path (Section 2.4).</li><li><strong>The shadow is the lesson.</strong> Users_to_Internet allows any application, so it matches the update traffic before Allow-PANW-Apps can. Narrowing it is what fixes the problem; moving rules around is not what the lab asks for.</li><li><strong>Dependencies.</strong> When you add applications like dropbox or ms-office365, PAN-OS offers their dependencies. Add them to the current rule, or the commit will report unresolved dependencies and the applications will half-work.</li><li><strong>The Application Block Page shows only for web-based applications.</strong> Without it, a blocked site simply fails to load, which looks like a network problem to the user.</li><li><strong>Answer the questions.</strong> The guide asks you to decide which applications should and should not be allowed. Write your answers down; they are the part of this lab that is about judgment, not clicking.</li></ul>
+<h3>After the lab</h3>
+<label for="l7-reflect">Name one application the App Generator produced that you would block on a production network, and justify it using what the App-ID database told you.</label>
+<textarea id="l7-reflect" data-save="lab7-reflect"></textarea>
+<p class="box-note">Saved in this browser only. Copy it into Canvas if your instructor asks for it.</p>
+</div>
+</section>
+
+<section class="unit" id="s-wrap" data-section="wrap" data-label="Summary and self-check" data-part="Wrap-up">
+<header><span class="sec-n">✓</span><h2>Summary and self-check</h2></header>
+<ul>
+<li>App-ID identifies applications with signatures, decryption where policy allows, protocol decoders, and heuristics, regardless of port, and keeps watching for shifts.</li>
+<li>Application-based rules are a positive model: anything not listed, including never-seen threats, is denied.</li>
+<li>Labels: not-applicable (dropped before identification), incomplete (no completed handshake or no data), insufficient-data (too little data), unknown-tcp/udp/p2p (data, no match).</li>
+<li>Policy is re-checked on every application shift. Dependencies must be allowed by some rule and are reported at commit. Some applications implicitly allow their parents.</li>
+<li>Application groups are static; application filters are dynamic and pick up new App-IDs. Tags can drive filters. Enable the Application Block Page for blocked web applications.</li>
+<li>Investigate allowed unknown traffic: block it, write a custom application, or use Application Override sparingly. Encrypted traffic needs decryption for full identification.</li>
+<li>Migrate with Policy Optimizer in three phases. Create Cloned Rule is safest; set application-default after converting. Review new App-IDs before installing content.</li>
+</ul>
+<h3>Key terms</h3>
+<p><dfn data-term="app-id">App-ID</dfn>, <dfn data-term="application-shift">application shift</dfn>, <dfn data-term="application-dependency">application dependency</dfn>, <dfn data-term="application-group">application group</dfn>, <dfn data-term="application-filter">application filter</dfn>, <dfn data-term="unknown-tcp">unknown-tcp</dfn>, <dfn data-term="application-override">Application Override</dfn>, <dfn data-term="policy-optimizer">Policy Optimizer</dfn>, <dfn data-term="application-default">application-default</dfn>.</p>
+<h3 id="self-check">Self-check quiz</h3>
+<p class="box-note">Ungraded. Score 80% or better and this section marks itself complete. The graded Quiz 8 is in Canvas.</p>
+<div class="quiz" data-quiz="m08">
+<script type="application/json">{"questions":[
+{"q":"A rule allows the application dns. BitTorrent runs on udp/53. What happens?","choices":["Allowed, because it uses port 53","Identified as bittorrent and not allowed by the dns rule","Labeled incomplete","Allowed but logged as dns"],"answer":1,"why":"App-ID identifies the traffic itself, regardless of port. Section 8.1."},
+{"q":"Why can application-based policy block a zero-day command-and-control channel that has no signature?","choices":["App-ID downloads signatures every minute","Only listed applications are allowed, so anything else is denied","WildFire analyzes every packet","It can't"],"answer":1,"why":"Positive enforcement. Section 8.1."},
+{"q":"A client sends SYN; the server never responds. Which label appears in the Traffic log?","choices":["insufficient-data","incomplete","unknown-tcp","not-applicable"],"answer":1,"why":"The handshake did not complete. Section 8.2."},
+{"q":"Traffic is dropped by the Security policy pre-check before App-ID can identify it. Which label appears?","choices":["not-applicable","incomplete","unknown-tcp","insufficient-data"],"answer":0,"why":"not-applicable means policy dropped it before identification. Section 8.2."},
+{"q":"What does the firewall do when a session's application shifts?","choices":["Nothing; the first identified application is final","Re-evaluates Security policy with the new application","Ends the session","Logs it as unknown"],"answer":1,"why":"Policy is checked again on each shift. Section 8.3."},
+{"q":"Where does the firewall report that a rule's application needs another application no rule allows?","choices":["System log only","Commit results, as unresolved dependencies per rule","The Threat log","It doesn't"],"answer":1,"why":"Commits check dependencies across the rulebase. Section 8.3."},
+{"q":"Which object automatically includes new App-IDs that match its criteria after a content update?","choices":["Application group","Application filter","Custom application","Service group"],"answer":1,"why":"Filters are dynamic. Section 8.4."},
+{"q":"What is a significant drawback of Application Override?","choices":["It requires a commit","Overridden traffic skips normal App-ID and threat inspection","It only works for UDP","It can't be used with zones"],"answer":1,"why":"Use it sparingly. Section 8.5."},
+{"q":"Which Policy Optimizer conversion option is the safest when a port-based rule carries many applications?","choices":["Match Usage","Add to This Rule","Create Cloned Rule","Add to Existing Rule"],"answer":2,"why":"The original rule stays in place below the clone. Section 8.6."},
+{"q":"After converting a rule with Policy Optimizer, what must you usually change yourself?","choices":["The rule name","The service, to application-default","The zones","The action"],"answer":1,"why":"Policy Optimizer leaves the service unchanged. Section 8.6."}
+]}</script>
+</div>
+</section>
+
+<nav class="pager" id="pager" aria-label="Module navigation"></nav>
+</article>
+</div>
+</main>
+
+<footer id="site-footer"></footer>
+<script src="../assets/js/course.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/activities.js"></script>
+<script src="../assets/js/sims/m08.js"></script>
+</body>
+</html>

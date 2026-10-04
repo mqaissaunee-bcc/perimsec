@@ -31,7 +31,7 @@ assets/js/
 
 ## Common edits
 
-- **Due dates or week contents:** edit `PS_WEEKS` in `assets/js/course.js`.
+- **Due dates or week contents:** edit `PS_WEEKS` in `assets/js/course.js`. Lab numbers there are NDG Online's numbers (User-ID is Lab 11, done in week 5).
 - **Open a new module:** add `modules/module-NN.html`, then set `available: true` and `sections: <count>` for that module in `course.js`.
 - **Overview video:** on the module page, find `<div class="video-slot" ...>`. Set `data-embed` to an embeddable player URL for an inline video, or `data-link` to link out to a page (for example a Screencast.com link).
 - **Glossary term:** add an entry to `glossary.js`, then use `<dfn data-term="key">term</dfn>` in a module.

@@ -526,3 +526,7 @@ dfn[data-term] { font-style: normal; border-bottom: 1px dotted var(--ink-2); cur
 .rules-table button { min-height: 34px; min-width: 34px; padding: 0.1rem 0.4rem; }
 .pf-detail { align-self: start; font-weight: 400; margin-top: 0; }
 .nat-result.verdict { font-weight: 400; }
+.po-out.verdict, .lab-fb.verdict, .pick-out .verdict { font-weight: 400; }
+.po-out.verdict strong { font-weight: 700; }
+html, body { overflow-x: clip; }
+#sim-11-1 .verdict, #sim-10-1 .verdict { font-weight: 400; }

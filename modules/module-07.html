@@ -190,31 +190,36 @@
 <header><span class="sec-n">Lab</span><h2>Lab 6 companion: Creating and managing NAT policy rules</h2></header>
 <div class="lab">
 <dl class="lab-meta">
-<dt>Where</dt><dd>NDG Online</dd>
-<dt>Time</dt><dd>About 60 to 75 minutes</dd>
+<dt>Where</dt><dd>NDG Online, PAN-OS 11.0 Firewall Essentials, Lab 6</dd>
+<dt>Time</dt><dd>About 45 to 60 minutes</dd>
 <dt>Graded</dt><dd>Yes. Submit as directed in Canvas.</dd>
 <dt>Uses</dt><dd>Sections 7.2 to 7.4</dd>
 </dl>
 <h3>What you will do</h3>
-<p>Configure a source NAT rule so internal networks reach the internet from the ethernet1/1 address (203.0.113.20 in the course topology), then configure a destination NAT rule so that users connecting to 192.168.1.80 reach the extranet web server at 192.168.50.80, and write the Security rules both need.</p>
+<p>Finish what Lab 5 started. A source NAT rule lets users and extranet servers reach the internet from the firewall's public address, and a destination NAT rule lets users reach the extranet web server through an address on their own subnet.</p>
+<p>The guide has two versions of the same lab: High-Level Lab Steps (Task 1) and Detailed Lab Steps (Task 2). Do one, not both. If this is your first time on a Palo Alto Networks firewall, use the detailed steps; if you try the high-level steps and get stuck, switch to the detailed steps at the same task.</p>
 <h3>Before you start</h3>
-<ul class="checklist" data-save="lab6-pre">
-<li><input type="checkbox" id="l6p1"><label for="l6p1">I completed all four scenarios in Simulation 7.1, including the internal DNAT one.</label></li>
-<li><input type="checkbox" id="l6p2"><label for="l6p2">I can state the rule: pre-NAT addresses, post-NAT destination zone (7.4).</label></li>
-<li><input type="checkbox" id="l6p3"><label for="l6p3">I know why the destination NAT rule for 192.168.1.80 has destination zone Users_Net (7.3).</label></li>
-<li><input type="checkbox" id="l6p4"><label for="l6p4">My Lab 5 Security rules are committed and working.</label></li>
-</ul>
+<ul class="checklist" data-save="lab6-pre"><li><input type="checkbox" id="l6p1"><label for="l6p1">I completed all four scenarios in Simulation 7.1, especially Scenario 3.</label></li><li><input type="checkbox" id="l6p2"><label for="l6p2">I can state the rule: pre-NAT addresses, post-NAT destination zone (7.4).</label></li><li><input type="checkbox" id="l6p3"><label for="l6p3">I can explain why the destination NAT rule for 192.168.1.80 has destination zone Users_Net (7.3).</label></li><li><input type="checkbox" id="l6p4"><label for="l6p4">I remember why the last ping in Lab 5 got no reply.</label></li></ul>
+<h3>Your lab network</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Users_Net once Lab 4 builds the zones)</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.0/24</code></td><td>Firewall ethernet1/1 is .20; the ISP router is .1</td></tr>
+</tbody></table></div>
+<p class="box-note">Usernames and passwords are in the Lab Settings table on page 5 of each lab guide.</p>
+<h3>The lab at a glance</h3>
+<p>Two rules at <span class="path" data-path="Policies > NAT"></span>.</p>
+<ol><li><strong>Every lab starts the same way.</strong> On the client desktop, open Firefox to <code>https://192.168.1.254</code>, log in with the credentials in your lab guide, then go to <span class="path" data-path="Device > Setup > Operations"></span> and click <em>Load named configuration snapshot</em>. Choose <code>edu-210-11.0a-06.xml</code>, open the Tasks window (lower right) to confirm the load completed, and then <strong>commit</strong>. Loading only changes the candidate (Module 3); skipping the commit is the most common reason a lab "doesn't match" the guide. If the login page doesn't appear right away, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li><strong>Inside_Nets_to_Internet</strong> (source NAT): original packet from Users_Net and Extranet to Internet, destination interface ethernet1/1; translated packet Dynamic IP and Port using the interface address of ethernet1/1 (203.0.113.20). Commit, then ping 8.8.8.8 and browse the web. Now it works.</li><li><strong>Dest_NAT_To_Webserver</strong> (destination NAT): original packet from Users_Net to Users_Net, destination interface ethernet1/2, destination address 192.168.1.80; translated destination 192.168.50.80, static IP. Commit and browse to <code>http://192.168.1.80</code>.</li><li><strong>Verify in the Traffic log</strong>: filter for destination 192.168.1.80, for example <code>( addr.dst in 192.168.1.80 )</code>, and use the Log Viewer link on the Users_to_Extranet rule to jump to its sessions.</li></ol>
 <h3>Watch out for</h3>
-<ul>
-<li><strong>The internal DNAT zones.</strong> 192.168.1.80 is on the users' own subnet, so the NAT rule is Users_Net to Users_Net. The Security rule is Users_Net to Extranet with destination 192.168.1.80. This is Scenario 3 in Simulation 7.1.</li>
-<li><strong>Existing sessions.</strong> A new NAT rule applies to new sessions. If a test seems to ignore your change, close the browser tab or wait for the old session to time out.</li>
-<li><strong>NAT rule order.</strong> A broad source NAT rule above the destination NAT rule can match first. Put specific NAT rules above general ones.</li>
-<li><strong>Read both addresses in the Traffic log.</strong> Add the NAT source and destination columns to see the translation actually happening.</li>
-</ul>
+<ul><li><strong>No new Security rule is needed, and that is the lesson.</strong> The destination NAT session matches Lab 5's Users_to_Extranet rule. Security policy uses the post-NAT destination zone, which is Extranet, and that rule's destination address is any, so it matches. If the rule had named the server's address, it would have needed 192.168.1.80, the pre-NAT address.</li><li><strong>Why Users_Net to Users_Net?</strong> 192.168.1.80 is on the users' own subnet, so before translation the packet is routed toward ethernet1/2. NAT rules use pre-NAT zones.</li><li><strong>Old sessions.</strong> NAT applies to new sessions. If a test seems to ignore your rule, close the browser tab and try again.</li><li><strong>Read both addresses.</strong> Add the NAT source and NAT destination columns to the Traffic log to see the translation happen.</li></ul>
 <h3>After the lab</h3>
-<label for="l6-reflect">In your own words, why does the Security rule for destination NAT use the pre-NAT address but the post-NAT zone?</label>
+<label for="l6-reflect">In your own words, why did Users_to_Extranet allow the destination NAT traffic even though the client connected to an address in Users_Net?</label>
 <textarea id="l6-reflect" data-save="lab6-reflect"></textarea>
-<p class="box-note">Saved in this browser only.</p>
+<p class="box-note">Saved in this browser only. Copy it into Canvas if your instructor asks for it.</p>
 </div>
 </section>
 

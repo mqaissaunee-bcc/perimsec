@@ -200,32 +200,36 @@
 <header><span class="sec-n">Lab</span><h2>Lab 3 companion: Managing firewall administrator accounts</h2></header>
 <div class="lab">
 <dl class="lab-meta">
-<dt>Where</dt><dd>NDG Online</dd>
-<dt>Time</dt><dd>About 75 to 90 minutes</dd>
+<dt>Where</dt><dd>NDG Online, PAN-OS 11.0 Firewall Essentials, Lab 3</dd>
+<dt>Time</dt><dd>About 60 to 75 minutes</dd>
 <dt>Graded</dt><dd>Yes. Submit as directed in Canvas.</dd>
 <dt>Uses</dt><dd>Sections 4.2 to 4.4</dd>
 </dl>
 <h3>What you will do</h3>
-<p>Load a baseline configuration, create a local administrator, configure LDAP and RADIUS server profiles and authentication profiles, combine them in an authentication sequence, and create non-local administrator accounts that log in through it.</p>
+<p>Create three administrators who each authenticate a different way: adminBob from the firewall's local user database, adminSally from an LDAP directory, and adminHelga from a RADIUS server. You test each login, confirm in the System log which profile authenticated it, and finish with an authentication sequence that tries LDAP first and RADIUS second.</p>
+<p>The guide has two versions of the same lab: High-Level Lab Steps (Task 1) and Detailed Lab Steps (Task 2). Do one, not both. If this is your first time on a Palo Alto Networks firewall, use the detailed steps; if you try the high-level steps and get stuck, switch to the detailed steps at the same task.</p>
 <h3>Before you start</h3>
-<ul class="checklist" data-save="lab3-pre">
-<li><input type="checkbox" id="l3p1"><label for="l3p1">I can name the three objects in the chain: server profile, authentication profile, authentication sequence (4.4).</label></li>
-<li><input type="checkbox" id="l3p2"><label for="l3p2">I ran all four "Try this" prompts in Simulation 4.1.</label></li>
-<li><input type="checkbox" id="l3p3"><label for="l3p3">I know the difference between a dynamic role and an Admin Role Profile (4.2).</label></li>
-<li><input type="checkbox" id="l3p4"><label for="l3p4">I know how to log out and log back in as a different administrator to test an account.</label></li>
-</ul>
+<ul class="checklist" data-save="lab3-pre"><li><input type="checkbox" id="l3p1"><label for="l3p1">I can name the chain: server profile, then authentication profile, then (optionally) authentication sequence (4.4).</label></li><li><input type="checkbox" id="l3p2"><label for="l3p2">I ran all four Try this prompts in Simulation 4.1.</label></li><li><input type="checkbox" id="l3p3"><label for="l3p3">I know what the allow list on an authentication profile does (4.3).</label></li><li><input type="checkbox" id="l3p4"><label for="l3p4">I know how to log out of the web interface (upper right) and log back in as someone else.</label></li></ul>
+<h3>Your lab network</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Users_Net once Lab 4 builds the zones)</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.0/24</code></td><td>Firewall ethernet1/1 is .20; the ISP router is .1</td></tr>
+</tbody></table></div>
+<p class="box-note">Usernames and passwords are in the Lab Settings table on page 5 of each lab guide.</p>
+<h3>The lab at a glance</h3>
+<p>Three accounts, three methods. Server addresses and settings come from the guide's tables.</p>
+<ol><li><strong>Every lab starts the same way.</strong> On the client desktop, open Firefox to <code>https://192.168.1.254</code>, log in with the credentials in your lab guide, then go to <span class="path" data-path="Device > Setup > Operations"></span> and click <em>Load named configuration snapshot</em>. Choose <code>edu-210-11.0a-03.xml</code>, open the Tasks window (lower right) to confirm the load completed, and then <strong>commit</strong>. Loading only changes the candidate (Module 3); skipping the commit is the most common reason a lab "doesn't match" the guide. If the login page doesn't appear right away, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li><strong>Local:</strong> create the Local-Database authentication profile (allow list <code>all</code>), add adminBob to <span class="path" data-path="Device > Local User Database > Users"></span>, then create the adminBob administrator using that profile. Commit, log in as adminBob, and check the System log.</li><li><strong>LDAP:</strong> an LDAP server profile for the lab directory at 192.168.50.89 (port 389, type Other, base DN dc=panw,dc=lab), an LDAP-Auth-Profile using it (allow list <code>all</code>), and the adminSally administrator. Commit and test.</li><li><strong>RADIUS:</strong> a RADIUS server profile for 192.168.50.150 (CHAP, port 1812), a RADIUS-Auth-Profile, and the adminHelga administrator. Commit and test.</li><li><strong>Sequence:</strong> create an authentication sequence with LDAP-Auth-Profile first and RADIUS-Auth-Profile second. Commit.</li></ol>
 <h3>Watch out for</h3>
-<ul>
-<li><strong>Usernames must match.</strong> For a non-local administrator, the name under Device > Administrators must match the account in LDAP or RADIUS exactly.</li>
-<li><strong>Allow lists.</strong> If a correct password is rejected, open the authentication profile's Advanced tab and check that the user or <code>all</code> is in the allow list.</li>
-<li><strong>Commit before testing.</strong> New profiles and accounts do nothing until committed.</li>
-<li><strong>Read the System log when a login fails.</strong> Filter for authentication events; the entry usually names the profile that failed and why.</li>
-<li><strong>Keep the admin session open.</strong> Test new accounts in a private browser window so you stay logged in as admin to fix mistakes.</li>
-</ul>
+<ul><li><strong>Allow lists.</strong> Each authentication profile needs <code>all</code> (or the user) on its Advanced tab. With an empty allow list, a correct password is still rejected.</li><li><strong>Names must match exactly.</strong> adminSally and adminHelga under Device > Administrators must match the accounts on the LDAP and RADIUS servers, including capitalization.</li><li><strong>The sequence name.</strong> The high-level steps call it LDAP-then-RADIUS; the detailed steps type LDAP then RADIUS. Either works; just be consistent if your instructor checks it.</li><li><strong>Log back in as admin after each test.</strong> The new accounts may not have rights to create the next objects. The guide reminds you after adminBob; do the same after adminSally and adminHelga.</li><li><strong>Read the System log when a login fails.</strong> The authentication entry names the profile used and usually the reason for a failure, which is faster than guessing.</li></ul>
 <h3>After the lab</h3>
-<label for="l3-reflect">Your sequence checks LDAP first, then RADIUS. Give one reason an organization might choose the opposite order.</label>
+<label for="l3-reflect">The lab's sequence checks LDAP first, then RADIUS. Give one reason an organization might choose the opposite order.</label>
 <textarea id="l3-reflect" data-save="lab3-reflect"></textarea>
-<p class="box-note">Saved in this browser only.</p>
+<p class="box-note">Saved in this browser only. Copy it into Canvas if your instructor asks for it.</p>
 </div>
 </section>
 

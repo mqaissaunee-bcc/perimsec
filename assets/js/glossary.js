@@ -2,6 +2,16 @@
 (function () {
   "use strict";
   window.PS_GLOSSARY = {
+    "data-pattern": { t: "Data pattern", d: "An object describing sensitive data to detect, using predefined patterns such as card or Social Security numbers, regular expressions, or file properties.", m: [10] },
+    "credential-phishing": { t: "Credential phishing prevention", d: "URL Filtering's User Credential Submission setting, which controls whether users may submit corporate credentials to sites in each category.", m: [11] },
+    "application-shift": { t: "Application shift", d: "A change in the application App-ID identifies during a session, such as web-browsing becoming a site's chat application. Policy is re-evaluated on each shift.", m: [8] },
+    "application-override": { t: "Application Override", d: "A policy that labels traffic on given ports and addresses as a custom application. Overridden traffic skips normal App-ID and threat inspection, so use it sparingly.", m: [8] },
+    "user-mapping": { t: "User mapping", d: "The User-ID function that associates IP addresses with usernames.", m: [9] },
+    "group-mapping": { t: "Group mapping", d: "The User-ID function that learns users' group memberships from an LDAP directory.", m: [9] },
+    "user-id-agent": { t: "User-ID agent", d: "Software that collects IP-to-user information, either integrated into PAN-OS on the firewall or installed on a Windows server.", m: [9] },
+    "terminal-services-agent": { t: "Terminal Services agent", d: "A User-ID agent on Citrix or Microsoft terminal servers that maps each user's source port range, since many users share one IP address.", m: [9] },
+    "server-monitoring": { t: "Server monitoring", d: "A User-ID mapping method that reads login events from domain controller, Exchange, or eDirectory logs.", m: [9] },
+    "known-user": { t: "known-user", d: "A Source User value that matches any traffic from a mapped user, without naming who.", m: [9] },
     "subinterface": { t: "Subinterface", d: "A logical interface on a physical port, such as ethernet1/3.20, that receives traffic by VLAN tag or IP classifier and can be in its own zone.", m: [5] },
     "static-route": { t: "Static route", d: "A route entered by an administrator, giving a destination prefix, egress interface, next hop, and metric.", m: [5] },
     "path-monitoring": { t: "Path monitoring", d: "Pinging upstream addresses to test a static route; if they stop responding the route is removed so a backup route takes over.", m: [5] },

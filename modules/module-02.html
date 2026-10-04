@@ -102,13 +102,13 @@
 
 <div class="sim" id="sim-2-1">
 <p class="box-kicker">Simulation 2.1</p><h3>Bring the management interface online</h3>
-<p class="box-note">Scenario: you manage the firewall from your workstation at <code>192.168.1.20</code> on the management network <code>192.168.1.0/24</code>, whose router is <code>192.168.1.1</code>. Fill in the MGT settings and watch the checks. Your NDG lab may use different addresses; follow your lab guide there.</p>
+<p class="box-note">Scenario: you manage the firewall from your workstation at <code>192.168.1.20</code> on the management network <code>192.168.1.0/24</code>, whose router is <code>192.168.1.10</code>. These are the same addresses as your NDG lab. Fill in the MGT settings and watch the checks.</p>
 <div class="sim-grid">
 <div>
 <div class="field"><label for="mgt-ip">IP address</label><input type="text" id="mgt-ip" value="192.168.1.254" inputmode="decimal" autocomplete="off"></div>
 <div class="field"><label for="mgt-mask">Netmask</label>
 <select id="mgt-mask"><option value="24" selected>255.255.255.0 (/24)</option><option value="25">255.255.255.128 (/25)</option><option value="26">255.255.255.192 (/26)</option><option value="16">255.255.0.0 (/16)</option><option value="30">255.255.255.252 (/30)</option></select></div>
-<div class="field"><label for="mgt-gw">Default gateway</label><input type="text" id="mgt-gw" value="192.168.1.1" inputmode="decimal" autocomplete="off"></div>
+<div class="field"><label for="mgt-gw">Default gateway</label><input type="text" id="mgt-gw" value="192.168.1.10" inputmode="decimal" autocomplete="off"></div>
 <div class="field"><label for="mgt-dns">Primary DNS server (Device > Setup > Services)</label><input type="text" id="mgt-dns" value="" inputmode="decimal" autocomplete="off"></div>
 <div class="field"><label for="mgt-permit">Permitted IP addresses (one per line or comma-separated; CIDR allowed)</label><textarea id="mgt-permit" rows="3" style="min-height:4.5rem"></textarea></div>
 <fieldset style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:var(--step--1)">Management services</legend>
@@ -124,6 +124,7 @@
 </div>
 <div class="try-this"><h4>Try this</h4><ol>
 <li>Add <code>10.0.0.0/8</code> as the only permitted address. What happens to you after the commit?</li>
+<li>Lab 1 has you enter <code>192.168.1.20/24</code>. Compare it with <code>192.168.1.20/32</code>: which hosts can manage the firewall in each case?</li>
 <li>Change the netmask to /30. Why does the gateway check now fail even though nothing else changed?</li>
 <li>Find the smallest change that turns every check green.</li>
 </ol></div>
@@ -229,29 +230,34 @@
 <header><span class="sec-n">Lab</span><h2>Lab 1 companion: Configuring initial firewall settings</h2></header>
 <div class="lab">
 <dl class="lab-meta">
-<dt>Where</dt><dd>NDG Online</dd>
-<dt>Time</dt><dd>About 75 to 90 minutes</dd>
+<dt>Where</dt><dd>NDG Online, PAN-OS 11.0 Firewall Essentials, Lab 1</dd>
+<dt>Time</dt><dd>About 45 to 60 minutes</dd>
 <dt>Graded</dt><dd>Yes. Submit as directed in Canvas.</dd>
 <dt>Uses</dt><dd>Sections 2.1 to 2.5</dd>
 </dl>
 <h3>What you will do</h3>
-<p>Connect to the firewall's web interface, load a starting configuration, set DNS and NTP servers, add a login banner, set the firewall's latitude and longitude, restrict management access to permitted IP addresses, and schedule dynamic updates.</p>
+<p>Connect to the firewall's web interface, load the starting configuration, set DNS and NTP servers, set the domain, a login banner, and the firewall's map location, restrict management access with permitted IP addresses, and check for new PAN-OS software without installing it.</p>
+<p>The guide has two versions of the same lab: High-Level Lab Steps (Task 1) and Detailed Lab Steps (Task 2). Do one, not both. If this is your first time on a Palo Alto Networks firewall, use the detailed steps; if you try the high-level steps and get stuck, switch to the detailed steps at the same task.</p>
 <h3>Before you start</h3>
-<ul class="checklist" data-save="lab1-pre">
-<li><input type="checkbox" id="l1p1"><label for="l1p1">I can explain why the firewall needs DNS before it can download anything (2.3).</label></li>
-<li><input type="checkbox" id="l1p2"><label for="l1p2">I know that OK saves to the candidate configuration and Commit makes it active (2.1).</label></li>
-<li><input type="checkbox" id="l1p3"><label for="l1p3">I ran Simulation 2.1 and know how to avoid locking myself out with permitted IPs (2.2).</label></li>
-<li><input type="checkbox" id="l1p4"><label for="l1p4">I have my NDG login and have opened the lab once to check that it loads.</label></li>
-</ul>
+<ul class="checklist" data-save="lab1-pre"><li><input type="checkbox" id="l1p1"><label for="l1p1">I can explain why the firewall needs DNS before it can download anything (2.3).</label></li><li><input type="checkbox" id="l1p2"><label for="l1p2">I know that OK saves to the candidate configuration and Commit makes it active (2.1).</label></li><li><input type="checkbox" id="l1p3"><label for="l1p3">I ran Simulation 2.1 and know how a permitted-IP mistake locks you out (2.2).</label></li><li><input type="checkbox" id="l1p4"><label for="l1p4">I have opened the lab in NDG Online once to check that it loads.</label></li></ul>
+<h3>Your lab network</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Users_Net once Lab 4 builds the zones)</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.0/24</code></td><td>Firewall ethernet1/1 is .20; the ISP router is .1</td></tr>
+</tbody></table></div>
+<p class="box-note">Usernames and passwords are in the Lab Settings table on page 5 of each lab guide.</p>
+<h3>The lab at a glance</h3>
+<p>What you configure, and where. Values come from the lab guide.</p>
+<ol><li><strong>Every lab starts the same way.</strong> On the client desktop, open Firefox to <code>https://192.168.1.254</code>, log in with the credentials in your lab guide, then go to <span class="path" data-path="Device > Setup > Operations"></span> and click <em>Load named configuration snapshot</em>. Choose <code>edu-210-11.0a-01.xml</code>, open the Tasks window (lower right) to confirm the load completed, and then <strong>commit</strong>. Loading only changes the candidate (Module 3); skipping the commit is the most common reason a lab "doesn't match" the guide. If the login page doesn't appear right away, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li><strong>DNS and NTP</strong> at <span class="path" data-path="Device > Setup > Services"></span>: primary DNS 8.8.8.8, secondary 192.168.50.53 (a lab DNS server in the extranet), and two NTP servers from pool.ntp.org.</li><li><strong>General settings</strong> at <span class="path" data-path="Device > Setup > Management"></span>: domain lab.local, the login banner, time zone, and latitude and longitude.</li><li><strong>Management interface</strong> at the same page, Management Interface Settings: verify the address 192.168.1.254/24 and the gateway, then add a permitted IP entry for the client network.</li><li><strong>Commit</strong>, then <strong>check for new software</strong> at <span class="path" data-path="Device > Software"></span> with Check Now. Do not download or install an upgrade.</li></ol>
 <h3>Watch out for</h3>
-<ul>
-<li><strong>Permitted IPs.</strong> Before you commit the permitted-IP step, confirm your lab client's address is in the list. If you lock yourself out, use the lab's console access to fix it, or reload the starting configuration.</li>
-<li><strong>Forgetting to commit.</strong> If a setting seems to have no effect, check the Commit button and the Tasks window.</li>
-<li><strong>Updates in an isolated lab.</strong> Lab environments sometimes have limited internet access. Configuring the schedule is the goal; a download that fails because the lab cannot reach the update server is not a configuration error. Note it and move on.</li>
-<li><strong>Two sets of steps.</strong> If your lab guide offers high-level and detailed steps, use one or the other, not both. Try the high-level steps if you are comfortable; switch to detailed steps when stuck.</li>
-</ul>
+<ul><li><strong>Two gateways in the guide.</strong> The high-level steps say to verify a management gateway of 192.168.1.1; the detailed steps and the Lab Settings table say 192.168.1.10 (the vRouter). Expect 192.168.1.10. This step is verify-only: don't change the gateway.</li><li><strong>The permitted IP entry.</strong> The guide has you enter <code>192.168.1.20/24</code>. Because of the /24, that entry permits the whole 192.168.1.0/24 network, not only your client. Try it in Simulation 2.1 to see the difference between that and 192.168.1.20/32.</li><li><strong>Latitude and longitude.</strong> Use the guide's values (37.00 and 122.00) so your work matches what is graded. Notice, though, that longitudes west of Greenwich are negative: real Santa Clara is about 37.35, −121.96. A positive 122 would put the firewall in eastern Asia on the ACC map.</li><li><strong>Forgetting to commit.</strong> If a setting seems to have no effect, check the Commit button and the Tasks window.</li><li><strong>Check Now only.</strong> The last task is to see what software is available. Installing an upgrade in the lab can break later labs.</li></ul>
 <h3>After the lab</h3>
-<label for="l1-reflect">In two or three sentences: which setting from this lab would cause the most trouble if it were wrong in production, and why?</label>
+<label for="l1-reflect">Which setting from this lab would cause the most trouble if it were wrong in production, and why?</label>
 <textarea id="l1-reflect" data-save="lab1-reflect"></textarea>
 <p class="box-note">Saved in this browser only. Copy it into Canvas if your instructor asks for it.</p>
 </div>

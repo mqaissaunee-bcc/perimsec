@@ -233,33 +233,36 @@
 <header><span class="sec-n">Lab</span><h2>Lab 4 companion: Connecting the firewall to production networks with security zones</h2></header>
 <div class="lab">
 <dl class="lab-meta">
-<dt>Where</dt><dd>NDG Online</dd>
+<dt>Where</dt><dd>NDG Online, PAN-OS 11.0 Firewall Essentials, Lab 4</dd>
 <dt>Time</dt><dd>About 60 to 75 minutes</dd>
 <dt>Graded</dt><dd>Yes. Submit as directed in Canvas.</dd>
 <dt>Uses</dt><dd>Sections 5.2 to 5.5</dd>
 </dl>
 <h3>What you will do</h3>
-<p>Load a baseline configuration, create Layer 3 interfaces, create a virtual router with a default route, segment the network into security zones, test connectivity from the firewall to hosts in each zone, and create Interface Management Profiles.</p>
-<h3>The lab topology</h3>
-<p>The course topology has three data interfaces: ethernet1/1 toward the internet (203.0.113.20, gateway 203.0.113.1), ethernet1/2 for the user network (192.168.1.1/24), and ethernet1/3 for the extranet servers (192.168.50.1/24). If your lab guide shows different addresses, the lab guide wins.</p>
+<p>Turn three data ports into Layer 3 interfaces, put them in a virtual router with a default route, assign each to a security zone, test connectivity from the firewall's CLI, and use Interface Management Profiles to control which services each interface answers.</p>
+<p>The guide has two versions of the same lab: High-Level Lab Steps (Task 1) and Detailed Lab Steps (Task 2). Do one, not both. If this is your first time on a Palo Alto Networks firewall, use the detailed steps; if you try the high-level steps and get stuck, switch to the detailed steps at the same task.</p>
 <h3>Before you start</h3>
-<ul class="checklist" data-save="lab4-pre">
-<li><input type="checkbox" id="l4p1"><label for="l4p1">I can explain why an interface without a zone passes no traffic (5.2).</label></li>
-<li><input type="checkbox" id="l4p2"><label for="l4p2">I tried all three prompts in Simulation 5.1 and all three in Simulation 5.2.</label></li>
-<li><input type="checkbox" id="l4p3"><label for="l4p3">I know where Interface Management Profiles are attached (5.4).</label></li>
-<li><input type="checkbox" id="l4p4"><label for="l4p4">I know the CIDR form of the lab addresses, for example 192.168.1.1/24.</label></li>
-</ul>
+<ul class="checklist" data-save="lab4-pre"><li><input type="checkbox" id="l4p1"><label for="l4p1">I can explain why an interface without a zone passes no traffic (5.2).</label></li><li><input type="checkbox" id="l4p2"><label for="l4p2">I tried the Try this prompts in Simulations 5.1 and 5.2.</label></li><li><input type="checkbox" id="l4p3"><label for="l4p3">I know where Interface Management Profiles are attached (5.4).</label></li><li><input type="checkbox" id="l4p4"><label for="l4p4">I can write the lab addresses in CIDR form, for example 192.168.1.1/24.</label></li></ul>
+<h3>Your lab network</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Users_Net once Lab 4 builds the zones)</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.0/24</code></td><td>Firewall ethernet1/1 is .20; the ISP router is .1</td></tr>
+</tbody></table></div>
+<p class="box-note">Usernames and passwords are in the Lab Settings table on page 5 of each lab guide.</p>
+<h3>The lab at a glance</h3>
+<p>What you build. The zone names you create here are used in every lab that follows.</p>
+<ol><li><strong>Every lab starts the same way.</strong> On the client desktop, open Firefox to <code>https://192.168.1.254</code>, log in with the credentials in your lab guide, then go to <span class="path" data-path="Device > Setup > Operations"></span> and click <em>Load named configuration snapshot</em>. Choose <code>edu-210-11.0a-04.xml</code>, open the Tasks window (lower right) to confirm the load completed, and then <strong>commit</strong>. Loading only changes the candidate (Module 3); skipping the commit is the most common reason a lab "doesn't match" the guide. If the login page doesn't appear right away, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li><strong>Layer 3 interfaces</strong> at <span class="path" data-path="Network > Interfaces > Ethernet"></span>: ethernet1/1 203.0.113.20/24 (internet), ethernet1/2 192.168.1.1/24 (users), ethernet1/3 192.168.50.1/24 (extranet servers).</li><li><strong>Virtual router VR-1</strong> with all three interfaces and a static route named Firewall Default Gateway: 0.0.0.0/0 out ethernet1/1 to next hop 203.0.113.1.</li><li><strong>Zones</strong> Internet (ethernet1/1), Users_Net (ethernet1/2), and Extranet (ethernet1/3), all Layer 3. Commit.</li><li><strong>Test from the CLI</strong>: SSH to the firewall with Remmina and run <code>ping source 192.168.1.1 host 192.168.1.20</code>, then the same from 192.168.50.1 to 192.168.50.150 and from 203.0.113.20 to 8.8.8.8.</li><li><strong>Test from the client, then fix it</strong>: pinging or SSHing to 192.168.1.1 fails. Create Allow-ping (ping only) and Allow-mgt (HTTPS, SSH, ping, SNMP, response pages), apply Allow-ping to ethernet1/1 and Allow-mgt to ethernet1/2 and ethernet1/3, commit, and test again.</li></ol>
 <h3>Watch out for</h3>
-<ul>
-<li><strong>Address without a mask.</strong> Enter interface addresses in CIDR form. An address without /24 becomes a /32 and nothing on the subnet is reachable.</li>
-<li><strong>Interface not in the virtual router.</strong> Assigning the interface on its Config tab adds it to the virtual router; if routes don't appear, check the virtual router's General tab.</li>
-<li><strong>Pings fail.</strong> Testing from the firewall uses the CLI <code>ping source &lt;interface-ip&gt; host &lt;target&gt;</code>. Pings <em>to</em> the firewall need an Interface Management Profile that allows ping.</li>
-<li><strong>Commit after each major step</strong> so an error is easy to trace.</li>
-</ul>
+<ul><li><strong>Masks.</strong> Enter every interface address with its /24. Without it the address becomes a /32 and nothing on the subnet is reachable.</li><li><strong>The first client test is supposed to fail.</strong> Before the profiles exist, the firewall ignores pings and SSH on ethernet1/2. That is the lesson, not a mistake.</li><li><strong>Why the firewall's own pings work with no Security rules.</strong> Traffic the firewall itself originates, such as a CLI ping, is not checked against Security policy. Traffic passing through the firewall is, starting in Lab 5.</li><li><strong>Two paths to one subnet.</strong> In this lab the management interface (192.168.1.254) and ethernet1/2 (192.168.1.1) sit on the same 192.168.1.0/24 network. That keeps the lab simple; in production the management network is kept separate (Section 2.2).</li></ul>
 <h3>After the lab</h3>
 <label for="l4-reflect">Your lab network uses three zones. Propose a fourth zone this organization should probably have, and say which traffic it would protect.</label>
 <textarea id="l4-reflect" data-save="lab4-reflect"></textarea>
-<p class="box-note">Saved in this browser only.</p>
+<p class="box-note">Saved in this browser only. Copy it into Canvas if your instructor asks for it.</p>
 </div>
 </section>
 

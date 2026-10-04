@@ -121,7 +121,7 @@
 </tbody></table></div>
 <div class="callout myth"><p class="c-title">Common misconception</p>
 <p>"Loading a configuration rolls the firewall back." Load and revert change only the candidate. The firewall keeps enforcing the old running configuration until you commit. This is also why an import never changes anything by itself: import puts the file on the firewall, load puts it in the candidate, and commit makes it run.</p></div>
-<p>There is also a per-administrator version of save and revert in the Config menu at the upper right of the web interface. Save Changes and Revert Changes there can apply to all changes or only your own, which is handy when you share the firewall with others.</p>
+<p>There is also a per-administrator version of save and revert under the Changes button at the upper right of the web interface. Revert Changes there (and the related save options) can apply to all changes or only your own, which is handy when you share the firewall with others.</p>
 
 <div class="sim" id="sim-3-1">
 <p class="box-kicker">Simulation 3.1</p><h3>Candidate and running configuration lab</h3>
@@ -189,7 +189,7 @@
 <p class="box-note">About 3 minutes.</p>
 <script type="application/json">{"items":[
 {"text":"With a commit lock set by another administrator, you can still make changes to the candidate.","answer":true,"why":"A commit lock blocks commits, not edits. A config lock blocks edits."},
-{"text":"Revert to running configuration undoes only your own changes.","answer":false,"why":"The Device > Setup > Operations revert is global: it discards every administrator's uncommitted changes. The Config menu offers per-admin revert."},
+{"text":"Revert to running configuration undoes only your own changes.","answer":false,"why":"The Device > Setup > Operations revert is global: it discards every administrator's uncommitted changes. The Changes button at the upper right offers a revert scoped to selected changes."},
 {"text":"Importing a configuration file makes it the running configuration.","answer":false,"why":"Import uploads the file. You still have to load it into the candidate and commit."},
 {"text":"A commit that produces warnings still takes effect.","answer":true,"why":"Only errors block a commit."}
 ]}</script>
@@ -229,31 +229,36 @@
 <header><span class="sec-n">Lab</span><h2>Lab 2 companion: Managing firewall configurations</h2></header>
 <div class="lab">
 <dl class="lab-meta">
-<dt>Where</dt><dd>NDG Online</dd>
-<dt>Time</dt><dd>About 60 to 75 minutes</dd>
+<dt>Where</dt><dd>NDG Online, PAN-OS 11.0 Firewall Essentials, Lab 2</dd>
+<dt>Time</dt><dd>About 45 to 60 minutes</dd>
 <dt>Graded</dt><dd>Yes. Submit as directed in Canvas.</dd>
 <dt>Uses</dt><dd>Sections 3.1 to 3.5</dd>
 </dl>
 <h3>What you will do</h3>
-<p>Load a baseline configuration, save and export a named snapshot, save changes in progress before committing, revert changes, preview changes, and examine the System and Configuration logs using filters and the Filter Builder.</p>
+<p>Save and export a named configuration snapshot, make a deliberate mistake and revert it, preview uncommitted changes against the running configuration, rearrange the System log columns, and filter the System log by clicking a value and by using the Filter Builder.</p>
+<p>The guide has two versions of the same lab: High-Level Lab Steps (Task 1) and Detailed Lab Steps (Task 2). Do one, not both. If this is your first time on a Palo Alto Networks firewall, use the detailed steps; if you try the high-level steps and get stuck, switch to the detailed steps at the same task.</p>
 <h3>Before you start</h3>
-<ul class="checklist" data-save="lab2-pre">
-<li><input type="checkbox" id="l2p1"><label for="l2p1">I can say what changes when I load a snapshot, and what does not (3.3).</label></li>
-<li><input type="checkbox" id="l2p2"><label for="l2p2">I worked through all four "Try this" prompts in Simulation 3.1.</label></li>
-<li><input type="checkbox" id="l2p3"><label for="l2p3">I know where Preview Changes is and what it compares (3.2).</label></li>
-<li><input type="checkbox" id="l2p4"><label for="l2p4">I can write a simple log filter of the form ( field eq value ) (3.5).</label></li>
-</ul>
+<ul class="checklist" data-save="lab2-pre"><li><input type="checkbox" id="l2p1"><label for="l2p1">I can say what changes when I load a snapshot, and what does not (3.3).</label></li><li><input type="checkbox" id="l2p2"><label for="l2p2">I worked through all four Try this prompts in Simulation 3.1.</label></li><li><input type="checkbox" id="l2p3"><label for="l2p3">I know what Preview Changes compares (3.2).</label></li><li><input type="checkbox" id="l2p4"><label for="l2p4">I can write a simple log filter of the form ( field eq value ) (3.5).</label></li></ul>
+<h3>Your lab network</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Users_Net once Lab 4 builds the zones)</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.0/24</code></td><td>Firewall ethernet1/1 is .20; the ISP router is .1</td></tr>
+</tbody></table></div>
+<p class="box-note">Usernames and passwords are in the Lab Settings table on page 5 of each lab guide.</p>
+<h3>The lab at a glance</h3>
+<p>What you do, in order.</p>
+<ol><li><strong>Every lab starts the same way.</strong> On the client desktop, open Firefox to <code>https://192.168.1.254</code>, log in with the credentials in your lab guide, then go to <span class="path" data-path="Device > Setup > Operations"></span> and click <em>Load named configuration snapshot</em>. Choose <code>edu-210-11.0a-02.xml</code>, open the Tasks window (lower right) to confirm the load completed, and then <strong>commit</strong>. Loading only changes the candidate (Module 3); skipping the commit is the most common reason a lab "doesn't match" the guide. If the login page doesn't appear right away, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li><strong>Save a named snapshot</strong> of the configuration (firewall-a plus today's date in the high-level steps, firewall-a-lab2 in the detailed steps), then <strong>export</strong> it, which downloads it to the client desktop.</li><li><strong>Make a typo on purpose</strong>: change the primary DNS server to 88.8.8.8, confirm it in Services, then undo it with <em>Revert Changes</em> from the <strong>Changes</strong> button at the upper right.</li><li><strong>Change SNMP settings</strong> (location, contact, and community string from the guide), open the Commit window, and click <strong>Preview Changes</strong> to compare candidate with running. Do not commit.</li><li><strong>System log</strong> at <span class="path" data-path="Monitor > Logs > System"></span>: hide the Object column, drag Severity to the far left, click an <em>informational</em> severity value to build <code>( severity eq informational )</code>, then clear it and use the Filter Builder to show the last 60 minutes.</li></ol>
 <h3>Watch out for</h3>
-<ul>
-<li><strong>Load is not commit.</strong> After loading a baseline or snapshot, the lab expects a commit before testing. If something looks unchanged, check for pending changes.</li>
-<li><strong>Exports go to the lab desktop.</strong> When you export a snapshot, note where the browser saves it inside the NDG environment; a later step may import it.</li>
-<li><strong>Two kinds of revert.</strong> Device > Setup > Operations reverts everything; the Config menu can revert only your changes. Read which one the step asks for.</li>
-<li><strong>Filter typos.</strong> Values with spaces need single quotes, and field names are case-sensitive. If a filter returns nothing, rebuild it with the Filter Builder.</li>
-</ul>
+<ul><li><strong>Which revert?</strong> The lab uses Revert Changes from the Changes button, which returns the candidate to the running configuration. That is different from the Operations-page reverts in Section 3.3. Both discard the typo here because nothing else is pending.</li><li><strong>Leave the SNMP changes uncommitted.</strong> The point is to see them in Preview Changes. Lab 3 loads a fresh baseline, so nothing carries over.</li><li><strong>Filter Builder time.</strong> Your timestamp will differ from the screenshot. The filter compares receive_time to a time 60 minutes before now, so use your lab's clock, which is in UTC.</li><li><strong>Clear filters when you finish.</strong> Log filters persist while you move around the interface and can make later logs look empty.</li></ul>
 <h3>After the lab</h3>
-<label for="l2-reflect">Describe a real situation where you would use a named snapshot and one where you would use a configuration version instead.</label>
+<label for="l2-reflect">Describe a real situation where you would use a named snapshot, and one where you would use a configuration version from commit history instead.</label>
 <textarea id="l2-reflect" data-save="lab2-reflect"></textarea>
-<p class="box-note">Saved in this browser only.</p>
+<p class="box-note">Saved in this browser only. Copy it into Canvas if your instructor asks for it.</p>
 </div>
 </section>
 

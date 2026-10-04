@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Module 10: Security Profiles | Perimeter Security</title>
+<meta name="description" content="An allow rule decides that traffic may pass. It says nothing about whether that traffic is safe. Security Profiles inspect what you allowed, catching exploits, malware, command-and-control, dangerous files, and sensitive data on their way through.">
+<link rel="stylesheet" href="../assets/css/site.css">
+<script src="../assets/js/prefs.js"></script>
+</head>
+<body data-root=".." data-module="10" data-page="">
+<a class="skip-link" href="#main">Skip to main content</a>
+<header id="site-header"></header>
+
+<main id="main" class="page">
+<div class="module-hero">
+<p class="kicker">Module 10 of 16, week 6. Corresponds to EDU-210 Module 9.</p>
+<h1>Security Profiles</h1>
+<p class="lede">An allow rule decides that traffic may pass. It says nothing about whether that traffic is safe. Security Profiles inspect what you allowed, catching exploits, malware, command-and-control, dangerous files, and sensitive data on their way through.</p>
+<ul class="facts"><li>About 4 hours plus Lab 8</li><li>6 reading sections</li><li>2 simulations</li><li>3 activities</li><li>Lab 8 in NDG Online</li><li>10-question self-check</li></ul>
+<!-- Overview video: add data-embed="https://...embed-url" for an inline player,
+     or data-link="https://..." to link out (e.g. a Screencast page). -->
+<div class="video-slot" data-title="Module 10 overview video" data-embed="" data-link="">
+<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="1" y="6" width="38" height="28" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="16,13 28,20 16,27" fill="currentColor"/></svg>
+<p><strong>Module overview video.</strong> Your instructor's walkthrough of this module will appear here.</p>
+</div>
+</div>
+
+<div class="objectives">
+<h2>By the end of this module you should be able to</h2>
+<ol><li>Explain where Content-ID and Security Profiles act in the packet flow, and name the seven profile types.</li><li>Use the predefined Vulnerability Protection profiles, and customize rules and exceptions.</li><li>Configure Antivirus profiles, including WildFire and inline machine-learning actions and threat exceptions.</li><li>Configure Anti-Spyware profiles with DNS signatures and DNS sinkholing, and find infected hosts from the logs.</li><li>Control file transfers with File Blocking profiles and sensitive data with Data Filtering profiles.</li><li>Bundle profiles into a Security Profile Group and attach it to Security policy rules.</li></ol>
+</div>
+
+<h2>Plan your time</h2>
+<div class="table-wrap" style="max-width:860px"><table>
+<caption class="visually-hidden">Suggested time for each part of the module</caption>
+<thead><tr><th scope="col">Part</th><th scope="col">What's in it</th><th scope="col">Minutes</th></tr></thead>
+<tbody><tr><td>Part A: Threat profiles</td><td>Sections 10.1–10.4, Simulations 10.1–10.2, Activities 10.1–10.2</td><td>85</td></tr><tr><td>Part B: Files, data, and groups</td><td>Sections 10.5–10.6, Activity 10.3</td><td>45</td></tr><tr><td>Lab 8 in NDG Online</td><td>Lab companion, then the lab</td><td>75–90</td></tr><tr><td>Wrap-up</td><td>Summary, key terms, self-check quiz</td><td>20</td></tr></tbody></table></div>
+<p class="box-note">Week 6 also includes Module 11 and Lab 9. Lab 9 builds on the Security Profile Group you create in Lab 8.</p>
+
+<div class="module-layout">
+<nav class="module-rail" aria-label="This module">
+<h2>This module</h2>
+<div class="progress-wrap"><span class="label" id="rail-meter-label">0 sections complete</span>
+<div class="meter" role="progressbar" aria-labelledby="rail-meter-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="rail-meter"></span></div></div>
+<ol id="rail-list"></ol>
+<p><a href="#self-check">Jump to the self-check quiz</a></p>
+</nav>
+<article>
+
+<div class="part-head"><p class="part-n">Part A</p><h2>Threat profiles</h2><p>Inspecting allowed traffic for exploits, malware, and command-and-control.</p></div>
+
+<section class="unit" id="s-overview" data-section="overview" data-label="10.1 Content-ID and profiles" data-part="Part A: Threat profiles">
+<header><span class="sec-n">10.1</span><h2>Content-ID and Security Profiles</h2></header>
+<p class="intro">Policy decides what may pass; profiles decide whether what passes is safe.</p>
+<p>Recall the packet flow from Module 6: after App-ID identifies the application and Security policy allows it, <dfn data-term="content-id">Content-ID</dfn> inspects the traffic using the <dfn data-term="security-profile">Security Profiles</dfn> attached to the matching rule. Content-ID is a stream-based threat prevention engine (Module 1's single-pass architecture) that scans for software vulnerability exploits, viruses, spyware, malicious URLs, and restricted files and data. When a profile finds something, it can allow, alert (log), block, or ask the user, depending on the profile and threat.</p>
+<p>Profiles attach only to rules whose action is allow. A deny rule has nothing to inspect.</p>
+<h3>Seven profile types</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Profile</th><th scope="col">Catches</th><th scope="col">Logs to</th><th scope="col">Module</th></tr></thead>
+<tbody>
+<tr><td>Vulnerability Protection</td><td>Exploits against software vulnerabilities (intrusion prevention)</td><td>Threat</td><td>10</td></tr>
+<tr><td>Antivirus</td><td>Known malware in files and traffic</td><td>Threat</td><td>10</td></tr>
+<tr><td>Anti-Spyware</td><td>Command-and-control traffic and malicious DNS lookups</td><td>Threat</td><td>10</td></tr>
+<tr><td>URL Filtering</td><td>Access to risky or unwanted web categories</td><td>URL Filtering</td><td>11</td></tr>
+<tr><td>File Blocking</td><td>Transfers of specific file types</td><td>Data Filtering</td><td>10</td></tr>
+<tr><td>Data Filtering</td><td>Sensitive data patterns such as card or Social Security numbers</td><td>Data Filtering</td><td>10</td></tr>
+<tr><td>WildFire Analysis</td><td>Unknown files and links, sent for analysis</td><td>WildFire Submissions</td><td>12</td></tr>
+</tbody></table></div>
+<p>The <dfn data-term="threat-log">Threat log</dfn> at <span class="path" data-path="Monitor > Logs > Threat"></span> shows each event with its threat type, name and ID, severity, and action, plus a packet capture if the profile is set to take one. Click the details icon for the full Threat Details window.</p>
+<div class="sim" id="sim-10-1">
+<p class="box-kicker">Simulation 10.1</p><h3>Which profile catches it?</h3>
+<p class="box-note">An allow rule passes nine kinds of traffic. Attach profiles and see which threats are stopped, which slip through, and which log records each one.</p>
+<div class="sim-grid"><div class="cov-ctl"></div><div class="cov-out" aria-live="polite"></div></div>
+<div class="try-this"><h4>Try this</h4><ol>
+<li>Attach only Antivirus. Which kinds of threat still get through?</li>
+<li>Attach all seven. What still gets through, and which module fixes it?</li>
+</ol></div>
+</div>
+</section>
+
+<section class="unit" id="s-vuln" data-section="vuln" data-label="10.2 Vulnerability Protection" data-part="Part A: Threat profiles">
+<header><span class="sec-n">10.2</span><h2>Vulnerability Protection</h2></header>
+<p class="intro">Intrusion prevention for the services you expose and the clients you protect.</p>
+<p>A <dfn data-term="vulnerability-protection">Vulnerability Protection profile</dfn> detects attempts to exploit known flaws: buffer overflows, code execution, SQL injection, and the like, in both client-to-server and server-to-client directions. PAN-OS includes two predefined profiles at <span class="path" data-path="Objects > Security Profiles > Vulnerability Protection"></span>:</p>
+<ul>
+<li><strong>default</strong> applies each signature's default action, which blocks most critical, high, and medium-severity exploits and only alerts on low and informational ones.</li>
+<li><strong>strict</strong> blocks critical, high, and medium-severity events regardless of the signature default. It is the usual best-practice starting point.</li>
+</ul>
+<p>Predefined profiles are read-only. To customize, clone one and edit the clone, or build a new profile. A profile is a list of <strong>rules</strong>, each matching signatures by severity, host type (client or server), category, or a CVE or vendor ID, and assigning an action (default, allow, alert, drop, reset client, reset server, reset both, or block IP) and a packet capture setting.</p>
+<h3>Exceptions and inline analysis</h3>
+<p>If one signature causes false positives, add an <strong>exception</strong> for its threat ID on the Exceptions tab, overriding the rule's action for that signature only, optionally for specific IP addresses. Inline cloud analysis engines in the profile also detect unknown SQL and command injection attempts in real time, beyond what signatures catch.</p>
+<div class="callout field"><p class="c-title">In the field</p>
+<p>Turn on packet capture for critical and high-severity events. When the security team asks "was that a real attack?", the capture answers it.</p></div>
+</section>
+
+<section class="unit" id="s-av" data-section="av" data-label="10.3 Antivirus" data-part="Part A: Threat profiles">
+<header><span class="sec-n">10.3</span><h2>Antivirus</h2></header>
+<p class="intro">Three kinds of malware detection in one profile.</p>
+<p>An <dfn data-term="antivirus-profile">Antivirus profile</dfn> at <span class="path" data-path="Objects > Security Profiles > Antivirus"></span> sets an action for each decoder (protocol) the firewall scans, such as http, smtp, ftp, imap, pop3, and smb, in three columns:</p>
+<ul>
+<li><strong>Signature action</strong>: for antivirus signatures delivered in Antivirus content updates.</li>
+<li><strong>WildFire signature action</strong>: for signatures generated by WildFire analysis (Module 12), which arrive much faster than the daily antivirus release.</li>
+<li><strong>WildFire inline ML action</strong>: for a real-time machine-learning scan of certain file types (such as Windows executables and Office files) that can block malware nobody has seen before, on the first download.</li>
+</ul>
+<p>Actions include default, allow, alert, drop, and the reset options. The predefined <strong>default</strong> profile is read-only; clone it to change actions. Two more tabs matter: <strong>Application Exception</strong>, to change the action for a specific application, and <strong>Signature Exceptions</strong>, where you add a threat ID (found in the Threat log) to stop a false positive.</p>
+<div class="callout exam"><p class="c-title">Exam tip</p>
+<p>An exception is always by threat ID. If a question asks how to stop one antivirus or vulnerability signature from blocking a legitimate application, the answer is a threat ID exception in the profile, not disabling the profile or the rule.</p></div>
+</section>
+
+<section class="unit" id="s-as" data-section="as" data-label="10.4 Anti-Spyware and DNS sinkhole" data-part="Part A: Threat profiles">
+<header><span class="sec-n">10.4</span><h2>Anti-Spyware and DNS sinkholing</h2></header>
+<p class="intro">Catch infected hosts by what they try to contact.</p>
+<p>An <dfn data-term="anti-spyware-profile">Anti-Spyware profile</dfn> at <span class="path" data-path="Objects > Security Profiles > Anti-Spyware"></span> detects command-and-control (C2) traffic: an infected machine calling home for instructions, or sending data out. Like Vulnerability Protection, it has predefined <strong>default</strong> and <strong>strict</strong> profiles, rules matching by severity and category, and exceptions by threat ID.</p>
+<h3>DNS policies</h3>
+<p>Malware almost always looks up its C2 server by name first, so the DNS query is an early chance to catch it. The profile's DNS Policies section sets an action for each source of malicious domains: Palo Alto Networks' DNS signatures (and the DNS Security cloud service, if licensed) and any <dfn data-term="edl">external dynamic lists</dfn> of domains you add. The best-practice action is <strong>sinkhole</strong>. The same section can also block DNS over HTTPS, which would otherwise hide lookups inside encrypted web traffic.</p>
+<h3>How a sinkhole works</h3>
+<p>With a <dfn data-term="dns-sinkhole">DNS sinkhole</dfn>, the firewall answers the malicious lookup with a sinkhole address instead of the real one: Palo Alto Networks' sinkhole.paloaltonetworks.com by default, or an internal address you choose. The infected host then tries to connect to the sinkhole, and that connection attempt identifies it.</p>
+<div class="sim" id="sim-10-2">
+<p class="box-kicker">Simulation 10.2</p><h3>Follow a sinkholed lookup</h3>
+<p class="box-note">Step through what happens when an infected host behind an internal DNS server looks up a C2 domain.</p>
+<figure class="diagram" style="margin:0.6rem 0">
+<svg viewBox="0 0 640 170" role="img" aria-label="Infected host, internal DNS server, firewall, and sinkhole address, from left to right">
+<g data-n="h"><rect class="svg-box" x="10" y="55" width="120" height="60" rx="6"/><text class="svg-ink" x="70" y="82" text-anchor="middle" font-size="13" font-weight="600">HostA</text><text class="svg-ink2" x="70" y="100" text-anchor="middle" font-size="11">infected laptop</text></g>
+<g data-n="d"><rect class="svg-box" x="170" y="55" width="130" height="60" rx="6"/><text class="svg-ink" x="235" y="82" text-anchor="middle" font-size="13" font-weight="600">Internal DNS</text><text class="svg-ink2" x="235" y="100" text-anchor="middle" font-size="11">forwards queries</text></g>
+<g data-n="f"><rect class="svg-box" x="340" y="55" width="120" height="60" rx="6"/><text class="svg-ink" x="400" y="82" text-anchor="middle" font-size="13" font-weight="600">Firewall</text><text class="svg-ink2" x="400" y="100" text-anchor="middle" font-size="11">Anti-Spyware</text></g>
+<g data-n="s"><rect class="svg-box" x="500" y="55" width="130" height="60" rx="6"/><text class="svg-ink" x="565" y="82" text-anchor="middle" font-size="13" font-weight="600">Sinkhole address</text><text class="svg-ink2" x="565" y="100" text-anchor="middle" font-size="11">goes nowhere</text></g>
+<line class="svg-line" x1="130" y1="85" x2="168" y2="85" stroke-width="2"/><line class="svg-line" x1="300" y1="85" x2="338" y2="85" stroke-width="2"/><line class="svg-line" x1="460" y1="85" x2="498" y2="85" stroke-width="2" stroke-dasharray="4 3"/>
+</svg>
+</figure>
+<p class="sk-text verdict pass" style="font-weight:400" aria-live="polite"></p>
+<div class="btn-row"><button type="button" data-sk="prev">Previous step</button><button type="button" class="btn-primary" data-sk="next">Next step</button></div>
+</div>
+<h3>Finding the infected host</h3>
+<p>The Threat log's sinkhole entry often names the wrong machine: its source is whoever sent the query to the firewall, which on most networks is the internal DNS server. To find the infected hosts, filter the Traffic log for sessions to the sinkhole address. Check daily, or schedule a report.</p>
+<div class="activity" data-activity="tf" data-id="m10-a1">
+<p class="box-kicker">Activity 10.1</p><h3>Fact or myth: threat profiles</h3>
+<p class="box-note">About 3 minutes.</p>
+<script type="application/json">{"items":[
+{"text":"You can edit the predefined strict Vulnerability Protection profile directly.","answer":false,"why":"Predefined profiles are read-only. Clone them to customize."},
+{"text":"WildFire inline ML can block a malicious executable the first time it is ever seen.","answer":true,"why":"It scans in real time with machine learning rather than waiting for a signature."},
+{"text":"After a sinkhole event, the Threat log's source address is always the infected host.","answer":false,"why":"It is the system that sent the DNS query, usually the internal DNS server. Use the Traffic log to find hosts connecting to the sinkhole."},
+{"text":"Security Profiles can be attached to deny rules.","answer":false,"why":"Profiles inspect allowed traffic."},
+{"text":"A false positive is best handled with a threat ID exception in the profile.","answer":true,"why":"It changes the action for that one signature only."}
+]}</script>
+</div>
+<div class="activity" data-activity="sort" data-id="m10-a2">
+<p class="box-kicker">Activity 10.2</p><h3>Which profile?</h3>
+<p class="box-note">About 3 minutes.</p>
+<script type="application/json">{"buckets":["Vulnerability Protection","Antivirus","Anti-Spyware"],"items":[
+{"text":"Block SQL injection attempts against the public web server.","answer":"Vulnerability Protection","why":"An exploit against a server application."},
+{"text":"Stop a known trojan inside an email attachment.","answer":"Antivirus","why":"Known malware in a file."},
+{"text":"Sinkhole lookups for domains on a threat-intelligence list.","answer":"Anti-Spyware","why":"DNS policies live in the Anti-Spyware profile."},
+{"text":"Detect a botnet's command-and-control beacons.","answer":"Anti-Spyware","why":"C2 detection is what anti-spyware does."},
+{"text":"Block an exploit kit targeting an outdated browser plug-in on user laptops.","answer":"Vulnerability Protection","why":"Client-side exploit protection."}
+]}</script>
+</div>
+</section>
+
+<div class="part-head"><p class="part-n">Part B</p><h2>Files, data, and groups</h2><p>Controlling what crosses the firewall, and attaching it all to policy.</p></div>
+
+<section class="unit" id="s-files" data-section="files" data-label="10.5 File Blocking and Data Filtering" data-part="Part B: Files, data, groups">
+<header><span class="sec-n">10.5</span><h2>File Blocking and Data Filtering</h2></header>
+<p class="intro">Keep dangerous files out and sensitive data in.</p>
+<h3>File Blocking</h3>
+<p>A <dfn data-term="file-blocking">File Blocking profile</dfn> at <span class="path" data-path="Objects > Security Profiles > File Blocking"></span> has rules that match by application, file type, and direction (upload, download, or both) and take one of three actions:</p>
+<ul>
+<li><strong>alert</strong>: allow the transfer and log it.</li>
+<li><strong>continue</strong>: show the user a response page and let them choose to proceed. This works only with web-browsing.</li>
+<li><strong>block</strong>: stop the transfer, log it, and show a response page.</li>
+</ul>
+<p>Predefined profiles named basic file blocking and strict file blocking are good starting points to clone. The firewall decodes up to four levels of encoding, such as a file in an archive inside a gzip HTTP response, and can block files encoded more deeply than that, which is a common evasion trick. Blocked files are recorded in the Data Filtering log at <span class="path" data-path="Monitor > Logs > Data Filtering"></span>, where source is the system that sent the file and destination is the one that received it.</p>
+<h3>Data Filtering</h3>
+<p>A <dfn data-term="data-filtering">Data Filtering profile</dfn> detects sensitive data leaving (or entering) the network:</p>
+<ol>
+<li>Create a <strong>data pattern</strong> at <span class="path" data-path="Objects > Custom Objects > Data Patterns"></span>: predefined patterns (credit card numbers, Social Security numbers with and without dashes), regular expressions, or file properties.</li>
+<li>Create the profile at <span class="path" data-path="Objects > Security Profiles > Data Filtering"></span>, adding the pattern with an <strong>alert threshold</strong> and a <strong>block threshold</strong>: the number of matches in one file or transfer that triggers each action, plus a log severity.</li>
+</ol>
+<p>Thresholds keep the profile practical: one nine-digit number in a document might be a coincidence, while fifty is a spreadsheet of employee records.</p>
+<div class="activity" data-activity="sort" data-id="m10-a3">
+<p class="box-kicker">Activity 10.3</p><h3>File Blocking or Data Filtering?</h3>
+<p class="box-note">About 3 minutes.</p>
+<script type="application/json">{"buckets":["File Blocking","Data Filtering"],"items":[
+{"text":"Stop users from downloading .exe files from websites.","answer":"File Blocking","why":"Control by file type."},
+{"text":"Alert when an upload contains one card number; block at five.","answer":"Data Filtering","why":"Pattern matching with thresholds."},
+{"text":"Warn users before they download a PDF, and let them continue.","answer":"File Blocking","why":"The continue action, for web-browsing."},
+{"text":"Detect Social Security numbers written without dashes.","answer":"Data Filtering","why":"A predefined data pattern covers that format."}
+]}</script>
+</div>
+</section>
+
+<section class="unit" id="s-groups" data-section="groups" data-label="10.6 Profile groups" data-part="Part B: Files, data, groups">
+<header><span class="sec-n">10.6</span><h2>Attaching profiles: Security Profile Groups</h2></header>
+<p class="intro">One object, every rule, no forgotten profile.</p>
+<p>On a Security rule's Actions tab, Profile Setting can be <strong>Profiles</strong>, where you pick each profile individually, or <strong>Group</strong>, where you pick one <dfn data-term="security-profile-group">Security Profile Group</dfn>. Create groups at <span class="path" data-path="Objects > Security Profile Groups"></span> by choosing one profile of each type you want.</p>
+<p>Groups are the practical choice: every allow rule gets the same inspection, and changing a profile in the group changes it everywhere. In the rulebase, hover over the profile icons in a rule's row to see which group or profiles it uses. A group named <code>default</code>, if you create one, is automatically attached to new rules you add, which helps make inspection the default rather than an afterthought.</p>
+<div class="callout myth"><p class="c-title">Common misconception</p>
+<p>"The firewall inspects everything automatically." It inspects only traffic matching allow rules that have profiles attached. An allow rule with no profiles is a door with no one checking bags, which is what Lab 8 demonstrates before you build the group.</p></div>
+</section>
+
+<section class="unit" id="s-lab" data-section="lab" data-label="Lab 8 companion" data-part="Lab">
+<header><span class="sec-n">Lab</span><h2>Lab 8 companion: Blocking known threats using Security Profiles</h2></header>
+<div class="lab">
+<dl class="lab-meta">
+<dt>Where</dt><dd>NDG Online, PAN-OS 11.0 Firewall Essentials, Lab 8</dd>
+<dt>Time</dt><dd>About 75 to 90 minutes (two 6-minute attack scripts)</dd>
+<dt>Graded</dt><dd>Yes. Submit as directed in Canvas.</dd>
+<dt>Uses</dt><dd>Sections 10.1 to 10.6</dd>
+</dl>
+<h3>What you will do</h3>
+<p>Run simulated attacks, a malware download, a file of Social Security numbers, and a DNS lookup for a malicious domain through a firewall with no Security Profiles, and see almost nothing in the Threat log. Then build a corporate profile for each type, add a custom DNS sinkhole list, bundle them in a Security Profile Group, attach it to every allow rule, and run the same traffic again.</p>
+<p>The guide has two versions of the same lab: High-Level Lab Steps (Task 1) and Detailed Lab Steps (Task 2). Do one, not both. If this is your first time on a Palo Alto Networks firewall, use the detailed steps; if you try the high-level steps and get stuck, switch to the detailed steps at the same task.</p>
+<h3>Before you start</h3>
+<ul class="checklist" data-save="lab8-pre"><li><input type="checkbox" id="l8p1"><label for="l8p1">I know which profiles log to the Threat log and which to the Data Filtering log (10.1, 10.5).</label></li><li><input type="checkbox" id="l8p2"><label for="l8p2">I know why cloning a predefined profile is the usual starting point (10.2).</label></li><li><input type="checkbox" id="l8p3"><label for="l8p3">I stepped through Simulation 10.2 and know where to find the infected host after a sinkhole.</label></li><li><input type="checkbox" id="l8p4"><label for="l8p4">I can attach a Security Profile Group on a rule's Actions tab (10.6).</label></li></ul>
+<h3>Your lab network</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Users_Net once Lab 4 builds the zones)</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.0/24</code></td><td>Firewall ethernet1/1 is .20; the ISP router is .1</td></tr>
+</tbody></table></div>
+<p class="box-note">Usernames and passwords are in the Lab Settings table on page 5 of each lab guide.</p>
+<h3>The lab at a glance</h3>
+<p>Baseline, build, attach, retest.</p>
+<ol><li><strong>Every lab starts the same way.</strong> On the client desktop, open Firefox to <code>https://192.168.1.254</code>, log in with the credentials in your lab guide, then go to <span class="path" data-path="Device > Setup > Operations"></span> and click <em>Load named configuration snapshot</em>. Choose <code>edu-210-11.0a-08.xml</code>, open the Tasks window (lower right) to confirm the load completed, and then <strong>commit</strong>. Loading only changes the candidate (Module 3); skipping the commit is the most common reason a lab "doesn't match" the guide. If the login page doesn't appear right away, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li><strong>Baseline with no profiles</strong>: in Remmina, connect to Server-Extranet and run <code>./malwareattacks.sh</code> from the directory in the guide (about 6 minutes). Meanwhile, on the client, download http://192.168.50.80/badtarfile.tar, open http://192.168.50.80/companyssns.txt, and run <code>dig @8.8.8.8 www.quora.com</code>. Check the Threat log: almost nothing.</li><li><strong>Corporate profiles</strong> at <span class="path" data-path="Objects > Security Profiles"></span>: Corp-AV (clone of default antivirus), Corp-Vuln (clone of strict vulnerability protection), Corp-FileBlock (clone of strict file blocking), Corp-AS (clone of strict anti-spyware).</li><li><strong>Data filtering</strong>: a US-SSNs data pattern using the two predefined Social Security number patterns, then Corp-DataFilter with alert threshold 1, block threshold 3, severity critical.</li><li><strong>Custom sinkhole list</strong>: an external dynamic list malicious-domains-edl (Domain List, from http://192.168.50.80/malicious-domains.txt, subdomains included, every five minutes). In Corp-AS, set its DNS policy action to sinkhole. Commit.</li><li><strong>Corp-Profiles-Group</strong> at <span class="path" data-path="Objects > Security Profile Groups"></span> with the five profiles (URL Filtering and WildFire Analysis left as none), applied to each of the six allow rules listed in the guide. Commit.</li><li><strong>Retest everything</strong>: rerun the script, and see the File Transfer Blocked page for the tar file, the Data Transfer Blocked page for the SSN file, and sinkhole.paloaltonetworks.com in the dig output. Read the Threat and Data Filtering logs.</li></ol>
+<h3>Watch out for</h3>
+<ul><li><strong>The high-level steps stop early.</strong> They end at the tar-file test. The detailed steps (Task 2.12) also retest the SSN file and the dig query and review the Threat log. Do those checks whichever version you follow: they prove the data filtering and sinkhole work.</li><li><strong>Six rules, one profile setting each.</strong> Every allow rule needs the group on its Actions tab, including Acquisition-Allow-All and Extranet_to_User_Net. A rule you skip is a rule with no inspection.</li><li><strong>Let the script finish.</strong> It runs for about 6 minutes; interrupting it means fewer Threat log entries to study.</li><li><strong>The sinkhole result looks like a failure.</strong> dig returning sinkhole.paloaltonetworks.com instead of quora.com's address is success. The EDL lists quora.com and producthunt.com only for the lab; they aren't really malicious.</li><li><strong>Where the source address points.</strong> In the Threat log, the DNS event's source is whoever sent the query. Here that's the client itself, because it queried 8.8.8.8 directly; in a network with an internal DNS server it would be the DNS server (Simulation 10.2).</li></ul>
+<h3>After the lab</h3>
+<label for="l8-reflect">Before the profiles, the attack script produced almost no Threat log entries even though the traffic was allowed. Explain what that says about a firewall with allow rules but no profiles.</label>
+<textarea id="l8-reflect" data-save="lab8-reflect"></textarea>
+<p class="box-note">Saved in this browser only. Copy it into Canvas if your instructor asks for it.</p>
+</div>
+</section>
+
+<section class="unit" id="s-wrap" data-section="wrap" data-label="Summary and self-check" data-part="Wrap-up">
+<header><span class="sec-n">✓</span><h2>Summary and self-check</h2></header>
+<ul>
+<li>Content-ID applies Security Profiles to traffic allowed by Security policy. The seven types are Antivirus, Anti-Spyware, Vulnerability Protection, URL Filtering, File Blocking, Data Filtering, and WildFire Analysis.</li>
+<li>Vulnerability Protection, Antivirus, and Anti-Spyware log to the Threat log; File Blocking and Data Filtering log to the Data Filtering log.</li>
+<li>Predefined profiles (default, strict) are read-only; clone to customize. Rules set actions by severity and category; exceptions override by threat ID.</li>
+<li>Antivirus has signature, WildFire signature, and WildFire inline ML actions per decoder.</li>
+<li>Anti-Spyware detects C2 and sinkholes malicious DNS lookups. Find infected hosts in the Traffic log by filtering for the sinkhole address, because the Threat log source is often the DNS server.</li>
+<li>File Blocking controls file types with alert, continue (web-browsing only), or block. Data Filtering uses data patterns with alert and block thresholds.</li>
+<li>Security Profile Groups apply consistent inspection to every allow rule.</li>
+</ul>
+<h3>Key terms</h3>
+<p><dfn data-term="content-id">Content-ID</dfn>, <dfn data-term="security-profile">Security Profile</dfn>, <dfn data-term="vulnerability-protection">Vulnerability Protection</dfn>, <dfn data-term="antivirus-profile">Antivirus profile</dfn>, <dfn data-term="anti-spyware-profile">Anti-Spyware profile</dfn>, <dfn data-term="dns-sinkhole">DNS sinkhole</dfn>, <dfn data-term="file-blocking">File Blocking</dfn>, <dfn data-term="data-filtering">Data Filtering</dfn>, <dfn data-term="data-pattern">data pattern</dfn>, <dfn data-term="security-profile-group">Security Profile Group</dfn>, <dfn data-term="threat-log">Threat log</dfn>.</p>
+<h3 id="self-check">Self-check quiz</h3>
+<p class="box-note">Ungraded. Score 80% or better and this section marks itself complete. The graded Quiz 10 is in Canvas.</p>
+<div class="quiz" data-quiz="m10">
+<script type="application/json">{"questions":[
+{"q":"To which traffic are Security Profiles applied?","choices":["All traffic entering the firewall","Traffic matching allow rules that have profiles attached","Only traffic to the internet","Only decrypted traffic"],"answer":1,"why":"Profiles inspect allowed traffic on rules where they are attached. Section 10.1."},
+{"q":"Which log records events from the Vulnerability Protection, Antivirus, and Anti-Spyware profiles?","choices":["Traffic","Threat","Data Filtering","System"],"answer":1,"why":"Section 10.1."},
+{"q":"Where are files blocked by a File Blocking profile recorded?","choices":["Threat log","Data Filtering log","URL Filtering log","Configuration log"],"answer":1,"why":"Section 10.5."},
+{"q":"How do you customize the predefined strict Vulnerability Protection profile?","choices":["Edit it directly","Clone it and edit the clone","Delete and re-create it","Use the CLI only"],"answer":1,"why":"Predefined profiles are read-only. Section 10.2."},
+{"q":"A legitimate application triggers a false positive antivirus signature. What is the targeted fix?","choices":["Remove the Antivirus profile from the rule","Add a signature exception for the threat ID","Disable the rule","Lower the rule's priority"],"answer":1,"why":"Exceptions are by threat ID. Section 10.3."},
+{"q":"Which antivirus action can block previously unseen malware on its first download?","choices":["Signature action","WildFire signature action","WildFire inline ML action","Application exception"],"answer":2,"why":"Inline ML scans in real time without a signature. Section 10.3."},
+{"q":"Which profile contains the DNS sinkhole setting?","choices":["Antivirus","Vulnerability Protection","Anti-Spyware","URL Filtering"],"answer":2,"why":"Section 10.4."},
+{"q":"A sinkhole event's Threat log entry shows your internal DNS server as the source. How do you find the infected host?","choices":["Reboot the DNS server","Filter the Traffic log for connections to the sinkhole address","Check the System log","Disable the sinkhole"],"answer":1,"why":"The infected host reveals itself by connecting to the sinkhole address. Section 10.4."},
+{"q":"The File Blocking continue action works only with which application?","choices":["ftp","smtp","web-browsing","ssl"],"answer":2,"why":"It needs a browser to display the response page. Section 10.5."},
+{"q":"What do the alert and block thresholds in a Data Filtering profile count?","choices":["Sessions per minute","Instances of the data pattern found","Users affected","Files per session"],"answer":1,"why":"Section 10.5."}
+]}</script>
+</div>
+</section>
+
+<nav class="pager" id="pager" aria-label="Module navigation"></nav>
+</article>
+</div>
+</main>
+
+<footer id="site-footer"></footer>
+<script src="../assets/js/course.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/activities.js"></script>
+<script src="../assets/js/sims/m10.js"></script>
+</body>
+</html>

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Module 11: Advanced URL Filtering | Perimeter Security</title>
+<meta name="description" content="Most attacks arrive on the web: a phishing link, a malicious download, a freshly registered domain hosting an exploit kit. URL filtering cuts off the dangerous neighborhoods before a user ever gets there, and gives you control over the merely inappropriate ones too.">
+<link rel="stylesheet" href="../assets/css/site.css">
+<script src="../assets/js/prefs.js"></script>
+</head>
+<body data-root=".." data-module="11" data-page="">
+<a class="skip-link" href="#main">Skip to main content</a>
+<header id="site-header"></header>
+
+<main id="main" class="page">
+<div class="module-hero">
+<p class="kicker">Module 11 of 16, week 6. Corresponds to EDU-210 Module 10.</p>
+<h1>Advanced URL Filtering</h1>
+<p class="lede">Most attacks arrive on the web: a phishing link, a malicious download, a freshly registered domain hosting an exploit kit. URL filtering cuts off the dangerous neighborhoods before a user ever gets there, and gives you control over the merely inappropriate ones too.</p>
+<ul class="facts"><li>About 3 hours plus Lab 9</li><li>5 reading sections</li><li>1 simulation</li><li>3 activities</li><li>Lab 9 in NDG Online</li><li>10-question self-check</li></ul>
+<!-- Overview video: add data-embed="https://...embed-url" for an inline player,
+     or data-link="https://..." to link out (e.g. a Screencast page). -->
+<div class="video-slot" data-title="Module 11 overview video" data-embed="" data-link="">
+<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="1" y="6" width="38" height="28" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="16,13 28,20 16,27" fill="currentColor"/></svg>
+<p><strong>Module overview video.</strong> Your instructor's walkthrough of this module will appear here.</p>
+</div>
+</div>
+
+<div class="objectives">
+<h2>By the end of this module you should be able to</h2>
+<ol><li>Explain how URL filtering disrupts the attack lifecycle and how PAN-DB categorizes websites.</li><li>Compare URL categories used as Security policy match criteria with URL Filtering profiles.</li><li>Configure a URL Filtering profile with site access, user credential submission, and the unknown and not-resolved categories.</li><li>Create custom URL categories and URL external dynamic lists, and predict which action applies to a URL.</li><li>Configure response pages, admin override, safe search, and HTTP header insertion.</li><li>Choose categories to block, alert, and allow using best-practice guidance.</li></ol>
+</div>
+
+<h2>Plan your time</h2>
+<div class="table-wrap" style="max-width:860px"><table>
+<caption class="visually-hidden">Suggested time for each part of the module</caption>
+<thead><tr><th scope="col">Part</th><th scope="col">What's in it</th><th scope="col">Minutes</th></tr></thead>
+<tbody><tr><td>Part A: How URL filtering works</td><td>Sections 11.1–11.2, Activity 11.1</td><td>45</td></tr><tr><td>Part B: Building URL filtering</td><td>Sections 11.3–11.5, Simulation 11.1, Activities 11.2–11.3</td><td>75</td></tr><tr><td>Lab 9 in NDG Online</td><td>Lab companion, then the lab</td><td>60–75</td></tr><tr><td>Wrap-up</td><td>Summary, key terms, self-check quiz</td><td>20</td></tr></tbody></table></div>
+
+
+<div class="module-layout">
+<nav class="module-rail" aria-label="This module">
+<h2>This module</h2>
+<div class="progress-wrap"><span class="label" id="rail-meter-label">0 sections complete</span>
+<div class="meter" role="progressbar" aria-labelledby="rail-meter-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="rail-meter"></span></div></div>
+<ol id="rail-list"></ol>
+<p><a href="#self-check">Jump to the self-check quiz</a></p>
+</nav>
+<article>
+
+<div class="part-head"><p class="part-n">Part A</p><h2>How URL filtering works</h2><p>Categories, PAN-DB, and two places to use them.</p></div>
+
+<section class="unit" id="s-why" data-section="why" data-label="11.1 Why and PAN-DB" data-part="Part A: How it works">
+<header><span class="sec-n">11.1</span><h2>Why filter URLs, and how sites get categories</h2></header>
+<p class="intro">Block the delivery and the phone call home.</p>
+<p>Web traffic is hard to secure. The business needs the web, much of it is encrypted, and in many organizations web proxies, firewalls, and endpoint tools are run by different teams. URL filtering on the firewall attacks two stages of the cyberattack lifecycle directly: <strong>delivery</strong> (the phishing page, the malicious download site) and <strong>command-and-control</strong> (the site malware reaches out to).</p>
+<h3>PAN-DB</h3>
+<p><dfn data-term="pan-db">PAN-DB</dfn> is Palo Alto Networks' cloud URL database. It groups websites into categories by content and purpose, such as news, shopping, or social-networking, and by risk, such as malware, phishing, command-and-control, and high-risk. With Advanced URL Filtering, a site can belong to <strong>several categories at once</strong>, typically one for content and one for risk: a recently compromised news site might be both news and high-risk. Sites registered fewer than 32 days ago are placed in newly-registered-domain, a favorite of attackers.</p>
+<p>The firewall keeps a cache of recent lookups and asks the cloud about URLs it hasn't seen. Advanced URL Filtering also analyzes pages inline, in real time, to catch new phishing and malicious sites that aren't categorized yet. Custom categories you define need no license; PAN-DB categories require the URL filtering subscription.</p>
+<div class="callout think"><p class="c-title">Think of it this way</p>
+<p>PAN-DB is a city map with neighborhoods shaded by purpose and by crime rate. Your URL policy decides which neighborhoods employees may visit, which they visit with a warning, and which are off the map.</p></div>
+</section>
+
+<section class="unit" id="s-two" data-section="two" data-label="11.2 Policy vs. profile" data-part="Part A: How it works">
+<header><span class="sec-n">11.2</span><h2>URL categories in policy, or in a profile</h2></header>
+<p class="intro">Two tools that look similar and behave differently.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col"></th><th scope="col">Category in a Security rule</th><th scope="col">URL Filtering profile</th></tr></thead>
+<tbody>
+<tr><td>What it is</td><td>A match criterion on the rule's Service/URL Category tab</td><td>A Security Profile attached to an allow rule</td></tr>
+<tr><td>Who it affects</td><td>Only sessions matching the rule's other criteria too</td><td>Traffic the rule already allowed</td></tr>
+<tr><td>Action</td><td>The rule's action (allow or deny) for the whole category list</td><td>A separate action per category: allow, alert, continue, override, or block</td></tr>
+<tr><td>Logging</td><td>Category recorded for the session</td><td>Each URL logged with its category and action (for alert, continue, override, and block)</td></tr>
+<tr><td>Typical use</td><td>Rules for specific users or categories, such as letting a Pentesters group reach hacking sites</td><td>Organization-wide web policy on every allow rule to the internet</td></tr>
+</tbody></table></div>
+<p>The URL Filtering log at <span class="path" data-path="Monitor > Logs > URL Filtering"></span> is where both show up, with the profile entries carrying the most detail.</p>
+<div class="activity" data-activity="sort" data-id="m11-a1">
+<p class="box-kicker">Activity 11.1</p><h3>Rule or profile?</h3>
+<p class="box-note">About 3 minutes.</p>
+<script type="application/json">{"buckets":["Category in a Security rule","URL Filtering profile"],"items":[
+{"text":"Warn every user before they open a gambling site, and let them continue.","answer":"URL Filtering profile","why":"Continue is a profile action."},
+{"text":"Allow only the Security-Team group to reach hacking-category sites.","answer":"Category in a Security rule","why":"A rule combining source user and URL category."},
+{"text":"Log every URL visited in the shopping category without blocking it.","answer":"URL Filtering profile","why":"Alert logs each URL."},
+{"text":"Apply one set of category actions to all internet traffic.","answer":"URL Filtering profile","why":"Attach it to every internet allow rule, usually through the profile group."}
+]}</script>
+</div>
+</section>
+
+<div class="part-head"><p class="part-n">Part B</p><h2>Building URL filtering</h2><p>Profiles, custom categories and lists, and the extras around them.</p></div>
+
+<section class="unit" id="s-profile" data-section="profile" data-label="11.3 The URL Filtering profile" data-part="Part B: Building">
+<header><span class="sec-n">11.3</span><h2>The URL Filtering profile</h2></header>
+<p class="intro">Every category, two decisions, and two special cases.</p>
+<p>At <span class="path" data-path="Objects > Security Profiles > URL Filtering"></span>, the predefined <code>default</code> profile is read-only, with malicious categories already set to block. Clone it or add a new profile. The Categories tab lists every category, your custom categories, and URL EDLs, each with two settings:</p>
+<ul>
+<li><strong>Site Access</strong>: what happens when a user opens a URL in that category. allow (the default for most categories; not logged), alert (allowed and logged), continue (a warning page with a Continue button), override (a password is required to proceed), or block.</li>
+<li><strong>User Credential Submission</strong>: what happens if a user tries to submit corporate credentials to a site in that category, a key defense against credential phishing.</li>
+</ul>
+<p>The column header has a drop-down to change every category's action at once, which is how you set "alert on everything" before carving out blocks.</p>
+<h3>Two categories that aren't really categories</h3>
+<ul>
+<li><strong>unknown</strong>: PAN-DB had no record of the URL. Brand-new sites land here, and so do some malicious ones. Set the action to fit your risk tolerance; many organizations block or continue.</li>
+<li><strong>not-resolved</strong>: the firewall couldn't reach PAN-DB to ask. The recommendation is alert, so that a cloud outage doesn't block all web traffic.</li>
+</ul>
+<h3>Best-practice starting point</h3>
+<p>Block command-and-control, dynamic-dns, hacking, high-risk, malware, phishing, and unknown. Consider blocking adult, extremism, newly-registered-domain, parked, proxy-avoidance-and-anonymizers, and questionable. Set the rest to alert rather than allow, so every category is logged and visible in reports.</p>
+<div class="callout myth"><p class="c-title">Common misconception</p>
+<p>"allow and alert are the same, since the user gets through either way." Only alert writes a URL Filtering log entry. With allow you have no record of where users went.</p></div>
+</section>
+
+<section class="unit" id="s-custom" data-section="custom" data-label="11.4 Custom categories and precedence" data-part="Part B: Building">
+<header><span class="sec-n">11.4</span><h2>Custom categories, URL lists, and precedence</h2></header>
+<p class="intro">Your own lists come first.</p>
+<p>A <dfn data-term="custom-url-category">custom URL category</dfn> at <span class="path" data-path="Objects > Custom Objects > URL Category"></span> is either a list of URLs (wildcards allowed, such as <code>*.example.com</code>) or a combination of predefined categories, such as "shopping and auctions." A URL <dfn data-term="edl">external dynamic list</dfn> is a list hosted on a web server that the firewall checks for updates on a schedule. Both can be used as a rule's URL category or given an action in a URL Filtering profile.</p>
+<h3>Lookup order</h3>
+<ol>
+<li>Custom URL categories</li>
+<li>External dynamic lists</li>
+<li>The PAN-DB cache on the firewall</li>
+<li>The PAN-DB cloud</li>
+</ol>
+<p>When a URL matches a custom category, that category's action takes precedence over the predefined categories the URL also belongs to. When a URL has several predefined categories with different actions, the most severe action applies: block, then override, then continue, then alert, then allow.</p>
+<p>That precedence makes exceptions easy. To let penetration testers reach the hacking category except one particular site, allow the hacking category for them and put the one site in a custom category set to block.</p>
+<div class="sim" id="sim-11-1">
+<p class="box-kicker">Simulation 11.1</p><h3>What happens to this URL?</h3>
+<p class="box-note">Set the profile's actions, pick a URL, and trace the lookup and the action that applies.</p>
+<div class="sim-grid">
+<div class="table-wrap url-acts"><table><caption class="visually-hidden">URL Filtering profile site access actions</caption><thead><tr><th scope="col">Category</th><th scope="col">Site access</th></tr></thead><tbody></tbody></table></div>
+<div>
+<div class="field"><label for="url-pick">URL requested</label><select id="url-pick"></select></div>
+<h4>Lookup</h4><ol class="trace plain" aria-live="polite"></ol>
+<p class="verdict" aria-live="polite"></p>
+</div>
+</div>
+<div class="try-this"><h4>Try this</h4><ol>
+<li>tools.example-hackers.net is both hacking and high-risk. Set hacking to alert. What happens, and why?</li>
+<li>partner.example-pentest.org is also in the hacking category. Why is it allowed even when hacking is set to block?</li>
+<li>Set unknown to alert, then back to block. Which choice would you defend to your manager, and why?</li>
+</ol></div>
+</div>
+<div class="activity" data-activity="order" data-id="m11-a2">
+<p class="box-kicker">Activity 11.2</p><h3>Put the lookup in order</h3>
+<p class="box-note">About 2 minutes.</p>
+<script type="application/json">{"items":["Custom URL categories","External dynamic lists","PAN-DB cache on the firewall","PAN-DB cloud"],"why":"Administrator-defined lists come first, then Palo Alto Networks' categories, cached copy before cloud."}</script>
+</div>
+</section>
+
+<section class="unit" id="s-extras" data-section="extras" data-label="11.5 Pages, override, and options" data-part="Part B: Building">
+<header><span class="sec-n">11.5</span><h2>Response pages, override, and other options</h2></header>
+<p class="intro">What users see, and a few powerful extras.</p>
+<ul>
+<li><strong>Response pages</strong> at <span class="path" data-path="Device > Response Pages"></span>: the URL Filtering and Category Match block page, the continue and override page, and others can be customized with your organization's wording. Data interfaces that serve them need an Interface Management Profile with Response Pages enabled (Module 5).</li>
+<li><strong>Admin override</strong>: for the override action, set the password and how long access lasts at <span class="path" data-path="Device > Setup > Content-ID > URL Admin Override"></span>.</li>
+<li><strong>Safe search enforcement</strong>, on the profile's Settings tab, blocks searches that don't use the search engine's strict safe-search setting.</li>
+<li><strong>Logging options</strong>: log the container page only (the default, which keeps logs readable), and optionally record user agent, referer, and X-Forwarded-For headers.</li>
+<li><strong>HTTP header insertion</strong> adds or overwrites headers in requests. Predefined types for Dropbox, Google, Office 365, and YouTube let you restrict users to your organization's enterprise accounts. A dynamic field can insert the user's name for a downstream device.</li>
+<li><strong>Recategorization</strong>: if PAN-DB has a site wrong, request a change from the URL Filtering log entry or Palo Alto Networks' Test A Site page.</li>
+</ul>
+<div class="activity" data-activity="tf" data-id="m11-a3">
+<p class="box-kicker">Activity 11.3</p><h3>Fact or myth: URL filtering</h3>
+<p class="box-note">About 3 minutes.</p>
+<script type="application/json">{"items":[
+{"text":"A site can belong to more than one PAN-DB category.","answer":true,"why":"Typically a content category and a risk category."},
+{"text":"When a URL's categories have different actions, the most permissive one applies.","answer":false,"why":"The most severe applies: block, override, continue, alert, allow."},
+{"text":"Setting not-resolved to block is recommended.","answer":false,"why":"Alert is recommended, so a PAN-DB outage doesn't block all web traffic."},
+{"text":"A custom URL category's action overrides the predefined categories for URLs it contains.","answer":true,"why":"Custom categories are checked first and take precedence."},
+{"text":"The allow action writes an entry to the URL Filtering log.","answer":false,"why":"Use alert if you want a record."}
+]}</script>
+</div>
+</section>
+
+<section class="unit" id="s-lab" data-section="lab" data-label="Lab 9 companion" data-part="Lab">
+<header><span class="sec-n">Lab</span><h2>Lab 9 companion: Blocking inappropriate web traffic with Advanced URL Filtering</h2></header>
+<div class="lab">
+<dl class="lab-meta">
+<dt>Where</dt><dd>NDG Online, PAN-OS 11.0 Firewall Essentials, Lab 9</dd>
+<dt>Time</dt><dd>About 60 to 75 minutes</dd>
+<dt>Graded</dt><dd>Yes. Submit as directed in Canvas.</dd>
+<dt>Uses</dt><dd>Sections 11.1 to 11.5</dd>
+</dl>
+<h3>What you will do</h3>
+<p>Block web categories two ways and compare them: first with URL categories as match criteria in a Security policy deny rule, then with a URL Filtering Profile attached to the allow rules. Then add a custom URL category and an external dynamic list of malicious URLs, and see each one work through the rule and through the profile.</p>
+<p>The guide has two versions of the same lab: High-Level Lab Steps (Task 1) and Detailed Lab Steps (Task 2). Do one, not both. If this is your first time on a Palo Alto Networks firewall, use the detailed steps; if you try the high-level steps and get stuck, switch to the detailed steps at the same task.</p>
+<h3>Before you start</h3>
+<ul class="checklist" data-save="lab9-pre"><li><input type="checkbox" id="l9p1"><label for="l9p1">I can explain the difference between a URL category in a rule and in a profile (11.2).</label></li><li><input type="checkbox" id="l9p2"><label for="l9p2">I know the URL lookup order: custom categories, EDLs, cache, cloud (11.4).</label></li><li><input type="checkbox" id="l9p3"><label for="l9p3">I ran Simulation 11.1 with a multi-category URL and a custom category URL.</label></li><li><input type="checkbox" id="l9p4"><label for="l9p4">Lab 8's Security Profile Group exists in this baseline; I know where to edit it.</label></li></ul>
+<h3>Your lab network</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Users_Net once Lab 4 builds the zones)</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.0/24</code></td><td>Firewall ethernet1/1 is .20; the ISP router is .1</td></tr>
+</tbody></table></div>
+<p class="box-note">Usernames and passwords are in the Lab Settings table on page 5 of each lab guide.</p>
+<h3>The lab at a glance</h3>
+<p>Each method is tested, then turned off so it doesn't hide the next one.</p>
+<ol><li><strong>Every lab starts the same way.</strong> On the client desktop, open Firefox to <code>https://192.168.1.254</code>, log in with the credentials in your lab guide, then go to <span class="path" data-path="Device > Setup > Operations"></span> and click <em>Load named configuration snapshot</em>. Choose <code>edu-210-11.0a-09.xml</code>, open the Tasks window (lower right) to confirm the load completed, and then <strong>commit</strong>. Loading only changes the candidate (Module 3); skipping the commit is the most common reason a lab "doesn't match" the guide. If the login page doesn't appear right away, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li><strong>Before</strong>: run the Clear Firewall Logs script on the client desktop, then browse to hacker9.com and hidester.com. Both load.</li><li><strong>Block by policy</strong>: rule Block-Bad-URLs, Users_Net to Internet, with the twelve URL categories in the guide, action deny, moved to the top. Commit, retest, and read the Traffic and URL Filtering logs.</li><li><strong>Block by profile</strong>: Corp-URL-Profile with every category set to alert except the block list in the guide (which adds copyright-infringement and unknown). Add it to the Security Profile Group, <strong>disable</strong> Block-Bad-URLs, commit, retest, and compare the block pages.</li><li><strong>Custom category</strong> Block-Per-Company-Policy with *.nbcnews.com and *.theguardian.com: test it in the re-enabled rule, then set it to block in the profile and disable the rule again.</li><li><strong>URL EDL</strong> malicious-urls-edl (URL List, from http://192.168.50.80/malicious-urls.txt, every five minutes): add it to the rule's URL categories, enable the rule, browse to www.popurls.com, filter the URL Filtering log for action block-url, then disable the rule and commit.</li></ol>
+<h3>Watch out for</h3>
+<ul><li><strong>Object names drift in the guide.</strong> The group is called Corp-Profiles-Group in the headings and the detailed steps, but Corp-Security-Group in one high-level step. The profile is Corp-URL-Profile when you create it and Corp-URL-Filtering when you add it to the group. They are the same objects; select what you actually created.</li><li><strong>Keep track of the rule's state.</strong> Block-Bad-URLs is enabled, disabled, and re-enabled several times. Before each test, check whether it is supposed to be on; if it's on, it blocks first and you won't be testing the profile at all.</li><li><strong>Two different block pages.</strong> A deny rule matching on URL category produces a generic application-style block. A profile's block action shows the URL Filtering block page with the category. Noticing the difference is part of the lab.</li><li><strong>Wildcard syntax.</strong> *.nbcnews.com matches www.nbcnews.com and other subdomains. Enter the entries exactly as the guide shows them.</li><li><strong>Read both logs after each test.</strong> A deny rule matching on URL category logs the session in the Traffic log under the rule's name and records the category in the URL Filtering log. A profile records each URL with its category and the profile's action, such as alert or block-url.</li></ul>
+<h3>After the lab</h3>
+<label for="l9-reflect">After trying both, which method would you use to block the hacking category company-wide, a deny rule or a profile, and why?</label>
+<textarea id="l9-reflect" data-save="lab9-reflect"></textarea>
+<p class="box-note">Saved in this browser only. Copy it into Canvas if your instructor asks for it.</p>
+</div>
+</section>
+
+<section class="unit" id="s-wrap" data-section="wrap" data-label="Summary and self-check" data-part="Wrap-up">
+<header><span class="sec-n">✓</span><h2>Summary and self-check</h2></header>
+<ul>
+<li>URL filtering disrupts the delivery and command-and-control stages of attacks. PAN-DB assigns sites to content and risk categories, including newly-registered-domain; Advanced URL Filtering adds inline analysis.</li>
+<li>URL categories can be Security rule match criteria (the rule's action applies) or entries in a URL Filtering profile attached to allow rules (per-category actions and detailed logging).</li>
+<li>Profile actions: allow (not logged), alert, continue, override, block. User Credential Submission controls credential entry per category. Set not-resolved to alert; decide deliberately on unknown.</li>
+<li>Lookup order: custom categories, EDLs, cache, cloud. Custom categories take precedence; among multiple predefined categories the most severe action wins.</li>
+<li>Response pages, admin override, safe search, header insertion, and recategorization requests round out the feature.</li>
+</ul>
+<h3>Key terms</h3>
+<p><dfn data-term="pan-db">PAN-DB</dfn>, <dfn data-term="url-filtering">URL Filtering profile</dfn>, <dfn data-term="custom-url-category">custom URL category</dfn>, <dfn data-term="edl">external dynamic list</dfn>, <dfn data-term="credential-phishing">credential phishing</dfn>.</p>
+<h3 id="self-check">Self-check quiz</h3>
+<p class="box-note">Ungraded. Score 80% or better and this section marks itself complete. The graded Quiz 11 is in Canvas.</p>
+<div class="quiz" data-quiz="m11">
+<script type="application/json">{"questions":[
+{"q":"Which two attack stages does URL filtering disrupt most directly?","choices":["Reconnaissance and weaponization","Delivery and command-and-control","Installation and exfiltration only","None; it only enforces acceptable use"],"answer":1,"why":"Section 11.1."},
+{"q":"A site registered 10 days ago is placed in which category?","choices":["unknown","not-resolved","newly-registered-domain","parked"],"answer":2,"why":"Sites under 32 days old. Section 11.1."},
+{"q":"Which URL Filtering profile action lets the user proceed after reading a warning page?","choices":["alert","continue","override","allow"],"answer":1,"why":"Override requires a password; continue just a click. Section 11.3."},
+{"q":"Which action allows access and writes a URL Filtering log entry?","choices":["allow","alert","block","none"],"answer":1,"why":"Section 11.3."},
+{"q":"What is the recommended action for the not-resolved category?","choices":["block","alert","continue","override"],"answer":1,"why":"So a lookup outage doesn't block all web traffic. Section 11.3."},
+{"q":"In what order does the firewall check a URL?","choices":["Cloud, cache, EDL, custom","Custom categories, EDLs, cache, cloud","Cache, cloud, custom, EDL","EDL, custom, cloud, cache"],"answer":1,"why":"Section 11.4."},
+{"q":"A URL is in the news category (alert) and the high-risk category (continue). What happens?","choices":["alert","continue","allow","block"],"answer":1,"why":"The most severe action applies. Section 11.4."},
+{"q":"You must let pentesters reach hacking sites except one. What's the cleanest approach?","choices":["Block the hacking category for everyone","Allow hacking for them and add the one site to a custom category set to block","Use a separate firewall","Recategorize the site"],"answer":1,"why":"Custom categories take precedence. Section 11.4."},
+{"q":"How does a URL category used in a Security rule differ from a URL Filtering profile?","choices":["The rule's action applies to the whole category list; a profile sets an action per category","They are identical","Rules support continue and override; profiles don't","Profiles only work on deny rules"],"answer":0,"why":"Section 11.2."},
+{"q":"Which feature can restrict users to the organization's own Office 365 tenant?","choices":["Safe search","HTTP header insertion","Admin override","Recategorization"],"answer":1,"why":"Predefined header insertion types include Office 365. Section 11.5."}
+]}</script>
+</div>
+</section>
+
+<nav class="pager" id="pager" aria-label="Module navigation"></nav>
+</article>
+</div>
+</main>
+
+<footer id="site-footer"></footer>
+<script src="../assets/js/course.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/activities.js"></script>
+<script src="../assets/js/sims/m11.js"></script>
+</body>
+</html>

@@ -201,7 +201,7 @@
 <li>A <strong>static address group</strong> lists address objects and other groups. Membership changes by hand and needs a commit.</li>
 <li>A <dfn data-term="dag">dynamic address group</dfn> includes any IP address carrying a matching tag. Tags can come from external systems through the API or from the firewall's own log-based auto-tagging, and membership changes take effect without a commit. A classic use: when a host triggers a threat alert, tag it "Quarantine," and a rule that blocks the Quarantine group isolates it immediately.</li>
 </ul>
-<p>For lists of addresses maintained outside the firewall, such as threat-intelligence feeds of known-bad IPs, use an <dfn data-term="edl">external dynamic list</dfn>.</p>
+<p>For lists of addresses maintained outside the firewall, such as threat-intelligence feeds of known-bad IPs, use an <dfn data-term="edl">external dynamic list</dfn>. PAN-OS includes predefined lists maintained by Palo Alto Networks, such as known malicious, high-risk, and bulletproof hosting IP addresses, which you can use directly as source or destination addresses. Lab 5 builds block rules from them.</p>
 <h3>Tags</h3>
 <p>Tags, created at <span class="path" data-path="Objects > Tags"></span>, label rules and objects with a name and a color. Rules and objects can carry several tags. Use them to filter the rulebase, to spot related rules by color, and to view the rulebase as tag-based groups, where you can move or operate on a whole group of rules at once while rule priority is preserved.</p>
 <div class="activity" data-activity="sort" data-id="m6-a4">
@@ -243,31 +243,36 @@
 <header><span class="sec-n">Lab</span><h2>Lab 5 companion: Creating and managing Security policy rules</h2></header>
 <div class="lab">
 <dl class="lab-meta">
-<dt>Where</dt><dd>NDG Online</dd>
+<dt>Where</dt><dd>NDG Online, PAN-OS 11.0 Firewall Essentials, Lab 5</dd>
 <dt>Time</dt><dd>About 75 to 90 minutes</dd>
 <dt>Graded</dt><dd>Yes. Submit as directed in Canvas.</dd>
 <dt>Uses</dt><dd>Sections 6.2 to 6.6</dd>
 </dl>
 <h3>What you will do</h3>
-<p>Write a rule allowing Users_Net to reach the Extranet, test it from the client, read the Traffic log, examine and reset rule hit counts, customize the policy table columns, enable logging on the intrazone and interzone default rules, create rules to the Internet zone, and create block rules for known-bad IP addresses.</p>
+<p>Write the first Security policy rules on a firewall that so far allows nothing between zones: users to the extranet, users and extranet servers to the internet, and two rules that block known-bad addresses. Along the way you read hit counts, customize the policy and Traffic log tables, and turn on logging for the interzone-default rule so denied traffic becomes visible.</p>
+<p>The guide has two versions of the same lab: High-Level Lab Steps (Task 1) and Detailed Lab Steps (Task 2). Do one, not both. If this is your first time on a Palo Alto Networks firewall, use the detailed steps; if you try the high-level steps and get stuck, switch to the detailed steps at the same task.</p>
 <h3>Before you start</h3>
-<ul class="checklist" data-save="lab5-pre">
-<li><input type="checkbox" id="l5p1"><label for="l5p1">I worked through all four prompts in Simulation 6.2.</label></li>
-<li><input type="checkbox" id="l5p2"><label for="l5p2">I know how to override the default rules to turn on logging (6.2).</label></li>
-<li><input type="checkbox" id="l5p3"><label for="l5p3">I know where block rules for known-bad addresses must sit relative to allow rules (6.3).</label></li>
-<li><input type="checkbox" id="l5p4"><label for="l5p4">I can create an address object (6.5).</label></li>
-</ul>
+<ul class="checklist" data-save="lab5-pre"><li><input type="checkbox" id="l5p1"><label for="l5p1">I worked through all four Try this prompts in Simulation 6.2.</label></li><li><input type="checkbox" id="l5p2"><label for="l5p2">I know how to override a default rule to turn on logging (6.2).</label></li><li><input type="checkbox" id="l5p3"><label for="l5p3">I know where block rules must sit relative to allow rules (6.3).</label></li><li><input type="checkbox" id="l5p4"><label for="l5p4">I know what an external dynamic list is (6.5).</label></li></ul>
+<h3>Your lab network</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Users_Net once Lab 4 builds the zones)</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.0/24</code></td><td>Firewall ethernet1/1 is .20; the ISP router is .1</td></tr>
+</tbody></table></div>
+<p class="box-note">Usernames and passwords are in the Lab Settings table on page 5 of each lab guide.</p>
+<h3>The lab at a glance</h3>
+<p>The rules you build, top to bottom when you're done.</p>
+<ol><li><strong>Every lab starts the same way.</strong> On the client desktop, open Firefox to <code>https://192.168.1.254</code>, log in with the credentials in your lab guide, then go to <span class="path" data-path="Device > Setup > Operations"></span> and click <em>Load named configuration snapshot</em>. Choose <code>edu-210-11.0a-05.xml</code>, open the Tasks window (lower right) to confirm the load completed, and then <strong>commit</strong>. Loading only changes the candidate (Module 3); skipping the commit is the most common reason a lab "doesn't match" the guide. If the login page doesn't appear right away, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li><strong>Users_to_Extranet</strong>: Users_Net to Extranet, any application, application-default, allow. Test by pinging and browsing to the web server at 192.168.50.80, and watch the rule's hit count rise.</li><li><strong>Make denies visible</strong>: ping 8.8.8.8 from the client and look for it in the Traffic log. Nothing appears. Override <strong>interzone-default</strong>, enable Log at Session End, commit, and ping again: now the denies show up.</li><li><strong>Block-to-Known-Bad-Addresses</strong> and <strong>Block-from-Known-Bad-Addresses</strong> at the top of the rulebase, using Palo Alto Networks' predefined lists of bulletproof, high-risk, and known malicious IP addresses.</li><li><strong>Users_to_Internet</strong> and <strong>Extranet_to_Internet</strong>: allow those zones to the Internet zone. Commit and ping 8.8.8.8 once more.</li></ol>
 <h3>Watch out for</h3>
-<ul>
-<li><strong>Block rules at the bottom.</strong> A rule that blocks known-bad addresses does nothing if a broader allow rule sits above it. Check the commit's shadow warnings.</li>
-<li><strong>Empty Traffic log.</strong> Entries appear when sessions end. Generate traffic, wait a moment, and refresh. Short-lived web sessions appear quickly; long ones do not.</li>
-<li><strong>Hit counts reset.</strong> Reset hit counts before a test so you can see that your rule is the one being hit.</li>
-<li><strong>Zones from Lab 4.</strong> Rules use the zones you built last week. If a rule seems right but never matches, confirm interface-to-zone assignments in Network > Zones.</li>
-</ul>
+<ul><li><strong>The last ping still fails, and that's expected.</strong> The Traffic log now shows the session allowed by Users_to_Internet, but no reply comes back: the client's private address 192.168.1.20 can't be routed on the internet. Lab 6 adds the source NAT that fixes it. Policy allowing traffic and the traffic working are two different things.</li><li><strong>Block rules at the top.</strong> If Users_to_Internet sits above Block-to-Known-Bad-Addresses, the block rule is shadowed and never hit. Check the commit's shadow warnings.</li><li><strong>Traffic log timing.</strong> Entries appear when a session ends, and logs can take a minute to show. Ping a few times, wait, and refresh.</li><li><strong>Reset hit counts before a test</strong> so you can see that your rule is the one being hit.</li><li><strong>The guide skips a step number</strong> (1.12 to 1.14). Nothing is missing.</li></ul>
 <h3>After the lab</h3>
-<label for="l5-reflect">Which rule in your finished rulebase is the broadest? What would you need to learn to make it narrower?</label>
+<label for="l5-reflect">Which rule in your finished rulebase is the broadest? What would you need to know about your users to make it narrower?</label>
 <textarea id="l5-reflect" data-save="lab5-reflect"></textarea>
-<p class="box-note">Saved in this browser only.</p>
+<p class="box-note">Saved in this browser only. Copy it into Canvas if your instructor asks for it.</p>
 </div>
 </section>
 
