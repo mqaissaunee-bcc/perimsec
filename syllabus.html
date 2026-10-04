@@ -13,31 +13,45 @@
 <header id="site-header"></header>
 <main id="main" class="page">
 <h1>Syllabus</h1>
-<p class="lede">NETW 237 Perimeter Security, Fall 2026, fully online.</p>
+<p class="lede">NETW 237 Perimeter Security. Fall 2026, 11 weeks, fully online.</p>
 <div class="prose">
-<div class="callout exam"><p class="c-title">Instructor: finish before publishing</p><p>Items in square brackets are placeholders. Replace them, or link to the official syllabus in Canvas.</p></div>
+<div class="table-wrap"><table>
+<caption class="visually-hidden">Course information</caption>
+<tbody>
+<tr><th scope="row">Course</th><td>NETW 237 Perimeter Security</td></tr>
+<tr><th scope="row">Credits</th><td>3</td></tr>
+<tr><th scope="row">Prerequisites</th><td>NETW 106, NETW 107, and NETW 110 (or two of the three and department permission)</td></tr>
+<tr><th scope="row">Department</th><td>Engineering and Technology</td></tr>
+<tr><th scope="row">Format</th><td>Fully online and asynchronous; labs in NDG Online</td></tr>
+</tbody></table></div>
+
+<h2>Instructor</h2>
+<p><strong>Mike Qaissaunee</strong></p>
+<ul>
+<li>Email (preferred): <a href="mailto:mqaissaunee@brookdalecc.edu">mqaissaunee@brookdalecc.edu</a></li>
+<li>Phone: 732-224-2879</li>
+<li>Office hours: GMH 107, or book a time at <a href="https://tidycal.com/profq/fall-2026" target="_blank" rel="noopener">tidycal.com/profq/fall-2026</a> (opens in a new tab)</li>
+</ul>
 
 <h2>Course description</h2>
-<p>This course teaches students to deploy, configure, and manage a next-generation firewall at the network perimeter. Students build a firewall configuration from initial setup through security zones, security and NAT policy, application and user identification, threat prevention, URL filtering, malware analysis, and decryption, then use logs and reports to find what matters. The course closes with cloud-delivered security: SASE and CASB. Hands-on labs run on Palo Alto Networks firewalls in NDG Online.</p>
+<p>From the college catalog: This course provides students with the theory and skills needed to secure networks using virtual private networks (VPNs) and firewalls. Various network security-related issues, including risks, threats, and vulnerabilities are introduced and examined. The focus is on best practices and strategies for network security and incident response. Different types of VPNs for securing data in an organization are discussed as well as the benefits and architecture of a VPN and how to implement a VPN. Other topics include the utility and the limitations of a firewall. Instruction is also given on the functionality of a firewall, how to construct, configure, and administer a firewall, secure network design, and layered network security strategies.</p>
+<p><strong>This section</strong> teaches those skills on Palo Alto Networks next-generation firewalls, following the Palo Alto Networks Firewall Essentials (EDU-210) curriculum. You build a firewall configuration from initial setup through security zones, Security and NAT policy, application and user identification, threat prevention, URL filtering, malware analysis, and decryption, then use logs and reports to investigate what the firewall sees. The course closes with cloud-delivered security, SASE and CASB, including how VPN-based remote access is giving way to Zero Trust Network Access.</p>
 
-<h2>Learning outcomes</h2>
-<p>By the end of the course, you will be able to:</p>
-<ol>
-<li>Describe next-generation firewall architecture, including single-pass processing and separate control and data planes.</li>
-<li>Perform initial firewall configuration and manage licenses, content updates, and software.</li>
-<li>Manage candidate and running configurations and administrator accounts using local and external authentication.</li>
-<li>Segment a network with security zones and configure tap, virtual wire, and Layer 3 interfaces with routing.</li>
-<li>Write, order, test, and troubleshoot Security and NAT policy rules.</li>
-<li>Build application- and user-based policy with App-ID and User-ID.</li>
-<li>Block known and unknown threats with Security Profiles, URL filtering, and WildFire.</li>
-<li>Configure SSL/TLS and SSH decryption and handle decryption exceptions.</li>
-<li>Use the dashboard, ACC, logs, and reports to investigate traffic and threats, and forward logs to external systems.</li>
-<li>Explain SASE and CASB architectures and how they extend perimeter security to remote users and SaaS.</li>
-</ol>
+<h2>Course learning outcomes</h2>
+<p>Upon completion of this course, you will be able to:</p>
+<div class="table-wrap"><table>
+<caption class="visually-hidden">Course learning outcomes and the modules that address them</caption>
+<thead><tr><th scope="col">Outcome</th><th scope="col">Modules</th></tr></thead>
+<tbody>
+<tr><td>Describe common perimeter security technologies and the functions performed by firewalls and VPNs.</td><td><a href="modules/module-01.html">1</a>, <a href="modules/module-05.html">5</a>, <a href="modules/module-13.html">13</a>, <a href="modules/module-15.html">15</a></td></tr>
+<tr><td>Identify and apply network security management best practices and strategies for responding when security measures fail.</td><td><a href="modules/module-03.html">3</a>, <a href="modules/module-04.html">4</a>, <a href="modules/module-10.html">10</a>, <a href="modules/module-12.html">12</a>, <a href="modules/module-14.html">14</a></td></tr>
+<tr><td>Manage and monitor firewalls, and understand their limitations.</td><td><a href="modules/module-02.html">2</a>, <a href="modules/module-03.html">3</a>, <a href="modules/module-04.html">4</a>, <a href="modules/module-13.html">13</a>, <a href="modules/module-14.html">14</a>, <a href="modules/module-16.html">16</a></td></tr>
+<tr><td>Assess firewall design strategies and apply firewall management best practices.</td><td><a href="modules/module-05.html">5</a>, <a href="modules/module-06.html">6</a>, <a href="modules/module-07.html">7</a>, <a href="modules/module-08.html">8</a>, <a href="modules/module-09.html">9</a>, <a href="modules/module-11.html">11</a>, <a href="modules/module-15.html">15</a></td></tr>
+</tbody></table></div>
 
 <h2>Materials</h2>
 <ul>
-<li>This site: readings, simulations, lab companions, and self-check quizzes. Free.</li>
+<li>This site: readings, simulations, lab companions, overview videos, and self-check quizzes. Free.</li>
 <li>NDG Online lab environment, free of charge. See <a href="#labs-access">Getting into the labs</a> below.</li>
 <li>Canvas: graded quizzes, the final exam, announcements, and grades.</li>
 <li>Optional: Palo Alto Networks Beacon free learning and the TechDocs library for official documentation.</li>
@@ -53,7 +67,7 @@
 <p>Do this in the first week; Lab 1 is due with week 1.</p>
 
 <h2>How the course works</h2>
-<p>The course is fully online and asynchronous. There are no live sessions. Each week has a due date on the <a href="schedule.html">schedule</a>. Plan on roughly [8 to 10] hours per week: about half reading and simulations, half in the lab.</p>
+<p>The course is fully online and asynchronous; there are no live sessions. Each week has a due date on the <a href="schedule.html">schedule</a>. This 3-credit course is delivered in 11 weeks instead of the usual 15, so plan on about 12 hours per week: roughly half reading, videos, and simulations, and half in the lab.</p>
 
 <h2>Grading</h2>
 <p>There are quizzes throughout the semester, a series of labs, a capstone lab, and a final exam. Each contributes 25% of the final course grade.</p>
@@ -85,9 +99,6 @@
 <p>You must earn a grade of C or higher before taking any course for which this is a prerequisite.</p>
 <p>Self-check quizzes, activities, simulations, and design challenges on this site are practice and are not graded, unless your instructor assigns a design challenge in Canvas.</p>
 
-<h2>Certification</h2>
-<p>This course follows the Palo Alto Networks EDU-210 Firewall Essentials curriculum. The older PCNSA and PCNSE exams have been retired. The closest current Palo Alto Networks credential for this material is the Network Security Generalist certification; the Next-Generation Firewall Engineer certification is a further step. "Exam tip" boxes in each module flag ideas that certification exams test often.</p>
-
 <h2>Deadlines and late work</h2>
 <ul>
 <li><strong>Deadlines.</strong> Assignments (quizzes, labs, and other coursework) are due one week from the assigned date. Exact due dates and times are in Canvas; the <a href="schedule.html">schedule</a> on this site shows the weekly dates.</li>
@@ -99,7 +110,7 @@
 <h2>Getting help: 3 Before Me</h2>
 <p>Before asking your instructor about a problem, try at least three different resources: course materials (this site's readings, simulations, lab companions, and glossary), online resources such as Palo Alto Networks TechDocs, and your classmates. If you're still stuck, reach out and share what you found in those three places. It makes the answer faster and the learning stick.</p>
 
-<h2>AI use</h2>
+<h2 id="ai-use">AI use</h2>
 <p>This is a skills-based networking and cybersecurity course, and AI tools such as ChatGPT can support your learning when used appropriately.</p>
 <p><strong>Acceptable uses</strong></p>
 <ul>
@@ -114,13 +125,40 @@
 </ul>
 <p>You are responsible for understanding and following this policy; if a use seems unclear, ask first. Violations may result in a reduced assignment grade, a failing course grade, or further disciplinary action by the college. The design challenges in Modules 15 and 16 unlock a model answer only after you write your own; if one is assigned in Canvas, submit your own words.</p>
 
-<h2>Instructor</h2>
-<p><strong>Mike Qaissaunee</strong></p>
+<h2>Certification</h2>
+<p>This course follows the Palo Alto Networks EDU-210 Firewall Essentials curriculum. The older PCNSA and PCNSE exams have been retired. The closest current Palo Alto Networks credential for this material is the Network Security Generalist certification; the Next-Generation Firewall Engineer certification is a further step. "Exam tip" boxes in each module flag ideas that certification exams test often.</p>
+
+<h2>Department policies</h2>
+<h3>Incomplete</h3>
+<p>It is your responsibility to submit all classwork on time, and all course requirements are expected to be completed by the end of the course. In cases of hardship or emergency, your instructor may grant a grade of INC. To be considered, you must have satisfactorily completed 80% of the course, have a passing test average, and meet with the instructor before the end of the course to discuss this option. Your instructor is under no obligation to grant an INC.</p>
+<h3>Withdrawing from class</h3>
+<p>Check the college's academic calendar for the last day to withdraw with a grade of W from this 11-week section. While a W does not affect your GPA, it may affect financial aid. Before withdrawing from any class, consult your counselor or a Financial Aid representative.</p>
+<h3>Academic integrity</h3>
+<p>Academic integrity is submitting your own work and properly acknowledging the work of others. Any violation of this principle is academic dishonesty, including:</p>
 <ul>
-<li>Email (preferred): <a href="mailto:mqaissaunee@brookdalecc.edu">mqaissaunee@brookdalecc.edu</a></li>
-<li>Phone: 732-224-2879</li>
-<li>Office hours: GMH 107, or book a time at <a href="https://tidycal.com/profq/fall-2026" target="_blank" rel="noopener">tidycal.com/profq/fall-2026</a> (opens in a new tab)</li>
+<li><strong>Plagiarism</strong>: submitting another's work, in whole or part, as your own. This includes an examination, a computer program, a laboratory report, or a written assignment. Copying AI-generated responses into assignments is plagiarism (see <a href="#ai-use">AI use</a>).</li>
+<li><strong>Facilitating academic dishonesty</strong>: helping another commit an act of dishonesty, such as substituting for an examination or completing an assignment for someone else.</li>
+<li><strong>Cheating</strong>: using or attempting to use unauthorized materials on an examination or assignment, such as unauthorized texts or notes, or improperly obtaining or attempting to obtain copies of an examination or its answers.</li>
+<li><strong>Illegal system access</strong>: altering, transmitting, or permitting unauthorized individuals access to your account, or attempting to alter or destroy system files on any server or computer, including academic information or records.</li>
 </ul>
+<p>Students who participate in dishonest activities will receive a 0 for that project, examination, or assignment, may be given a grade of F for the course, and may be reported to the Dean for disciplinary action. For more information, see the current Brookdale Community College Student Handbook.</p>
+
+<h2>College policies</h2>
+<p>As an academic institution, Brookdale facilitates the free exchange of ideas, upholds the virtues of civil discourse, and honors diverse perspectives informed by credible sources. The College values all students and strives for inclusion and safety regardless of a student's disability, age, sex, gender identity, sexual orientation, race, ethnicity, country of origin, immigration status, religious affiliation, political orientation, socioeconomic standing, and veteran status. For additional information, support services, and engagement opportunities, visit <a href="https://www.brookdalecc.edu/support" target="_blank" rel="noopener">brookdalecc.edu/support</a> (opens in a new tab).</p>
+<p>For the Academic Integrity Code, the Student Conduct Code, and the Student Grade Appeal Process, refer to the Student Handbook and Catalog.</p>
+<h3>Students with disabilities</h3>
+<p>Brookdale Community College offers reasonable accommodations and services to persons with disabilities. Students who wish to self-identify should contact the Accessibility Services Office at 732-224-2730 (voice) or 732-842-4211 (TTY) to provide documentation and request specific accommodations or services. If a student qualifies, reasonable accommodations and services that are appropriate for the college level and recommended in the documentation can be approved. This site is built to be keyboard-accessible and screen-reader friendly, with adjustable text size and light and dark themes; tell your instructor about anything that gets in your way.</p>
+<h3>Mental health</h3>
+<p>Resources available 24 hours a day, every day:</p>
+<ul>
+<li>Monmouth Medical Center Psychiatric Emergency Services: 732-923-6999</li>
+<li>2nd Floor Youth Helpline, to talk about any problem, distress, or hardship: call or text 888-222-2228, or visit <a href="https://www.2ndfloor.org/" target="_blank" rel="noopener">2ndfloor.org</a> (opens in a new tab)</li>
+</ul>
+<p>Faculty counselors are licensed mental health professionals who can help and refer students to other resources. To make an appointment, call 732-224-1822 (non-emergency) during business hours.</p>
+<h3>Diversity statement</h3>
+<p>Brookdale Community College fosters an environment of inclusion and belonging. We promote a safe and open culture, encourage dialogue respecting diverse perspectives informed by credible sources, and uphold the virtues of civil discourse. We celebrate all identities with the understanding that ultimately, diversity, equity, and inclusion cultivate belonging and make us a stronger Brookdale community.</p>
+
+<p class="disclaimer">This syllabus is intended to guide you on what may be covered during the semester and will be followed as closely as possible. The instructor reserves the right to modify, supplement, and make changes as the need arises. Where this page and the official college syllabus differ, this page reflects the current section.</p>
 </div>
 </main>
 <footer id="site-footer"></footer>
