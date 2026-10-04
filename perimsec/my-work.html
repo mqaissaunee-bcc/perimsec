@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My work | Perimeter Security</title>
+<meta name="description" content="Review progress and back up, restore, or erase your saved work.">
+<link rel="stylesheet" href="assets/css/site.css">
+<script src="assets/js/prefs.js"></script>
+</head>
+<body data-root="." data-page="my-work.html">
+<a class="skip-link" href="#main">Skip to main content</a>
+<header id="site-header"></header>
+<main id="main" class="page">
+<h1>My work</h1>
+<p class="lede">Your progress, activity answers, quiz scores, and notes are stored only in this browser. Nothing is sent anywhere.</p>
+<dl class="stat-grid" id="mw-stats"></dl>
+<div class="panel">
+<h2>Progress by module</h2>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Module</th><th scope="col">Sections complete</th><th scope="col">Self-check quiz</th></tr></thead>
+<tbody id="mw-table"></tbody></table></div>
+</div>
+<div class="panel">
+<h2>Back up or move your work</h2>
+<p>Download a backup each week. To continue on another computer or browser, open this page there and restore the file. Clearing your browser data or using a private window erases saved work.</p>
+<div class="btn-row">
+<button type="button" class="btn-primary" id="mw-export">Download backup</button>
+<button type="button" id="mw-notes">Download all notes (Markdown)</button>
+</div>
+<div class="field" style="margin-top:1rem">
+<label for="mw-file">Restore from a backup file</label>
+<input type="file" id="mw-file" accept=".json,application/json">
+</div>
+<div class="btn-row"><button type="button" id="mw-import">Restore backup</button></div>
+<p id="mw-status" aria-live="polite"></p>
+</div>
+<div class="panel">
+<h2>Start over</h2>
+<p>Erases every saved item from this site in this browser. This cannot be undone.</p>
+<button type="button" id="mw-reset">Erase all saved work</button>
+</div>
+</main>
+<footer id="site-footer"></footer>
+<script src="assets/js/course.js"></script>
+<script src="assets/js/glossary.js"></script>
+<script src="assets/js/site.js"></script>
+<script src="assets/js/pages.js"></script>
+</body>
+</html>

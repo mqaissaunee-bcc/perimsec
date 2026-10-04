@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Module 1: Platform and Architecture | Perimeter Security</title>
+<meta name="description" content="Before you configure anything, understand what is inside the box: what a next-generation firewall is built to do, how it inspects traffic once instead of four times, and which form factor fits which job.">
+<link rel="stylesheet" href="../assets/css/site.css">
+<script src="../assets/js/prefs.js"></script>
+</head>
+<body data-root=".." data-module="1" data-page="">
+<a class="skip-link" href="#main">Skip to main content</a>
+<header id="site-header"></header>
+
+<main id="main" class="page">
+<div class="module-hero">
+<p class="kicker">Module 1 of 16, week 1. Corresponds to EDU-210 Module 1.</p>
+<h1>Platform and Architecture</h1>
+<p class="lede">Before you configure anything, understand what is inside the box: what a next-generation firewall is built to do, how it inspects traffic once instead of four times, and which form factor fits which job.</p>
+<ul class="facts"><li>About 3 hours</li><li>6 reading sections</li><li>1 simulation</li><li>5 activities</li><li>No lab this module</li><li>10-question self-check</li></ul>
+<!-- Overview video: add data-embed="https://...embed-url" for an inline player,
+     or data-link="https://..." to link out (e.g. a Screencast page). -->
+<div class="video-slot" data-title="Module 1 overview video" data-embed="" data-link="">
+<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="1" y="6" width="38" height="28" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="16,13 28,20 16,27" fill="currentColor"/></svg>
+<p><strong>Module overview video.</strong> Your instructor's walkthrough of this module will appear here.</p>
+</div>
+</div>
+
+<div class="objectives">
+<h2>By the end of this module you should be able to</h2>
+<ol><li>Describe the four goals behind the Palo Alto Networks approach: complete visibility, a reduced attack surface, and prevention of known and unknown threats.</li><li>Identify the main products in the network security portfolio and what each one is for.</li><li>Explain single-pass architecture and why it matters for performance and for policy.</li><li>Distinguish the control plane from the data plane and the work each one does.</li><li>Explain the Zero Trust model and the difference between north-south and east-west inspection.</li><li>Match PA-Series, VM-Series, CN-Series, and Prisma Access to deployment scenarios, and explain virtual systems.</li></ol>
+</div>
+
+<h2>Plan your time</h2>
+<div class="table-wrap" style="max-width:860px"><table>
+<caption class="visually-hidden">Suggested time for each part of the module</caption>
+<thead><tr><th scope="col">Part</th><th scope="col">What's in it</th><th scope="col">Minutes</th></tr></thead>
+<tbody><tr><td>Part A: Why and what</td><td>Sections 1.1–1.3, Simulation 1.1, Activities 1.1–1.2</td><td>75</td></tr><tr><td>Part B: Inside the firewall and where it runs</td><td>Sections 1.4–1.6, Activities 1.3–1.5</td><td>75</td></tr><tr><td>Wrap-up</td><td>Summary, key terms, self-check quiz</td><td>25</td></tr></tbody></table></div>
+<p class="box-note">Week 1 also includes Module 2 and Lab 1, so finish this module early in the week.</p>
+
+<div class="module-layout">
+<nav class="module-rail" aria-label="This module">
+<h2>This module</h2>
+<div class="progress-wrap"><span class="label" id="rail-meter-label">0 sections complete</span>
+<div class="meter" role="progressbar" aria-labelledby="rail-meter-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="rail-meter"></span></div></div>
+<ol id="rail-list"></ol>
+<p><a href="#self-check">Jump to the self-check quiz</a></p>
+</nav>
+<article>
+
+<div class="part-head"><p class="part-n">Part A</p><h2>Why and what</h2><p>What problem a next-generation firewall solves, and the products built to solve it.</p></div>
+
+<section class="unit" id="s-ngfw" data-section="ngfw" data-label="1.1 Why next-generation?" data-part="Part A: Why and what">
+<header><span class="sec-n">1.1</span><h2>Why "next-generation"?</h2></header>
+<p class="intro">A traditional firewall asks two questions: where is this packet going, and on which port? For years that was enough.</p>
+<p>Port-based firewalls assumed each application used a known port: web on 80, mail on 25, DNS on 53. Allow the port and you allowed the application. That assumption broke a long time ago. Today almost everything rides on TCP 443: email, file sharing, chat, video, remote access tools, and malware command-and-control. Many applications hop to whatever port is open, tunnel inside other protocols, or encrypt everything. A rule that says "allow 443" says almost nothing about what is actually being allowed.</p>
+<p>A <dfn data-term="ngfw">next-generation firewall</dfn> makes decisions on three things a port number cannot tell you:</p>
+<ul>
+<li><strong>Which application</strong> this is, whatever port it uses (<dfn data-term="app-id">App-ID</dfn>).</li>
+<li><strong>Which user</strong> sent it, not just which IP address (<dfn data-term="user-id">User-ID</dfn>).</li>
+<li><strong>What the content contains</strong>: exploits, malware, dangerous URLs, or sensitive data (<dfn data-term="content-id">Content-ID</dfn>).</li>
+</ul>
+<div class="callout think"><p class="c-title">Think of it this way</p>
+<p>A port-based firewall is a building guard who only checks which door you came through. A next-generation firewall checks your badge (who you are), the reason for your visit (what application), and your bag (what you are carrying), then decides whether the door matters at all.</p></div>
+<h3>Four goals that shape the whole course</h3>
+<p>Palo Alto Networks describes its approach as four goals that build on each other. You will see each one become a set of features in later modules.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Goal</th><th scope="col">What it means</th><th scope="col">Where you build it</th></tr></thead>
+<tbody>
+<tr><td>Complete visibility</td><td>See every application, user, and piece of content, including encrypted traffic.</td><td>App-ID, User-ID, decryption, logs (Modules 8, 9, 13, 14)</td></tr>
+<tr><td>Reduce the attack surface</td><td>Allow only what the business needs; block everything else by default.</td><td>Zones, Security policy, URL filtering (Modules 5, 6, 11)</td></tr>
+<tr><td>Prevent known threats</td><td>Block exploits, malware, and command-and-control already identified by signatures.</td><td>Security Profiles (Module 10)</td></tr>
+<tr><td>Prevent unknown threats</td><td>Analyze never-seen-before files and links and turn the results into new protections.</td><td>WildFire (Module 12)</td></tr>
+</tbody></table></div>
+<p>The order matters. You cannot reduce what you cannot see, and every threat you stop with a signature is one fewer that has to be caught by slower analysis.</p>
+<div class="callout myth"><p class="c-title">Common misconception</p>
+<p>"If I block the right ports, unwanted applications can't get in." Evasive applications deliberately use ports you already allow. Blocking port 6881 does nothing to a BitTorrent client that has moved to port 443. Identifying the application is the only reliable way to control it.</p></div>
+<div class="activity" data-activity="tf" data-id="m1-a1">
+<p class="box-kicker">Activity 1.1</p><h3>Fact or myth: ports and applications</h3>
+<p class="box-note">About 4 minutes. Decide before you read each explanation.</p>
+<script type="application/json">{"items":[
+{"text":"A rule that allows TCP 443 allows only web browsing.","answer":false,"why":"TCP 443 carries hundreds of applications, from file sharing to remote-access tools. The port alone tells you very little."},
+{"text":"An application can be identified even when it runs on a non-standard port.","answer":true,"why":"App-ID inspects the traffic itself (signatures, decoders, heuristics), so the port does not need to match."},
+{"text":"Knowing the source IP address is the same as knowing the user.","answer":false,"why":"IP addresses change with DHCP, VPNs, and shared hosts. User-ID maps addresses to actual usernames and groups."},
+{"text":"Preventing known threats reduces the load on unknown-threat analysis.","answer":true,"why":"Anything a signature catches never needs to be sent for sandbox analysis, so the slower layer only sees genuinely new samples."}
+]}</script>
+</div>
+</section>
+
+<section class="unit" id="s-portfolio" data-section="portfolio" data-label="1.2 The portfolio" data-part="Part A: Why and what">
+<header><span class="sec-n">1.2</span><h2>The network security portfolio</h2></header>
+<p class="intro">The firewall you configure in this course is one member of a family that shares the same operating system, policy model, and security services.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Product</th><th scope="col">What it is</th><th scope="col">Typical use</th></tr></thead>
+<tbody>
+<tr><td>Next-generation firewall (PA-Series)</td><td>Physical appliances running <dfn data-term="pan-os">PAN-OS</dfn>.</td><td>Branch offices, campus perimeters, data centers.</td></tr>
+<tr><td><dfn data-term="vm-series">VM-Series</dfn></td><td>The same firewall as a virtual machine.</td><td>Private data centers and public clouds such as AWS, Azure, and Google Cloud.</td></tr>
+<tr><td><dfn data-term="cn-series">CN-Series</dfn></td><td>A container-native firewall that runs inside Kubernetes.</td><td>Traffic between containerized application workloads.</td></tr>
+<tr><td>Cloud-delivered security services</td><td>Subscriptions that add protections to any of the firewalls above, such as Advanced Threat Prevention, Advanced URL Filtering, Advanced WildFire, and DNS Security.</td><td>Turned on per firewall through licenses.</td></tr>
+<tr><td><dfn data-term="panorama">Panorama</dfn></td><td>Central management and logging.</td><td>Organizations running more than a handful of firewalls.</td></tr>
+<tr><td><dfn data-term="prisma-access">Prisma Access</dfn></td><td>The firewall's security delivered as a cloud service.</td><td>Remote users and branch sites without local appliances (Module 15).</td></tr>
+</tbody></table></div>
+<p>Because every form factor runs the same policy model, what you learn on the lab firewall transfers directly. A Security policy rule, a NAT rule, or an antivirus profile looks the same on a branch appliance, a VM in Azure, or a Panorama template.</p>
+<div class="callout exam"><p class="c-title">Exam tip</p>
+<p>Panorama manages firewalls and collects their logs. It does not inspect traffic itself. If a question asks which product enforces policy on packets, Panorama is never the answer.</p></div>
+</section>
+
+<section class="unit" id="s-singlepass" data-section="singlepass" data-label="1.3 Single-pass architecture" data-part="Part A: Why and what">
+<header><span class="sec-n">1.3</span><h2>Single-pass architecture</h2></header>
+<p class="intro">How the firewall does all that inspection without slowing traffic to a crawl.</p>
+<p>The older way to add security was to stack devices: a firewall, then an intrusion prevention system, then an antivirus gateway, then a web proxy. Each device reassembles the traffic, parses it, scans it, and passes it on. Each has its own policy, its own logs, and its own administrators. Every added service adds another full pass over the same bytes, and the policies inevitably drift apart.</p>
+<p>A <dfn data-term="single-pass">single-pass architecture</dfn> processes each packet once:</p>
+<ol>
+<li><strong>Classify</strong> the traffic: which application is it? (App-ID)</li>
+<li><strong>Map</strong> it to a user and group. (User-ID)</li>
+<li><strong>Scan</strong> the content for threats, URLs, and sensitive data, all in one stream using one signature format. (Content-ID)</li>
+<li><strong>Enforce</strong> one unified policy that can use all of the above at once.</li>
+</ol>
+<figure class="diagram">
+<svg viewBox="0 0 640 230" role="img" aria-labelledby="f13t f13d">
+<title id="f13t">Single-pass architecture</title>
+<desc id="f13d">Traffic enters, passes once through User-ID, App-ID, and Content-ID engines that feed a single policy engine, then leaves. All of it sits on a shared layer for networking, high availability, configuration management, and reporting.</desc>
+<rect class="svg-box" x="140" y="20" width="360" height="40" rx="6"/><text class="svg-ink" x="320" y="45" text-anchor="middle" font-size="15" font-weight="600">Policy engine (one policy)</text>
+<rect class="svg-accent" x="140" y="75" width="112" height="70" rx="6"/><text class="svg-ink" x="196" y="106" text-anchor="middle" font-size="14" font-weight="600">User-ID</text><text class="svg-ink2" x="196" y="126" text-anchor="middle" font-size="11">who</text>
+<rect class="svg-accent" x="264" y="75" width="112" height="70" rx="6"/><text class="svg-ink" x="320" y="106" text-anchor="middle" font-size="14" font-weight="600">App-ID</text><text class="svg-ink2" x="320" y="126" text-anchor="middle" font-size="11">what application</text>
+<rect class="svg-accent" x="388" y="75" width="112" height="70" rx="6"/><text class="svg-ink" x="444" y="106" text-anchor="middle" font-size="14" font-weight="600">Content-ID</text><text class="svg-ink2" x="444" y="126" text-anchor="middle" font-size="11">what it carries</text>
+<rect class="svg-box" x="140" y="160" width="360" height="40" rx="6"/><text class="svg-ink2" x="320" y="185" text-anchor="middle" font-size="12">Networking, HA, configuration management, reporting</text>
+<line class="svg-line" x1="20" y1="110" x2="130" y2="110" stroke-width="3"/><polygon class="svg-ink2" points="130,104 140,110 130,116"/>
+<line class="svg-line" x1="510" y1="110" x2="610" y2="110" stroke-width="3"/><polygon class="svg-ink2" points="610,104 620,110 610,116"/>
+<text class="svg-ink2" x="20" y="98" font-size="12">traffic in</text><text class="svg-ink2" x="560" y="98" font-size="12">out</text>
+</svg>
+<figcaption><strong>Figure 1.1</strong> One pass, one policy. Each engine works on the same stream instead of handing traffic to the next device.</figcaption>
+</figure>
+<p>Two design choices make this fast. First, <strong>stream-based scanning</strong>: signatures are matched as data flows through, instead of buffering an entire file before scanning it. Second, <strong>parallel processing</strong>: dedicated hardware handles networking, security processing, and signature matching side by side, which is the subject of Section 1.4.</p>
+
+<div class="sim sim-stack" id="sim-1-1">
+<p class="box-kicker">Simulation 1.1</p><h3>Single-pass versus stacked inspection</h3>
+<p class="box-note">Turn security services on and off. Compare how much work a chain of separate devices does with what one single-pass engine does.</p>
+<div class="sim-grid"><form class="sim-controls" aria-label="Security services"></form><div class="sim-output" aria-live="polite"></div></div>
+<div class="try-this"><h4>Try this</h4><ol>
+<li>Turn on every service. How many separate policies would you have to keep consistent in the stacked design?</li>
+<li>With only the firewall policy on, the two designs are nearly equal. Why does the gap grow with each service you add?</li>
+</ol></div>
+</div>
+
+<div class="activity" data-activity="order" data-id="m1-a2">
+<p class="box-kicker">Activity 1.2</p><h3>Put single-pass processing in order</h3>
+<p class="box-note">About 3 minutes. Arrange the steps from first to last.</p>
+<script type="application/json">{"items":["Traffic arrives on a data interface","App-ID classifies the application","User-ID maps the source address to a user","Content-ID scans the stream for threats and data","The policy engine applies one unified policy","Traffic is forwarded or dropped"],"why":"In practice the engines share information as the session progresses, but classification comes before the policy decision that depends on it."}</script>
+</div>
+</section>
+
+<div class="part-head"><p class="part-n">Part B</p><h2>Inside the firewall and where it runs</h2><p>The hardware split that keeps management responsive, the security model the platform is built for, and the form factors you can deploy.</p></div>
+
+<section class="unit" id="s-planes" data-section="planes" data-label="1.4 Control and data planes" data-part="Part B: Inside and where it runs">
+<header><span class="sec-n">1.4</span><h2>Control plane and data plane</h2></header>
+<p class="intro">A Palo Alto Networks firewall is really two computers in one chassis.</p>
+<p>The <dfn data-term="control-plane">control plane</dfn> manages the firewall. It has its own processor, memory, and disk, and it handles configuration, logging, and reporting. The dedicated management port and the console port connect here.</p>
+<p>The <dfn data-term="data-plane">data plane</dfn> moves and inspects traffic. On hardware models it is divided into three groups of specialized components:</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Data plane layer</th><th scope="col">Jobs</th></tr></thead>
+<tbody>
+<tr><td>Network processing</td><td>Flow control, route lookup, MAC lookup, QoS, NAT</td></tr>
+<tr><td>Security processing</td><td>App-ID, User-ID, URL matching, policy matching, SSL and IPsec decryption, decompression</td></tr>
+<tr><td>Signature matching</td><td>Vulnerability exploits, viruses, spyware, and data patterns such as credit card and Social Security numbers</td></tr>
+</tbody></table></div>
+<p>Why separate them? Because a firewall under attack still has to be manageable. If a flood of traffic saturates the data plane, the control plane keeps its own resources, so you can still log in through the management port, read the logs, and change policy. The reverse is also true: generating a large report on the control plane does not steal cycles from packet processing.</p>
+<div class="callout think"><p class="c-title">Think of it this way</p>
+<p>An air traffic control tower and the runways. The runways (data plane) move the aircraft; the tower (control plane) plans, records, and directs. A traffic jam on the runways does not stop the tower radios from working.</p></div>
+<div class="activity" data-activity="sort" data-id="m1-a3">
+<p class="box-kicker">Activity 1.3</p><h3>Which plane does the work?</h3>
+<p class="box-note">About 6 minutes. Assign each job to the part of the firewall that performs it.</p>
+<script type="application/json">{"buckets":["Control plane","Data plane: network processing","Data plane: security processing","Data plane: signature matching"],"items":[
+{"text":"Writing log entries to disk","answer":"Control plane","why":"Logging, reporting, and configuration all run on the management side."},
+{"text":"Looking up the route for a packet","answer":"Data plane: network processing","why":"Route and MAC lookups happen in the front-end network processing hardware."},
+{"text":"Translating a private source address to a public one","answer":"Data plane: network processing","why":"NAT is a network processing function."},
+{"text":"Identifying traffic on port 443 as a file-sharing application","answer":"Data plane: security processing","why":"App-ID runs in security processing."},
+{"text":"Decrypting an SSL session for inspection","answer":"Data plane: security processing","why":"SSL and IPsec decryption are security processing jobs."},
+{"text":"Detecting an exploit attempt against a web server","answer":"Data plane: signature matching","why":"Exploit, virus, and spyware signatures are matched in the signature matching layer."},
+{"text":"Spotting credit card numbers in an outbound file","answer":"Data plane: signature matching","why":"Data patterns such as card and Social Security numbers are matched with the same stream-based engine."},
+{"text":"Storing the configuration you edit in the web interface","answer":"Control plane","why":"The configuration lives with the management processor and disk."}
+]}</script>
+</div>
+</section>
+
+<section class="unit" id="s-zerotrust" data-section="zerotrust" data-label="1.5 Zero Trust" data-part="Part B: Inside and where it runs">
+<header><span class="sec-n">1.5</span><h2>Zero Trust</h2></header>
+<p class="intro">The security model the platform is designed to support: never trust, always verify.</p>
+<p>The classic perimeter model treated the network like a castle. Anything outside the wall was untrusted; anything inside was trusted. Once an attacker got in, through a phishing email, a stolen VPN credential, or an infected laptop, they could move from system to system with little resistance. That lateral movement is how a single compromised workstation becomes a breach of the payroll database.</p>
+<p><dfn data-term="zero-trust">Zero Trust</dfn> removes the idea of a trusted inside. Being on the internal network earns nothing. Every flow is identified, checked against least-privilege policy, and inspected, in two directions:</p>
+<ul>
+<li><strong>North-south</strong>: traffic entering or leaving the organization, between users or servers and the internet.</li>
+<li><strong>East-west</strong>: traffic between internal segments, for example from the user network to the application servers.</li>
+</ul>
+<p>The firewall supports this with the tools you will build over the next weeks: security zones that divide the network (Module 5), Security policy that allows only specific applications for specific users between those zones (Modules 6, 8, 9), and inspection of everything allowed (Modules 10 to 13).</p>
+<div class="callout think"><p class="c-title">Think of it this way</p>
+<p>A hotel where your keycard opens your room, the gym, and the lobby, and nothing else. The front door is not where security ends. Each door checks again.</p></div>
+<div class="activity" data-activity="sort" data-id="m1-a4">
+<p class="box-kicker">Activity 1.4</p><h3>North-south or east-west?</h3>
+<p class="box-note">About 3 minutes.</p>
+<script type="application/json">{"buckets":["North-south","East-west"],"items":[
+{"text":"An employee's laptop downloads a file from a public website.","answer":"North-south","why":"Traffic between the inside and the internet crosses the perimeter."},
+{"text":"An HR workstation connects to the payroll database server in the data center.","answer":"East-west","why":"Both endpoints are internal, on different segments."},
+{"text":"A customer on the internet reaches the company's public web server.","answer":"North-south","why":"Inbound traffic from outside."},
+{"text":"An infected desktop scans other desktops on the same floor for open file shares.","answer":"East-west","why":"Lateral movement between internal hosts. This is exactly what east-west inspection is meant to catch."}
+]}</script>
+</div>
+</section>
+
+<section class="unit" id="s-formfactors" data-section="formfactors" data-label="1.6 Form factors and vsys" data-part="Part B: Inside and where it runs">
+<header><span class="sec-n">1.6</span><h2>Form factors and virtual systems</h2></header>
+<p class="intro">Same policy model, different packaging.</p>
+<h3>PA-Series appliances</h3>
+<p>Hardware firewalls come in families sized for the job: small desktop units for branches and remote offices, mid-range appliances for the network perimeter, high-capacity models for large data centers, and modular chassis at the very top. In the generation covered by the EDU-210 materials, the PA-400 family serves small branches, the PA-3400 family the perimeter, the PA-5400 family large data centers, and the PA-7000 chassis the largest environments. Model numbers change every few years, so treat the current datasheet as the source of truth; what matters is matching throughput with threat prevention turned on, not raw firewall throughput, to the site.</p>
+<h3>VM-Series</h3>
+<p>The VM-Series delivers the same features as a hardware firewall in a virtual machine, for private virtualized data centers and public clouds. Capacity scales with the virtual CPUs and memory you give it. In Palo Alto Networks' published examples, doubling the vCPU count roughly doubles throughput and new sessions per second, and threat prevention throughput runs at about half of App-ID-only throughput. Your NDG lab firewall is almost certainly a VM-Series.</p>
+<h3>CN-Series</h3>
+<p>The CN-Series runs as containers inside a Kubernetes cluster. It brings Layer 7 visibility, application-level segmentation, and threat prevention to traffic between microservices that never touch a traditional network segment.</p>
+<h3>Prisma Access</h3>
+<p>Prisma Access delivers the firewall's security as a cloud service. Remote users and branch sites connect to the nearest cloud location instead of hauling traffic back to headquarters. You will study it as part of SASE in Module 15.</p>
+<h3>Virtual systems</h3>
+<p>A <dfn data-term="vsys">virtual system (vsys)</dfn> is a separate logical firewall inside one physical firewall. Each vsys has its own interfaces, zones, policies, and administrators, which creates an administrative boundary. Typical uses are a service provider hosting several customers on one appliance, or a company giving separate departments their own firewall without buying separate hardware. Larger models support multiple virtual systems; some require a license for additional ones.</p>
+<div class="callout exam"><p class="c-title">Exam tip</p>
+<p>A virtual system is a whole separate firewall instance with its own policy and administrators. A virtual router (Module 5) is only a routing table. Questions often put both in the answer choices.</p></div>
+<div class="activity" data-activity="sort" data-id="m1-a5">
+<p class="box-kicker">Activity 1.5</p><h3>Pick the form factor</h3>
+<p class="box-note">About 5 minutes. Choose the best fit for each scenario.</p>
+<script type="application/json">{"buckets":["PA-Series appliance","VM-Series","CN-Series","Prisma Access","Virtual systems on one appliance"],"items":[
+{"text":"A retail chain needs a firewall in each of 40 small stores with a local internet connection.","answer":"PA-Series appliance","why":"Small branch appliances are built for exactly this. (Prisma Access could also serve branches; the local hardware answer is the classic fit.)"},
+{"text":"An application team runs its web tier in Azure and needs inspection between subnets in the virtual network.","answer":"VM-Series","why":"Public cloud deployments use the virtual firewall."},
+{"text":"A development team needs to segment traffic between microservices in a Kubernetes cluster.","answer":"CN-Series","why":"The container-native firewall runs inside the cluster."},
+{"text":"Two thousand employees now work from home and need consistent web and application security without a VPN back to headquarters.","answer":"Prisma Access","why":"Cloud-delivered security meets users where they are."},
+{"text":"A managed service provider wants to host firewalls for three small customers, each with its own administrators, on one large appliance.","answer":"Virtual systems on one appliance","why":"Each customer gets a logical firewall with separate policy and admins."}
+]}</script>
+</div>
+</section>
+
+<section class="unit" id="s-wrap" data-section="wrap" data-label="Summary and self-check" data-part="Wrap-up">
+<header><span class="sec-n">✓</span><h2>Summary and self-check</h2></header>
+<ul>
+<li>Port numbers no longer identify applications. A next-generation firewall decides by application (App-ID), user (User-ID), and content (Content-ID).</li>
+<li>The approach builds in four steps: complete visibility, a reduced attack surface, prevention of known threats, and prevention of unknown threats.</li>
+<li>The portfolio shares one OS and policy model: PA-Series, VM-Series, CN-Series, cloud-delivered security services, Panorama for management, and Prisma Access in the cloud.</li>
+<li>Single-pass architecture parses traffic once, scans it as a stream with one signature format, and enforces one policy, with parallel hardware doing the work.</li>
+<li>The control plane (management, configuration, logging, reporting) and data plane (network processing, security processing, signature matching) have separate resources, so a traffic flood does not lock out administrators.</li>
+<li>Zero Trust grants no trust for being inside: inspect north-south and east-west traffic with least-privilege policy.</li>
+<li>A virtual system is a separate logical firewall within one physical firewall.</li>
+</ul>
+<h3>Key terms</h3>
+<p><dfn data-term="ngfw">Next-generation firewall</dfn>, <dfn data-term="app-id">App-ID</dfn>, <dfn data-term="user-id">User-ID</dfn>, <dfn data-term="content-id">Content-ID</dfn>, <dfn data-term="single-pass">single-pass architecture</dfn>, <dfn data-term="control-plane">control plane</dfn>, <dfn data-term="data-plane">data plane</dfn>, <dfn data-term="zero-trust">Zero Trust</dfn>, <dfn data-term="panorama">Panorama</dfn>, <dfn data-term="vm-series">VM-Series</dfn>, <dfn data-term="cn-series">CN-Series</dfn>, <dfn data-term="prisma-access">Prisma Access</dfn>, <dfn data-term="vsys">virtual system</dfn>.</p>
+<h3 id="self-check">Self-check quiz</h3>
+<p class="box-note">Ungraded. Score 80% or better and this section marks itself complete. The graded Quiz 1 is in Canvas.</p>
+<div class="quiz" data-quiz="m01">
+<script type="application/json">{"questions":[
+{"q":"Which question can a port-based firewall answer but cannot answer reliably on its own for modern traffic?","choices":["Which port is the traffic using?","Which application is the traffic?","Which destination address is the traffic going to?","Which interface did the traffic arrive on?"],"answer":1,"why":"Applications share and hop ports, so the port no longer reliably identifies the application. Section 1.1."},
+{"q":"Which feature identifies the user behind a session?","choices":["App-ID","Content-ID","User-ID","Panorama"],"answer":2,"why":"User-ID maps IP addresses to usernames and groups. Section 1.1."},
+{"q":"What does single-pass architecture mean?","choices":["Each packet is inspected by a separate device for each security service","Each packet is processed once for classification, user mapping, and content scanning, with one policy","Only the first packet of a session is inspected","Traffic passes through the firewall only in one direction"],"answer":1,"why":"One pass, one stream-based scan, one unified policy. Section 1.3."},
+{"q":"A DDoS flood is saturating the firewall's data interfaces. Why can an administrator usually still log in to the web interface?","choices":["The web interface runs on Panorama","The control plane has its own processor, memory, and disk","The firewall automatically blocks the attack","Management traffic is given QoS priority on the data plane"],"answer":1,"why":"Separate control and data planes keep management responsive under load. Section 1.4."},
+{"q":"Which job is performed by the control plane?","choices":["NAT","Route lookup","Generating reports","Matching antivirus signatures"],"answer":2,"why":"Configuration, logging, and reporting are control plane functions. Section 1.4."},
+{"q":"In which data plane layer does App-ID run?","choices":["Network processing","Security processing","Signature matching","The control plane"],"answer":1,"why":"Security processing handles App-ID, User-ID, URL and policy matching, decryption, and decompression. Section 1.4."},
+{"q":"A compromised HR workstation tries to connect to a database server in the data center. What kind of traffic is this?","choices":["North-south","East-west","Out-of-band","Intrazone management"],"answer":1,"why":"Internal-to-internal traffic is east-west. Zero Trust inspects it too. Section 1.5."},
+{"q":"Which product centrally manages many firewalls and collects their logs but does not inspect traffic?","choices":["Prisma Access","CN-Series","Panorama","VM-Series"],"answer":2,"why":"Panorama is the management and logging platform. Section 1.2."},
+{"q":"A company wants to secure traffic between microservices running in Kubernetes. Which form factor fits best?","choices":["PA-Series","VM-Series","CN-Series","Panorama"],"answer":2,"why":"CN-Series is container-native and runs inside the cluster. Section 1.6."},
+{"q":"What is a virtual system (vsys)?","choices":["A routing table inside the firewall","A separate logical firewall with its own zones, policies, and administrators","A VM-Series firewall in a public cloud","A backup copy of the configuration"],"answer":1,"why":"Each vsys is an administrative boundary within one physical firewall. Section 1.6."}
+]}</script>
+</div>
+</section>
+
+<nav class="pager" id="pager" aria-label="Module navigation"></nav>
+</article>
+</div>
+</main>
+
+<footer id="site-footer"></footer>
+<script src="../assets/js/course.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/activities.js"></script>
+<script src="../assets/js/sims/m01.js"></script>
+</body>
+</html>

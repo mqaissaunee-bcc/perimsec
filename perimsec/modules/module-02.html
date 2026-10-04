@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Module 2: Initial Firewall Configuration | Perimeter Security</title>
+<meta name="description" content="Every firewall starts the same way: one cable to the management port, a default login, and a short list of settings that must be right before anything else will work. Get these wrong and updates fail, logs lie about the time, or you lock yourself out.">
+<link rel="stylesheet" href="../assets/css/site.css">
+<script src="../assets/js/prefs.js"></script>
+</head>
+<body data-root=".." data-module="2" data-page="">
+<a class="skip-link" href="#main">Skip to main content</a>
+<header id="site-header"></header>
+
+<main id="main" class="page">
+<div class="module-hero">
+<p class="kicker">Module 2 of 16, week 1. Corresponds to EDU-210 Module 2.</p>
+<h1>Initial Firewall Configuration</h1>
+<p class="lede">Every firewall starts the same way: one cable to the management port, a default login, and a short list of settings that must be right before anything else will work. Get these wrong and updates fail, logs lie about the time, or you lock yourself out.</p>
+<ul class="facts"><li>About 4 hours plus Lab 1</li><li>6 reading sections</li><li>2 simulations</li><li>3 activities</li><li>Lab 1 in NDG Online</li><li>10-question self-check</li></ul>
+<!-- Overview video: add data-embed="https://...embed-url" for an inline player,
+     or data-link="https://..." to link out (e.g. a Screencast page). -->
+<div class="video-slot" data-title="Module 2 overview video" data-embed="" data-link="">
+<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="1" y="6" width="38" height="28" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="16,13 28,20 16,27" fill="currentColor"/></svg>
+<p><strong>Module overview video.</strong> Your instructor's walkthrough of this module will appear here.</p>
+</div>
+</div>
+
+<div class="objectives">
+<h2>By the end of this module you should be able to</h2>
+<ol><li>Identify the ways to reach a new firewall and the default management settings.</li><li>Change the predefined admin password to one PAN-OS will accept.</li><li>Configure the management interface address, permitted IP addresses, and management services.</li><li>Configure hostname, login banner, DNS, NTP, and the firewall&#x27;s map location.</li><li>Explain when and why to configure a service route.</li><li>Activate licenses, schedule dynamic content updates, and upgrade PAN-OS in a safe order.</li><li>Reset a firewall to factory defaults with and without the admin password.</li></ol>
+</div>
+
+<h2>Plan your time</h2>
+<div class="table-wrap" style="max-width:860px"><table>
+<caption class="visually-hidden">Suggested time for each part of the module</caption>
+<thead><tr><th scope="col">Part</th><th scope="col">What's in it</th><th scope="col">Minutes</th></tr></thead>
+<tbody><tr><td>Part A: Getting in</td><td>Sections 2.1–2.2, Simulations 2.1–2.2</td><td>70</td></tr><tr><td>Part B: Services, licenses, and software</td><td>Sections 2.3–2.6, Activities 2.1–2.3, Guided problem 2.1</td><td>80</td></tr><tr><td>Lab 1 in NDG Online</td><td>Lab companion, then the lab</td><td>75–90</td></tr><tr><td>Wrap-up</td><td>Summary, key terms, self-check quiz</td><td>20</td></tr></tbody></table></div>
+
+
+<div class="module-layout">
+<nav class="module-rail" aria-label="This module">
+<h2>This module</h2>
+<div class="progress-wrap"><span class="label" id="rail-meter-label">0 sections complete</span>
+<div class="meter" role="progressbar" aria-labelledby="rail-meter-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="rail-meter"></span></div></div>
+<ol id="rail-list"></ol>
+<p><a href="#self-check">Jump to the self-check quiz</a></p>
+</nav>
+<article>
+
+<div class="part-head"><p class="part-n">Part A</p><h2>Getting in</h2><p>First contact with a new firewall and its management interface.</p></div>
+
+<section class="unit" id="s-access" data-section="access" data-label="2.1 First access" data-part="Part A: Getting in">
+<header><span class="sec-n">2.1</span><h2>First access</h2></header>
+<p class="intro">A new firewall has no idea what network it is on. You reach it through one of two doors built for exactly this moment.</p>
+<p>Initial configuration happens through either the dedicated out-of-band <dfn data-term="mgt-interface">management (MGT) interface</dfn> or a serial console connection. Out of the box:</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Setting</th><th scope="col">Default</th></tr></thead>
+<tbody>
+<tr><td>MGT address on most hardware models</td><td><code>192.168.1.1/24</code></td></tr>
+<tr><td>MGT address on VM-Series</td><td>DHCP client (gets an address from the network)</td></tr>
+<tr><td>Predefined administrator</td><td>Username <code>admin</code>, password <code>admin</code></td></tr>
+</tbody></table></div>
+<p>To use the web interface on a hardware firewall, set your laptop to an address such as <code>192.168.1.2/24</code>, connect to the MGT port, and browse to <code>https://192.168.1.1</code>. Expect a certificate warning: the firewall ships with a self-signed certificate.</p>
+<h3>Four ways to manage a firewall</h3>
+<ul>
+<li><strong>Web interface</strong> over HTTPS. Where you will spend most of this course.</li>
+<li><strong>CLI</strong> over SSH or the serial console. Fast for troubleshooting and the only option before the network is configured.</li>
+<li><strong>XML and REST APIs</strong> for automation and integration with other tools.</li>
+<li><strong>Panorama</strong>, which pushes configuration to many firewalls at once.</li>
+</ul>
+<p>The CLI has two modes. Operational mode, shown by a <code>&gt;</code> prompt, is for viewing status and running commands. Type <code>configure</code> to enter configuration mode, shown by <code>#</code>.</p>
+<pre class="cli" aria-label="CLI example"><span class="prompt">admin@PA-VM&gt;</span> show system info      <span class="cmt"># model, serial, PAN-OS version, MGT IP</span>
+<span class="prompt">admin@PA-VM&gt;</span> configure
+<span class="prompt">admin@PA-VM#</span> show deviceconfig system   <span class="cmt"># candidate config for system settings</span></pre>
+<h3>The first login</h3>
+<p>PAN-OS forces you to change the predefined admin password at the first login. The new password must have at least eight characters, including one uppercase letter, one lowercase letter, and one number or special character. These rules cannot be changed and apply only to the predefined <code>admin</code> account; you set the policy for other accounts separately.</p>
+<div class="sim" id="sim-2-2">
+<p class="box-kicker">Simulation 2.2</p><h3>Admin password checker</h3>
+<p class="box-note">Test a new password against the first-login rules. Nothing you type leaves this page or is saved.</p>
+<div class="field"><label for="pw-input">New admin password</label><input type="password" id="pw-input" autocomplete="off" spellcheck="false"></div>
+<div class="field-inline"><label><input type="checkbox" id="pw-show"> Show password</label></div>
+<ul class="checks" aria-live="polite"></ul>
+<p class="verdict" aria-live="polite"></p>
+</div>
+<h3>Getting around the web interface</h3>
+<p>The top of the web interface has tabs for each functional area: Dashboard, ACC, Monitor, Policies, Objects, Network, and Device. The Commit button applies your changes (Module 3), and the Tasks button at the lower right shows the progress of commits and downloads. When you edit an object, required fields are highlighted in red and tabs that still need information are underlined in red; the OK button stays unavailable until everything required is valid. Throughout this course, menu locations are written like this: <span class="path" data-path="Device > Setup > Management"></span>.</p>
+<div class="callout myth"><p class="c-title">Common misconception</p>
+<p>"I clicked OK, so the change is live." In PAN-OS, OK only saves the change to the candidate configuration. Nothing takes effect until you commit. Forgetting to commit is the most common reason a lab step "doesn't work."</p></div>
+</section>
+
+<section class="unit" id="s-mgt" data-section="mgt" data-label="2.2 The management interface" data-part="Part A: Getting in">
+<header><span class="sec-n">2.2</span><h2>The management interface</h2></header>
+<p class="intro">Give the firewall a permanent address on your management network and decide who may reach it.</p>
+<p>Configure the MGT interface at <span class="path" data-path="Device > Setup > Interfaces > Management"></span>. It can use a static address or run as a DHCP client. A static configuration needs at least three things: an IP address, a netmask, and a default gateway. The gateway must be on the same subnet as the address, or the firewall cannot reach anything beyond its own segment, including the update servers.</p>
+<p>The same dialog controls who and what can use the interface:</p>
+<ul>
+<li><strong>Permitted IP addresses.</strong> If the list is empty, any host that can reach the port can attempt to log in. Add your administrator workstations or management subnet. Be careful: if you leave your own address out and commit, the firewall stops answering you.</li>
+<li><strong>Management services.</strong> HTTPS and SSH for the web interface and CLI, ping for reachability, plus others such as SNMP and User-ID. Leave HTTP and Telnet off; they send credentials in cleartext.</li>
+</ul>
+<p>The MGT interface is not part of any security zone and does not pass user traffic. To allow management on a data interface instead, you attach an Interface Management Profile to it (Module 5).</p>
+
+<div class="sim" id="sim-2-1">
+<p class="box-kicker">Simulation 2.1</p><h3>Bring the management interface online</h3>
+<p class="box-note">Scenario: you manage the firewall from your workstation at <code>192.168.1.20</code> on the management network <code>192.168.1.0/24</code>, whose router is <code>192.168.1.1</code>. Fill in the MGT settings and watch the checks. Your NDG lab may use different addresses; follow your lab guide there.</p>
+<div class="sim-grid">
+<div>
+<div class="field"><label for="mgt-ip">IP address</label><input type="text" id="mgt-ip" value="192.168.1.254" inputmode="decimal" autocomplete="off"></div>
+<div class="field"><label for="mgt-mask">Netmask</label>
+<select id="mgt-mask"><option value="24" selected>255.255.255.0 (/24)</option><option value="25">255.255.255.128 (/25)</option><option value="26">255.255.255.192 (/26)</option><option value="16">255.255.0.0 (/16)</option><option value="30">255.255.255.252 (/30)</option></select></div>
+<div class="field"><label for="mgt-gw">Default gateway</label><input type="text" id="mgt-gw" value="192.168.1.1" inputmode="decimal" autocomplete="off"></div>
+<div class="field"><label for="mgt-dns">Primary DNS server (Device > Setup > Services)</label><input type="text" id="mgt-dns" value="" inputmode="decimal" autocomplete="off"></div>
+<div class="field"><label for="mgt-permit">Permitted IP addresses (one per line or comma-separated; CIDR allowed)</label><textarea id="mgt-permit" rows="3" style="min-height:4.5rem"></textarea></div>
+<fieldset style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:var(--step--1)">Management services</legend>
+<div class="field-inline">
+<label><input type="checkbox" id="svc-https" checked> HTTPS</label>
+<label><input type="checkbox" id="svc-ssh" checked> SSH</label>
+<label><input type="checkbox" id="svc-ping" checked> Ping</label>
+<label><input type="checkbox" id="svc-http"> HTTP</label>
+<label><input type="checkbox" id="svc-telnet"> Telnet</label>
+</div></fieldset>
+</div>
+<div><h4 style="margin-top:0">Pre-commit checks</h4><ul class="checks" aria-live="polite"></ul><p class="verdict" aria-live="polite"></p></div>
+</div>
+<div class="try-this"><h4>Try this</h4><ol>
+<li>Add <code>10.0.0.0/8</code> as the only permitted address. What happens to you after the commit?</li>
+<li>Change the netmask to /30. Why does the gateway check now fail even though nothing else changed?</li>
+<li>Find the smallest change that turns every check green.</li>
+</ol></div>
+</div>
+<div class="callout field"><p class="c-title">In the field</p>
+<p>Put the MGT interface on a dedicated management network that is never reachable from the internet. Many published firewall compromises began with a management interface exposed to the internet. Restricting permitted IPs is your second line of defense, not your first.</p></div>
+</section>
+
+<div class="part-head"><p class="part-n">Part B</p><h2>Services, licenses, and software</h2><p>What the firewall needs from the outside world, and how it gets it.</p></div>
+
+<section class="unit" id="s-services" data-section="services" data-label="2.3 Identity and core services" data-part="Part B: Services, licenses, software">
+<header><span class="sec-n">2.3</span><h2>Identity and core services</h2></header>
+<p class="intro">Name the firewall, tell users what they are logging in to, and connect it to time and name resolution.</p>
+<p>At <span class="path" data-path="Device > Setup > Management"></span>, under General Settings:</p>
+<ul>
+<li><strong>Hostname and domain</strong> both default to the model name. Give each firewall a unique name; it appears in logs, in the CLI prompt, and in Panorama.</li>
+<li><strong>Login banner</strong> displays a message on the login page, typically an authorized-use warning required by your organization's policy.</li>
+<li><strong>Latitude and longitude</strong> place the firewall on the world maps in the ACC and Monitor tabs.</li>
+<li>The <strong>Accept DHCP server hostname/domain</strong> options appear only when the MGT interface uses DHCP.</li>
+</ul>
+<p>At <span class="path" data-path="Device > Setup > Services"></span>:</p>
+<ul>
+<li><strong>DNS servers are required.</strong> The firewall resolves the names of its update and license servers, and of any FQDN address objects you create later. With no DNS, license retrieval and dynamic updates fail.</li>
+<li><strong>NTP servers are optional but recommended.</strong> Accurate time keeps log timestamps trustworthy, lets you correlate events with other systems, and matters for certificate validity checks.</li>
+</ul>
+<div class="callout think"><p class="c-title">Think of it this way</p>
+<p>Investigating an incident with logs from five devices whose clocks disagree is like interviewing witnesses whose watches are all set differently. NTP is how everyone agrees what time it was.</p></div>
+</section>
+
+<section class="unit" id="s-routes" data-section="routes" data-label="2.4 Service routes" data-part="Part B: Services, licenses, software">
+<header><span class="sec-n">2.4</span><h2>Service routes</h2></header>
+<p class="intro">By default, the firewall uses its MGT interface to reach every external service. Sometimes that is the wrong path.</p>
+<p>DNS, NTP, update servers, license servers, syslog, email alerts, authentication servers: all of these are reached through the MGT interface unless you say otherwise. That works when the management network has a route to them. When it doesn't, for example when the management network is isolated from the internet by design, you configure a <dfn data-term="service-route">service route</dfn> that sends a particular service out a data interface instead.</p>
+<p>Configure service routes at <span class="path" data-path="Device > Setup > Services > Service Route Configuration"></span>. You can keep the default for everything, or choose Customize and set a source interface and source address for individual services.</p>
+<div class="activity" data-activity="sort" data-id="m2-a1">
+<p class="box-kicker">Activity 2.1</p><h3>Default MGT path or service route?</h3>
+<p class="box-note">About 4 minutes. For each situation, decide whether the default works or you need a service route.</p>
+<script type="application/json">{"buckets":["Default (MGT) works","Configure a service route"],"items":[
+{"text":"The management network has its own internet connection, and the firewall must download content updates.","answer":"Default (MGT) works","why":"MGT can already reach the update servers."},
+{"text":"Policy forbids the management network from reaching the internet, but the firewall must download threat signatures.","answer":"Configure a service route","why":"Send update traffic out a data interface that does have internet access."},
+{"text":"The syslog server is only reachable from the data center network attached to ethernet1/3, not from the management network.","answer":"Configure a service route","why":"Use ethernet1/3 as the source interface for syslog."},
+{"text":"The NTP server sits on the same management subnet as the MGT interface.","answer":"Default (MGT) works","why":"No routing is even needed; MGT is on the same subnet."}
+]}</script>
+</div>
+<div class="callout exam"><p class="c-title">Exam tip</p>
+<p>If updates or license retrieval fail, check three things in this order: DNS is configured, the MGT default gateway is correct, and, if the MGT network has no internet access, a service route exists for the update service.</p></div>
+</section>
+
+<section class="unit" id="s-licenses" data-section="licenses" data-label="2.5 Licenses, content, and software" data-part="Part B: Services, licenses, software">
+<header><span class="sec-n">2.5</span><h2>Licenses, content updates, and software</h2></header>
+<p class="intro">A firewall without licenses and current content is a very expensive port-based firewall.</p>
+<h3>Activation</h3>
+<p>Register the firewall with Palo Alto Networks Support: hardware by its serial number (shown on the Dashboard), VM-Series with the authorization codes from your order. Then manage licenses at <span class="path" data-path="Device > Licenses"></span>, where you can:</p>
+<ul>
+<li><strong>Retrieve license keys from the license server</strong> for licenses already associated with the firewall's serial number.</li>
+<li><strong>Activate a feature using an authorization code</strong> for a newly purchased subscription.</li>
+<li><strong>Manually upload a license key</strong> when the firewall has no internet access.</li>
+</ul>
+<h3>Dynamic updates</h3>
+<p><dfn data-term="dynamic-updates">Dynamic updates</dfn> are content packages separate from PAN-OS itself: Applications and Threats (new App-IDs and vulnerability and spyware signatures), Antivirus, WildFire, and others depending on your licenses. Manage them at <span class="path" data-path="Device > Dynamic Updates"></span>. Click Check Now to see what is available, then download and install. For each update type you can set a schedule that checks for new content and then either just downloads it or downloads and installs it. If a new content release causes a problem, you can revert to the previously installed version.</p>
+<h3>PAN-OS software</h3>
+<p>Manage the operating system at <span class="path" data-path="Device > Software"></span>: Check Now lists available releases, Download fetches one from the update server (or Upload installs one from your computer), and Install applies it, followed by a reboot. Before an upgrade, install current content updates (a new PAN-OS release can require a minimum content version), export a named configuration snapshot as a backup (Module 3), and read the release notes for the upgrade path.</p>
+<div class="activity" data-activity="order" data-id="m2-a2">
+<p class="box-kicker">Activity 2.2</p><h3>Put activation in order</h3>
+<p class="box-note">About 3 minutes. Arrange these steps for bringing a new firewall into service.</p>
+<script type="application/json">{"items":["Register the firewall with Palo Alto Networks Support","Verify DNS and the update server under Device > Setup > Services","Activate or retrieve licenses at Device > Licenses","Download and install the latest content updates","Download and install the recommended PAN-OS release"],"why":"DNS must work before the firewall can reach the license server, and content should be current before you upgrade PAN-OS."}</script>
+</div>
+<div class="guided">
+<p class="box-kicker">Guided problem 2.1</p><h3>"Retrieve license keys" fails</h3>
+<p>You click Retrieve license keys from license server on a newly installed lab firewall and get an error that the server cannot be reached. The firewall's MGT address is <code>10.10.5.20/24</code> with gateway <code>10.10.6.1</code>. Work out the cause. Try it on your own first; reveal one step at a time only as you need it.</p>
+<ol class="steps">
+<li>Retrieving licenses requires the firewall to resolve and reach the license server. Two things must work: DNS and a route out.</li>
+<li>Check the route first. The MGT address is in <code>10.10.5.0/24</code> (10.10.5.0 to 10.10.5.255). The gateway is <code>10.10.6.1</code>.</li>
+<li>The gateway is in a different subnet, so the firewall has no reachable next hop. Nothing beyond 10.10.5.0/24 can be reached, including DNS servers elsewhere.</li>
+<li>Fix: set the gateway to the router address on 10.10.5.0/24 (for example 10.10.5.1), commit, then confirm DNS servers are configured under Device > Setup > Services and retry.</li>
+</ol>
+</div>
+</section>
+
+<section class="unit" id="s-reset" data-section="reset" data-label="2.6 Factory reset" data-part="Part B: Services, licenses, software">
+<header><span class="sec-n">2.6</span><h2>Resetting to factory defaults</h2></header>
+<p class="intro">Sometimes the fastest fix is a clean start. There are two ways, depending on whether you still know the admin password.</p>
+<p><strong>If you know the password</strong>, run this from the CLI:</p>
+<pre class="cli"><span class="prompt">admin@PA-VM&gt;</span> request system private-data-reset</pre>
+<p>It erases all logs and resets all settings, including the MGT address, so you will lose your connection. When it finishes, the firewall is back to its defaults.</p>
+<p><strong>If you do not know the password</strong>, connect to the console port and reboot. During boot, type <code>maint</code> to enter maintenance mode, then choose Reset to Factory Default. Maintenance mode can also load a previous configuration file if the admin password was changed and lost.</p>
+<div class="callout field"><p class="c-title">In the field</p>
+<p>Both methods destroy the configuration and logs. In production, export a configuration snapshot first if you can, and treat the logs as possible evidence if the reset is part of an incident.</p></div>
+<div class="activity" data-activity="tf" data-id="m2-a3">
+<p class="box-kicker">Activity 2.3</p><h3>Fact or myth: first steps</h3>
+<p class="box-note">About 3 minutes.</p>
+<script type="application/json">{"items":[
+{"text":"A VM-Series firewall's MGT interface starts at 192.168.1.1/24.","answer":false,"why":"VM-Series MGT interfaces default to DHCP. 192.168.1.1/24 is the default on most hardware models."},
+{"text":"The firewall can retrieve licenses without DNS if the gateway is correct.","answer":false,"why":"It must resolve the license server's name, so DNS is required."},
+{"text":"The admin password complexity rules at first login also apply to every other administrator account.","answer":false,"why":"They apply only to the predefined admin account."},
+{"text":"request system private-data-reset erases logs as well as the configuration.","answer":true,"why":"It resets all settings and erases all logs."},
+{"text":"Clicking OK in a dialog applies the change to traffic immediately.","answer":false,"why":"OK updates the candidate configuration. Changes apply only after a commit."}
+]}</script>
+</div>
+</section>
+
+<section class="unit" id="s-lab" data-section="lab" data-label="Lab 1 companion" data-part="Lab">
+<header><span class="sec-n">Lab</span><h2>Lab 1 companion: Configuring initial firewall settings</h2></header>
+<div class="lab">
+<dl class="lab-meta">
+<dt>Where</dt><dd>NDG Online</dd>
+<dt>Time</dt><dd>About 75 to 90 minutes</dd>
+<dt>Graded</dt><dd>Yes. Submit as directed in Canvas.</dd>
+<dt>Uses</dt><dd>Sections 2.1 to 2.5</dd>
+</dl>
+<h3>What you will do</h3>
+<p>Connect to the firewall's web interface, load a starting configuration, set DNS and NTP servers, add a login banner, set the firewall's latitude and longitude, restrict management access to permitted IP addresses, and schedule dynamic updates.</p>
+<h3>Before you start</h3>
+<ul class="checklist" data-save="lab1-pre">
+<li><input type="checkbox" id="l1p1"><label for="l1p1">I can explain why the firewall needs DNS before it can download anything (2.3).</label></li>
+<li><input type="checkbox" id="l1p2"><label for="l1p2">I know that OK saves to the candidate configuration and Commit makes it active (2.1).</label></li>
+<li><input type="checkbox" id="l1p3"><label for="l1p3">I ran Simulation 2.1 and know how to avoid locking myself out with permitted IPs (2.2).</label></li>
+<li><input type="checkbox" id="l1p4"><label for="l1p4">I have my NDG login and have opened the lab once to check that it loads.</label></li>
+</ul>
+<h3>Watch out for</h3>
+<ul>
+<li><strong>Permitted IPs.</strong> Before you commit the permitted-IP step, confirm your lab client's address is in the list. If you lock yourself out, use the lab's console access to fix it, or reload the starting configuration.</li>
+<li><strong>Forgetting to commit.</strong> If a setting seems to have no effect, check the Commit button and the Tasks window.</li>
+<li><strong>Updates in an isolated lab.</strong> Lab environments sometimes have limited internet access. Configuring the schedule is the goal; a download that fails because the lab cannot reach the update server is not a configuration error. Note it and move on.</li>
+<li><strong>Two sets of steps.</strong> If your lab guide offers high-level and detailed steps, use one or the other, not both. Try the high-level steps if you are comfortable; switch to detailed steps when stuck.</li>
+</ul>
+<h3>After the lab</h3>
+<label for="l1-reflect">In two or three sentences: which setting from this lab would cause the most trouble if it were wrong in production, and why?</label>
+<textarea id="l1-reflect" data-save="lab1-reflect"></textarea>
+<p class="box-note">Saved in this browser only. Copy it into Canvas if your instructor asks for it.</p>
+</div>
+</section>
+
+<section class="unit" id="s-wrap" data-section="wrap" data-label="Summary and self-check" data-part="Wrap-up">
+<header><span class="sec-n">✓</span><h2>Summary and self-check</h2></header>
+<ul>
+<li>Initial access is through the MGT port or the serial console. Most hardware defaults to 192.168.1.1/24; VM-Series uses DHCP. The default login is admin/admin and must be changed at first login.</li>
+<li>Manage the firewall through the web interface, the CLI, the XML and REST APIs, or Panorama. Changes go to the candidate configuration until you commit.</li>
+<li>A static MGT configuration needs an address, netmask, and same-subnet gateway. Restrict permitted IPs, keep your own address in the list, and use HTTPS and SSH rather than HTTP and Telnet.</li>
+<li>DNS is required for licensing and updates; NTP is strongly recommended for accurate logs.</li>
+<li>External services use the MGT interface by default. A service route sends a service out a data interface instead.</li>
+<li>Activate licenses at Device > Licenses, schedule content at Device > Dynamic Updates, and upgrade PAN-OS at Device > Software after current content and a configuration backup.</li>
+<li>Reset to defaults with request system private-data-reset, or through maintenance mode on the console if the password is unknown.</li>
+</ul>
+<h3>Key terms</h3>
+<p><dfn data-term="mgt-interface">Management interface</dfn>, <dfn data-term="pan-os">PAN-OS</dfn>, <dfn data-term="service-route">service route</dfn>, <dfn data-term="dynamic-updates">dynamic updates</dfn>, <dfn data-term="candidate-config">candidate configuration</dfn>, <dfn data-term="commit">commit</dfn>.</p>
+<h3 id="self-check">Self-check quiz</h3>
+<p class="box-note">Ungraded. Score 80% or better and this section marks itself complete. The graded Quiz 2 is in Canvas.</p>
+<div class="quiz" data-quiz="m02">
+<script type="application/json">{"questions":[
+{"q":"What is the default MGT interface address on most Palo Alto Networks hardware firewalls?","choices":["10.0.0.1/8","192.168.1.1/24","DHCP client","172.16.0.1/16"],"answer":1,"why":"Most hardware defaults to 192.168.1.1/24; VM-Series uses DHCP. Section 2.1."},
+{"q":"Which two connections can you use for a firewall's initial configuration?","choices":["Any data interface or Wi-Fi","The MGT interface or the serial console","Panorama or the REST API","The HA port or a USB drive"],"answer":1,"why":"Initial configuration uses the out-of-band MGT port or the console. Section 2.1."},
+{"q":"Which new password would PAN-OS accept for the predefined admin account at first login?","choices":["firewall","Firewall","firewall1","Firewall1"],"answer":3,"why":"It needs 8+ characters with an uppercase letter, a lowercase letter, and a number or special character. Section 2.1."},
+{"q":"A static MGT configuration requires at minimum:","choices":["IP address, netmask, and default gateway","IP address and DNS server","Hostname and IP address","IP address, netmask, and NTP server"],"answer":0,"why":"Address, mask, and gateway are the minimum. DNS is configured separately under Services. Section 2.2."},
+{"q":"An administrator adds 10.1.1.0/24 as the only permitted IP for the MGT interface while working from 10.2.2.15 and commits. What happens?","choices":["Nothing changes until reboot","The administrator can no longer reach the management interface","Only SSH is blocked","The firewall adds the administrator's address automatically"],"answer":1,"why":"Hosts outside the permitted list are refused, including you. Section 2.2."},
+{"q":"Why is a DNS server required on a new firewall?","choices":["To translate addresses for NAT","To resolve the names of license and update servers","To assign addresses to clients","To synchronize the clock"],"answer":1,"why":"Licensing, updates, and FQDN objects all need name resolution. Section 2.3."},
+{"q":"By default, which interface does the firewall use to reach update servers, DNS, and NTP?","choices":["ethernet1/1","The interface in the untrust zone","The MGT interface","The HA interface"],"answer":2,"why":"External services use MGT unless a service route says otherwise. Section 2.4."},
+{"q":"The management network has no internet access by policy. How should the firewall download threat signatures?","choices":["Configure a service route through a data interface that has internet access","Move the MGT interface into the untrust zone","Disable DNS","Download signatures through Panorama only"],"answer":0,"why":"A service route sends a chosen service out a data interface. Section 2.4."},
+{"q":"Where do you schedule automatic downloads of Applications and Threats content?","choices":["Device > Software","Device > Licenses","Device > Dynamic Updates","Device > Setup > Operations"],"answer":2,"why":"Content packages are managed under Dynamic Updates; PAN-OS itself is under Software. Section 2.5."},
+{"q":"You forgot the admin password on a lab firewall. How can you reset it to factory defaults?","choices":["Run request system private-data-reset from the web interface","Type maint at the console during boot and choose Reset to Factory Default","Hold the power button for 30 seconds","Load a configuration from Device > Setup > Operations"],"answer":1,"why":"Without the password, use maintenance mode from the console. private-data-reset requires logging in to the CLI. Section 2.6."}
+]}</script>
+</div>
+</section>
+
+<nav class="pager" id="pager" aria-label="Module navigation"></nav>
+</article>
+</div>
+</main>
+
+<footer id="site-footer"></footer>
+<script src="../assets/js/course.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/activities.js"></script>
+<script src="../assets/js/sims/m02.js"></script>
+</body>
+</html>
