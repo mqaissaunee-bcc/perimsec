@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Module 7: NAT Policies | Perimeter Security</title>
+<meta name="description" content="Private addresses can&#x27;t cross the internet, and public servers rarely live on public addresses. Network address translation bridges the gap. The hard part is not the translation itself but writing the Security policy that goes with it, and this module is built around getting that right every time.">
+<link rel="stylesheet" href="../assets/css/site.css">
+<script src="../assets/js/prefs.js"></script>
+</head>
+<body data-root=".." data-module="7" data-page="">
+<a class="skip-link" href="#main">Skip to main content</a>
+<header id="site-header"></header>
+
+<main id="main" class="page">
+<div class="module-hero">
+<p class="kicker">Module 7 of 16, week 4. Corresponds to EDU-210 Module 7.</p>
+<h1>NAT Policies</h1>
+<p class="lede">Private addresses can&#x27;t cross the internet, and public servers rarely live on public addresses. Network address translation bridges the gap. The hard part is not the translation itself but writing the Security policy that goes with it, and this module is built around getting that right every time.</p>
+<ul class="facts"><li>About 3 hours plus Lab 6</li><li>4 reading sections</li><li>2 simulations</li><li>3 activities</li><li>Lab 6 in NDG Online</li><li>10-question self-check</li></ul>
+<!-- Overview video: add data-embed="https://...embed-url" for an inline player,
+     or data-link="https://..." to link out (e.g. a Screencast page). -->
+<div class="video-slot" data-title="Module 7 overview video" data-embed="" data-link="">
+<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="1" y="6" width="38" height="28" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="16,13 28,20 16,27" fill="currentColor"/></svg>
+<p><strong>Module overview video.</strong> Your instructor's walkthrough of this module will appear here.</p>
+</div>
+</div>
+
+<div class="objectives">
+<h2>By the end of this module you should be able to</h2>
+<ol><li>Explain when source NAT and destination NAT are used.</li><li>Compare static IP, dynamic IP, and dynamic IP and port (DIPP) source NAT.</li><li>Configure a NAT rule&#x27;s original packet and translated packet settings.</li><li>Size a DIPP pool and explain NAT oversubscription.</li><li>Configure destination NAT, including port translation and bidirectional static NAT.</li><li>Write the Security policy rule for any NAT scenario using pre-NAT addresses and post-NAT zones.</li></ol>
+</div>
+
+<h2>Plan your time</h2>
+<div class="table-wrap" style="max-width:860px"><table>
+<caption class="visually-hidden">Suggested time for each part of the module</caption>
+<thead><tr><th scope="col">Part</th><th scope="col">What's in it</th><th scope="col">Minutes</th></tr></thead>
+<tbody><tr><td>Part A: Source NAT</td><td>Sections 7.1–7.2, Simulation 7.2, Activities 7.1–7.2</td><td>60</td></tr><tr><td>Part B: Destination NAT and policy</td><td>Sections 7.3–7.4, Simulation 7.1, Activity 7.3, Guided problem 7.1</td><td>70</td></tr><tr><td>Lab 6 in NDG Online</td><td>Lab companion, then the lab</td><td>60–75</td></tr><tr><td>Wrap-up</td><td>Summary, key terms, self-check quiz</td><td>20</td></tr></tbody></table></div>
+<p class="box-note">Week 4 has only this module, so use the extra time to make sure Modules 5 and 6 are solid. NAT builds on both.</p>
+
+<div class="module-layout">
+<nav class="module-rail" aria-label="This module">
+<h2>This module</h2>
+<div class="progress-wrap"><span class="label" id="rail-meter-label">0 sections complete</span>
+<div class="meter" role="progressbar" aria-labelledby="rail-meter-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="rail-meter"></span></div></div>
+<ol id="rail-list"></ol>
+<p><a href="#self-check">Jump to the self-check quiz</a></p>
+</nav>
+<article>
+
+<div class="part-head"><p class="part-n">Part A</p><h2>Source NAT</h2><p>Getting many private hosts onto the internet.</p></div>
+
+<section class="unit" id="s-types" data-section="types" data-label="7.1 NAT in the flow" data-part="Part A: Source NAT">
+<header><span class="sec-n">7.1</span><h2>NAT types and where NAT happens</h2></header>
+<p class="intro">Two directions, two purposes.</p>
+<ul>
+<li><dfn data-term="source-nat">Source NAT</dfn> changes the source address of a packet. It is mostly used for outbound traffic: private internal users, such as 192.168.1.20, reaching the internet from a public address.</li>
+<li><dfn data-term="destination-nat">Destination NAT</dfn> changes the destination address. It is mostly used for inbound traffic: hosts on the internet reaching a server that sits on a private address, such as a web server in the extranet.</li>
+</ul>
+<p>NAT rules live at <span class="path" data-path="Policies > NAT"></span>. Like Security rules they are evaluated top to bottom and the first match wins. Each rule has two halves: the <strong>original packet</strong> (match criteria: source and destination zone, destination interface, service, source and destination address) and the <strong>translated packet</strong> (what to change it to).</p>
+<p>Recall the packet flow from Module 6. The NAT policy lookup happens during session setup, on the packet as it arrives. The translation decided there is stored in the session and applied as the packet leaves. In between, the Security policy check sees the original addresses. That ordering produces the rule you will practice in Section 7.4:</p>
+<div class="callout exam"><p class="c-title">The rule to remember</p>
+<p>Security policy rules use <strong>pre-NAT addresses</strong> and the <strong>post-NAT destination zone</strong>. NAT rules use the original, pre-NAT addresses and zones.</p></div>
+</section>
+
+<section class="unit" id="s-snat" data-section="snat" data-label="7.2 Source NAT types" data-part="Part A: Source NAT">
+<header><span class="sec-n">7.2</span><h2>Source NAT types and oversubscription</h2></header>
+<p class="intro">Three ways to translate a source address, from one-to-one to many-to-one.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Type</th><th scope="col">How it translates</th><th scope="col">Typical use</th></tr></thead>
+<tbody>
+<tr><td>Static IP</td><td>One fixed address to one fixed address. The source port is unchanged. Supports the bidirectional option (Section 7.3).</td><td>A server that must always appear from the same public address, for example a mail server.</td></tr>
+<tr><td>Dynamic IP</td><td>One-to-one, but each internal address takes the next available address from a pool. Only the address changes, not the port.</td><td>Applications that break when the source port is rewritten, with a pool large enough for the hosts.</td></tr>
+<tr><td><dfn data-term="dipp">Dynamic IP and port (DIPP)</dfn></td><td>Many-to-one. Many internal hosts share one or a few public addresses; the firewall rewrites source ports to keep sessions apart. The translated address can be the egress interface's address or addresses you specify.</td><td>Users browsing the internet. By far the most common.</td></tr>
+</tbody></table></div>
+<p>A typical outbound rule: original packet from source zone Users_Net to destination zone Internet, any address; translated packet with Dynamic IP and Port, using the interface address of ethernet1/1.</p>
+<div class="callout think"><p class="c-title">Think of it this way</p>
+<p>DIPP is an apartment building with one street address. Mail for everyone comes to the same address; the apartment number (the port) gets it to the right person.</p></div>
+<h3>DIPP oversubscription</h3>
+<p>Each translated address has roughly 64,000 usable source ports. Normally each address-and-port pair can serve one session at a time. With NAT oversubscription, the firewall can reuse the same translated address and port for several sessions at once, as long as they go to different destinations, because the destination still makes each session unique. The rate (for example 2x, 4x, or 8x, depending on the model) is set at <span class="path" data-path="Device > Setup > Session > Session Settings"></span>. Roughly, concurrent sessions available equals ports per address times the oversubscription rate times the number of addresses in the pool.</p>
+<div class="sim" id="sim-7-2">
+<p class="box-kicker">Simulation 7.2</p><h3>DIPP pool capacity</h3>
+<p class="box-note">Estimate whether a DIPP pool is large enough. Figures are approximate.</p>
+<div class="sim-grid">
+<div>
+<div class="field"><label for="dipp-ips">Addresses in the translated pool</label><input type="number" id="dipp-ips" value="1" min="1" max="64"></div>
+<div class="field"><label for="dipp-os">Oversubscription rate</label><select id="dipp-os"><option value="1">1x (off)</option><option value="2" selected>2x</option><option value="4">4x</option><option value="8">8x</option></select></div>
+<div class="field"><label for="dipp-users">Users</label><input type="number" id="dipp-users" value="1500" min="0"></div>
+<div class="field"><label for="dipp-per">Concurrent sessions per user at peak</label><input type="number" id="dipp-per" value="60" min="0"></div>
+</div>
+<div><dl class="readout" style="grid-template-columns:1fr 1fr"></dl><p class="verdict" aria-live="polite"></p></div>
+</div>
+<div class="try-this"><h4>Try this</h4><ol>
+<li>With one address and oversubscription off, how many users at 60 sessions each fit?</li>
+<li>Find two different ways to support 5,000 users.</li>
+</ol></div>
+</div>
+<div class="activity" data-activity="sort" data-id="m7-a1">
+<p class="box-kicker">Activity 7.1</p><h3>Choose the source NAT type</h3>
+<p class="box-note">About 3 minutes.</p>
+<script type="application/json">{"buckets":["Static IP","Dynamic IP","Dynamic IP and port (DIPP)"],"items":[
+{"text":"800 employees share the single public address on the internet interface.","answer":"Dynamic IP and port (DIPP)","why":"Many-to-one needs port translation."},
+{"text":"The mail server must always send from 203.0.113.25, which is published in the domain's SPF record.","answer":"Static IP","why":"A fixed one-to-one mapping."},
+{"text":"Thirty lab PCs run a legacy application that fails if the source port changes, and you own a pool of 32 public addresses.","answer":"Dynamic IP","why":"One-to-one from a pool, ports untouched."},
+{"text":"Outside partners must also be able to start connections to the inside server at its public address.","answer":"Static IP","why":"Static NAT with the bidirectional option provides the reverse mapping."}
+]}</script>
+</div>
+<div class="activity" data-activity="tf" data-id="m7-a2">
+<p class="box-kicker">Activity 7.2</p><h3>Fact or myth: source NAT</h3>
+<p class="box-note">About 3 minutes.</p>
+<script type="application/json">{"items":[
+{"text":"Dynamic IP NAT changes source ports.","answer":false,"why":"Dynamic IP changes only the address. DIPP changes the port too."},
+{"text":"With oversubscription, the same translated address and port can be in use by several sessions at once.","answer":true,"why":"Allowed as long as the sessions go to different destinations."},
+{"text":"NAT rules are evaluated top-down, first match wins, like Security rules.","answer":true,"why":"Order matters in the NAT rulebase too."},
+{"text":"A DIPP rule can translate to the egress interface's own address.","answer":true,"why":"Interface address is the most common DIPP choice."}
+]}</script>
+</div>
+</section>
+
+<div class="part-head"><p class="part-n">Part B</p><h2>Destination NAT and policy</h2><p>Publishing servers, and writing the Security rules that go with every NAT rule.</p></div>
+
+<section class="unit" id="s-dnat" data-section="dnat" data-label="7.3 Destination NAT" data-part="Part B: Destination NAT and policy">
+<header><span class="sec-n">7.3</span><h2>Destination NAT</h2></header>
+<p class="intro">Give an internal server a public face.</p>
+<p>Destination NAT translates the destination address of incoming traffic. A client on the internet connects to 203.0.113.50; the firewall rewrites the destination to 192.168.50.80, the web server's real address in the Extranet zone.</p>
+<h3>The original packet</h3>
+<p>The NAT rule matches the packet as it arrives, before translation. The source zone is where it came from (Internet). The destination zone is the zone the <em>original</em> destination address routes to. Because 203.0.113.50 is on the ethernet1/1 subnet, it routes to ethernet1/1, so the destination zone is also Internet. The destination address is 203.0.113.50.</p>
+<p>This surprises almost everyone the first time: for inbound destination NAT, the NAT rule's source and destination zones are usually <strong>the same</strong> outside zone.</p>
+<h3>The translated packet</h3>
+<ul>
+<li><strong>Static IP</strong>: one-to-one translation of the destination address, leaving the port unchanged unless you specify one.</li>
+<li><strong>Port translation</strong>: set a translated port when the server listens somewhere other than the well-known port, for example public tcp/80 to a server on tcp/8080. The rule's service field limits which original ports match; note that the predefined service-http includes both tcp/80 and tcp/8080.</li>
+<li><strong>Dynamic IP</strong>: the translated address can be an FQDN, address object, or address group, which suits servers with DHCP-assigned or changing addresses, and can spread connections across several servers.</li>
+</ul>
+<h3>Bidirectional static NAT</h3>
+<p>A static source NAT rule with the <dfn data-term="bidirectional-nat">Bi-directional</dfn> option set also creates the matching destination NAT in reverse. One rule then lets an internal server send traffic from its public address and receive connections on it. It is available only for static IP translation.</p>
+<div class="activity" data-activity="order" data-id="m7-a3">
+<p class="box-kicker">Activity 7.3</p><h3>What happens to an inbound DNAT connection?</h3>
+<p class="box-note">About 3 minutes. Put these events in order.</p>
+<script type="application/json">{"items":["A packet for 203.0.113.50 arrives on ethernet1/1 (zone Internet)","Route lookup on 203.0.113.50 gives the pre-NAT destination zone: Internet","The NAT rule matches and records translation to 192.168.50.80","Route lookup on 192.168.50.80 gives the post-NAT zone: Extranet","Security policy is checked with destination 203.0.113.50 and zone Extranet","The destination is rewritten and the packet leaves ethernet1/3"],"why":"NAT is decided early on the original packet, policy is checked in the middle, and translation is applied at egress."}</script>
+</div>
+</section>
+
+<section class="unit" id="s-policy" data-section="policy" data-label="7.4 NAT and Security policy" data-part="Part B: Destination NAT and policy">
+<header><span class="sec-n">7.4</span><h2>Writing Security policy for NAT</h2></header>
+<p class="intro">One rule of thumb resolves every NAT policy question.</p>
+<p>The firewall checks Security policy after it has decided on the NAT translation but before it applies it. At that moment it knows two things: the packet's original addresses, which are still in the packet, and where the translated packet will go, which it has already routed. So:</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Field</th><th scope="col">NAT rule</th><th scope="col">Security rule</th></tr></thead>
+<tbody>
+<tr><td>Source zone</td><td>Pre-NAT (ingress zone)</td><td>Pre-NAT (ingress zone)</td></tr>
+<tr><td>Destination zone</td><td>Pre-NAT: zone the original destination routes to</td><td><strong>Post-NAT</strong>: zone the translated destination routes to</td></tr>
+<tr><td>Source address</td><td>Pre-NAT</td><td>Pre-NAT</td></tr>
+<tr><td>Destination address</td><td>Pre-NAT</td><td><strong>Pre-NAT</strong></td></tr>
+</tbody></table></div>
+<p>For source NAT none of this is tricky: the destination isn't translated, so pre-NAT and post-NAT destinations are the same. For destination NAT, the Security rule mixes the two: the public address you published, and the zone where the server really lives.</p>
+<p>Applied to the web server example: the Security rule is source zone Internet, destination zone Extranet, destination address 203.0.113.50, application web-browsing.</p>
+<div class="callout myth"><p class="c-title">Common misconception</p>
+<p>"The Security rule should use the server's real address, 192.168.50.80, since that's where the traffic ends up." It won't match. When policy is checked, the packet still carries 203.0.113.50. Use the address the client connected to.</p></div>
+<div class="sim" id="sim-7-1">
+<p class="box-kicker">Simulation 7.1</p><h3>Write the rules for NAT scenarios</h3>
+<p class="box-note">For each scenario, fill in the NAT rule's destination zone and the Security rule's source zone, destination zone, and destination address. Lab zones: ethernet1/1 Internet (203.0.113.0/24), ethernet1/2 Users_Net (192.168.1.0/24), ethernet1/3 Extranet (192.168.50.0/24).</p>
+<div class="nat-story"></div>
+<div class="sim-grid">
+<fieldset style="border:1px solid var(--rule);border-radius:var(--radius-m);padding:0.8rem;align-self:start"><legend style="font-weight:600">NAT rule, original packet</legend>
+<div class="field"><label for="nat-natdst">Destination zone</label><select id="nat-natdst"></select><span class="box-note" id="nat-natdst-why" aria-live="polite"></span></div>
+</fieldset>
+<fieldset style="border:1px solid var(--rule);border-radius:var(--radius-m);padding:0.8rem"><legend style="font-weight:600">Security rule</legend>
+<div class="field"><label for="nat-src">Source zone</label><select id="nat-src"></select><span class="box-note" id="nat-src-why" aria-live="polite"></span></div>
+<div class="field"><label for="nat-dst">Destination zone</label><select id="nat-dst"></select><span class="box-note" id="nat-dst-why" aria-live="polite"></span></div>
+<div class="field"><label for="nat-daddr">Destination address</label><select id="nat-daddr"></select><span class="box-note" id="nat-daddr-why" aria-live="polite"></span></div>
+</fieldset>
+</div>
+<div class="btn-row"><button type="button" class="btn-primary" data-nat="check">Check my rules</button><button type="button" data-nat="next">Next scenario</button></div>
+<p class="nat-result" aria-live="polite"></p>
+</div>
+<div class="guided">
+<p class="box-kicker">Guided problem 7.1</p><h3>The published server nobody can reach</h3>
+<p>You published the extranet web server with a destination NAT rule from Internet to Internet, 203.0.113.50 to 192.168.50.80. Your Security rule allows source zone Internet, destination zone Internet, destination address 192.168.50.80, web-browsing. Outside users time out. Find both mistakes.</p>
+<ol class="steps">
+<li>Check the NAT rule against the rule of thumb: pre-NAT zones and addresses. Internet to Internet, 203.0.113.50: correct.</li>
+<li>Check the Security rule's destination zone. It must be the post-NAT zone, where 192.168.50.80 actually lives: Extranet, not Internet. First mistake.</li>
+<li>Check the Security rule's destination address. It must be the pre-NAT address the client used: 203.0.113.50, not 192.168.50.80. Second mistake.</li>
+<li>Corrected Security rule: source zone Internet, destination zone Extranet, destination address 203.0.113.50, application web-browsing, service application-default. Confirm with Test Policy Match, then watch the Traffic log, which shows both the pre-NAT and post-NAT addresses for each session.</li>
+</ol>
+</div>
+</section>
+
+<section class="unit" id="s-lab" data-section="lab" data-label="Lab 6 companion" data-part="Lab">
+<header><span class="sec-n">Lab</span><h2>Lab 6 companion: Creating and managing NAT policy rules</h2></header>
+<div class="lab">
+<dl class="lab-meta">
+<dt>Where</dt><dd>NDG Online</dd>
+<dt>Time</dt><dd>About 60 to 75 minutes</dd>
+<dt>Graded</dt><dd>Yes. Submit as directed in Canvas.</dd>
+<dt>Uses</dt><dd>Sections 7.2 to 7.4</dd>
+</dl>
+<h3>What you will do</h3>
+<p>Configure a source NAT rule so internal networks reach the internet from the ethernet1/1 address (203.0.113.20 in the course topology), then configure a destination NAT rule so that users connecting to 192.168.1.80 reach the extranet web server at 192.168.50.80, and write the Security rules both need.</p>
+<h3>Before you start</h3>
+<ul class="checklist" data-save="lab6-pre">
+<li><input type="checkbox" id="l6p1"><label for="l6p1">I completed all four scenarios in Simulation 7.1, including the internal DNAT one.</label></li>
+<li><input type="checkbox" id="l6p2"><label for="l6p2">I can state the rule: pre-NAT addresses, post-NAT destination zone (7.4).</label></li>
+<li><input type="checkbox" id="l6p3"><label for="l6p3">I know why the destination NAT rule for 192.168.1.80 has destination zone Users_Net (7.3).</label></li>
+<li><input type="checkbox" id="l6p4"><label for="l6p4">My Lab 5 Security rules are committed and working.</label></li>
+</ul>
+<h3>Watch out for</h3>
+<ul>
+<li><strong>The internal DNAT zones.</strong> 192.168.1.80 is on the users' own subnet, so the NAT rule is Users_Net to Users_Net. The Security rule is Users_Net to Extranet with destination 192.168.1.80. This is Scenario 3 in Simulation 7.1.</li>
+<li><strong>Existing sessions.</strong> A new NAT rule applies to new sessions. If a test seems to ignore your change, close the browser tab or wait for the old session to time out.</li>
+<li><strong>NAT rule order.</strong> A broad source NAT rule above the destination NAT rule can match first. Put specific NAT rules above general ones.</li>
+<li><strong>Read both addresses in the Traffic log.</strong> Add the NAT source and destination columns to see the translation actually happening.</li>
+</ul>
+<h3>After the lab</h3>
+<label for="l6-reflect">In your own words, why does the Security rule for destination NAT use the pre-NAT address but the post-NAT zone?</label>
+<textarea id="l6-reflect" data-save="lab6-reflect"></textarea>
+<p class="box-note">Saved in this browser only.</p>
+</div>
+</section>
+
+<section class="unit" id="s-wrap" data-section="wrap" data-label="Summary and self-check" data-part="Wrap-up">
+<header><span class="sec-n">✓</span><h2>Summary and self-check</h2></header>
+<ul>
+<li>Source NAT translates the source address, usually for outbound access. Destination NAT translates the destination address, usually to publish internal servers.</li>
+<li>NAT rules match the original packet and specify the translated packet. They are evaluated top-down; first match wins. Translation is decided at session setup and applied at egress.</li>
+<li>Static IP is one-to-one and supports bidirectional NAT. Dynamic IP is one-to-one from a pool without port changes. DIPP shares addresses by translating ports, and oversubscription lets address-port pairs serve several destinations at once.</li>
+<li>For inbound destination NAT, the NAT rule's destination zone is the zone the public address routes to, usually the same outside zone as the source.</li>
+<li>Destination NAT can translate ports, and can translate to an FQDN or address group.</li>
+<li>Security rules use pre-NAT addresses and the post-NAT destination zone.</li>
+</ul>
+<h3>Key terms</h3>
+<p><dfn data-term="nat">NAT</dfn>, <dfn data-term="source-nat">source NAT</dfn>, <dfn data-term="destination-nat">destination NAT</dfn>, <dfn data-term="dipp">DIPP</dfn>, <dfn data-term="nat-oversubscription">NAT oversubscription</dfn>, <dfn data-term="bidirectional-nat">bidirectional NAT</dfn>.</p>
+<h3 id="self-check">Self-check quiz</h3>
+<p class="box-note">Ungraded. Score 80% or better and this section marks itself complete. The graded Quiz 7 is in Canvas.</p>
+<div class="quiz" data-quiz="m07">
+<script type="application/json">{"questions":[
+{"q":"Which NAT type lets hundreds of internal users share one public address?","choices":["Static IP","Dynamic IP","Dynamic IP and port (DIPP)","Destination NAT"],"answer":2,"why":"DIPP translates ports so many hosts can share an address. Section 7.2."},
+{"q":"Which source NAT type changes only the address and draws it from a pool, one host per address?","choices":["Static IP","Dynamic IP","DIPP","Bidirectional"],"answer":1,"why":"Dynamic IP is one-to-one from a pool with ports unchanged. Section 7.2."},
+{"q":"What does NAT oversubscription allow?","choices":["More than one NAT rule to match a session","The same translated address and port to be used by several sessions to different destinations","Source and destination NAT in one rule","Translation of IPv4 to IPv6"],"answer":1,"why":"The destination keeps each session unique. Section 7.2."},
+{"q":"Bidirectional NAT is available for which translation type?","choices":["Static IP only","Dynamic IP only","DIPP only","All source NAT types"],"answer":0,"why":"Only a fixed one-to-one mapping can be reversed. Section 7.3."},
+{"q":"A destination NAT rule publishes 203.0.113.50 (on the ethernet1/1 subnet, zone Internet) as 192.168.50.80 (zone Extranet). What is the NAT rule's destination zone?","choices":["Extranet","Internet","Users_Net","Any"],"answer":1,"why":"NAT rules use the pre-NAT zone: where 203.0.113.50 routes, which is Internet. Section 7.3."},
+{"q":"For the same server, what is the Security rule's destination zone?","choices":["Internet","Extranet","Users_Net","Both Internet and Extranet"],"answer":1,"why":"Security rules use the post-NAT destination zone. Section 7.4."},
+{"q":"For the same server, what is the Security rule's destination address?","choices":["192.168.50.80","203.0.113.50","Any","The firewall's interface address"],"answer":1,"why":"Security rules use the pre-NAT address. Section 7.4."},
+{"q":"A web server listens on tcp/8080, but clients connect to the public address on tcp/80. What do you configure?","choices":["A second Security rule for 8080","Destination NAT with a translated port of 8080","Bidirectional NAT","DIPP"],"answer":1,"why":"Destination NAT can translate the port as well as the address. Section 7.3."},
+{"q":"Users Net 192.168.1.0/24 connect to 192.168.1.80, which destination NAT translates to 192.168.50.80 in Extranet. What is the NAT rule's destination zone?","choices":["Users_Net","Extranet","Internet","Trust"],"answer":0,"why":"192.168.1.80 routes to the Users_Net interface, so the pre-NAT destination zone is Users_Net. Section 7.3 and Lab 6."},
+{"q":"For an outbound DIPP rule from Users_Net to Internet, what destination address goes in the Security rule?","choices":["The translated source address","The real destination server address","The firewall's internal interface","It doesn't matter"],"answer":1,"why":"Source NAT doesn't change the destination, so the destination is the server's real address. Section 7.4."}
+]}</script>
+</div>
+</section>
+
+<nav class="pager" id="pager" aria-label="Module navigation"></nav>
+</article>
+</div>
+</main>
+
+<footer id="site-footer"></footer>
+<script src="../assets/js/course.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/activities.js"></script>
+<script src="../assets/js/sims/m07.js"></script>
+</body>
+</html>

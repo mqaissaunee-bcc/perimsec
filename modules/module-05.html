@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Module 5: Connecting Security Zones | Perimeter Security</title>
+<meta name="description" content="Until now the firewall has only talked to you through its management port. This module plugs it into the production network: dividing the network into security zones, choosing how each interface behaves, and giving the firewall the routes it needs to move traffic between them.">
+<link rel="stylesheet" href="../assets/css/site.css">
+<script src="../assets/js/prefs.js"></script>
+</head>
+<body data-root=".." data-module="5" data-page="">
+<a class="skip-link" href="#main">Skip to main content</a>
+<header id="site-header"></header>
+
+<main id="main" class="page">
+<div class="module-hero">
+<p class="kicker">Module 5 of 16, week 3. Corresponds to EDU-210 Module 5.</p>
+<h1>Connecting Security Zones</h1>
+<p class="lede">Until now the firewall has only talked to you through its management port. This module plugs it into the production network: dividing the network into security zones, choosing how each interface behaves, and giving the firewall the routes it needs to move traffic between them.</p>
+<ul class="facts"><li>About 3.5 hours plus Lab 4</li><li>5 reading sections</li><li>2 simulations</li><li>4 activities</li><li>Lab 4 in NDG Online</li><li>10-question self-check</li></ul>
+<!-- Overview video: add data-embed="https://...embed-url" for an inline player,
+     or data-link="https://..." to link out (e.g. a Screencast page). -->
+<div class="video-slot" data-title="Module 5 overview video" data-embed="" data-link="">
+<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="1" y="6" width="38" height="28" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="16,13 28,20 16,27" fill="currentColor"/></svg>
+<p><strong>Module overview video.</strong> Your instructor's walkthrough of this module will appear here.</p>
+</div>
+</div>
+
+<div class="objectives">
+<h2>By the end of this module you should be able to</h2>
+<ol><li>Explain how network segmentation and security zones reduce the attack surface.</li><li>Match interface types to the zone types that accept them.</li><li>Choose between tap, virtual wire, and Layer 3 deployments for a given situation.</li><li>Configure a Layer 3 interface, a subinterface, and an Interface Management Profile.</li><li>Configure a virtual router with connected and static routes, and predict which route the firewall will use.</li><li>Explain how multiple default routes and path monitoring provide failover.</li></ol>
+</div>
+
+<h2>Plan your time</h2>
+<div class="table-wrap" style="max-width:860px"><table>
+<caption class="visually-hidden">Suggested time for each part of the module</caption>
+<thead><tr><th scope="col">Part</th><th scope="col">What's in it</th><th scope="col">Minutes</th></tr></thead>
+<tbody><tr><td>Part A: Zones and interfaces</td><td>Sections 5.1–5.3, Simulation 5.1, Activities 5.1–5.2</td><td>75</td></tr><tr><td>Part B: Layer 3 and routing</td><td>Sections 5.4–5.5, Simulation 5.2, Activities 5.3–5.4</td><td>70</td></tr><tr><td>Lab 4 in NDG Online</td><td>Lab companion, then the lab</td><td>60–75</td></tr><tr><td>Wrap-up</td><td>Summary, key terms, self-check quiz</td><td>20</td></tr></tbody></table></div>
+<p class="box-note">Week 3 also includes Module 6 and Lab 5, which build directly on the zones you create here.</p>
+
+<div class="module-layout">
+<nav class="module-rail" aria-label="This module">
+<h2>This module</h2>
+<div class="progress-wrap"><span class="label" id="rail-meter-label">0 sections complete</span>
+<div class="meter" role="progressbar" aria-labelledby="rail-meter-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="rail-meter"></span></div></div>
+<ol id="rail-list"></ol>
+<p><a href="#self-check">Jump to the self-check quiz</a></p>
+</nav>
+<article>
+
+<div class="part-head"><p class="part-n">Part A</p><h2>Zones and interfaces</h2><p>Dividing the network, and deciding how the firewall attaches to each piece.</p></div>
+
+<section class="unit" id="s-segment" data-section="segment" data-label="5.1 Segmentation and zones" data-part="Part A: Zones and interfaces">
+<header><span class="sec-n">5.1</span><h2>Segmentation and security zones</h2></header>
+<p class="intro">A flat network lets anyone who gets in reach everything. Segmentation puts doors between the rooms.</p>
+<p>Network segmentation divides a network into parts with different security needs, so that access between them can be controlled. Good segmentation starts with the business, not the wiring: who needs to reach what? Customer card data, HR records, the public web servers, and the sales team's laptops have very different owners, risks, and regulations. Apply the principle of least privilege: each group gets access to what it needs and nothing else. Regulatory requirements such as PCI DSS for card data often make some of these boundaries mandatory.</p>
+<p>On the firewall, segments become <dfn data-term="security-zone">security zones</dfn>. A zone is a logical group of interfaces whose networks share a trust level and a set of security needs. Zone names are yours to choose: Users_Net, Extranet, PCI, Internet. Security policy is then written between zones, as in "Users_Net may reach Extranet with these applications."</p>
+<p>Two defaults shape everything that follows:</p>
+<ul>
+<li>Traffic between two different zones (<dfn data-term="interzone">interzone</dfn>) is <strong>denied</strong> unless a rule allows it.</li>
+<li>Traffic that stays within one zone (<dfn data-term="intrazone">intrazone</dfn>) is <strong>allowed</strong> unless a rule blocks it.</li>
+</ul>
+<p>So every zone boundary you draw is a place where nothing passes until you say so. That is the Zero Trust idea from Module 1 put into practice: inspect north-south traffic at the perimeter and east-west traffic between internal zones.</p>
+<div class="callout think"><p class="c-title">Think of it this way</p>
+<p>Zones are the rooms of a building and policy rules are the keycard readers on the doors between them. Moving around inside one room needs no badge. Every door between rooms is locked until someone programs the reader.</p></div>
+<div class="callout myth"><p class="c-title">Common misconception</p>
+<p>"Put all the internal networks in one Trust zone and the internet in Untrust." It works, but because intrazone traffic is allowed by default, an infected laptop can reach the payroll server with no rule ever being checked. More zones means more doors.</p></div>
+</section>
+
+<section class="unit" id="s-ifzones" data-section="ifzones" data-label="5.2 Interfaces and zone types" data-part="Part A: Zones and interfaces">
+<header><span class="sec-n">5.2</span><h2>Interfaces and zone types</h2></header>
+<p class="intro">Zones are made of interfaces, and the interface type decides the zone type.</p>
+<p>The data plane controls the in-band network interfaces: physical ports such as ethernet1/1, and logical interfaces such as the subinterface ethernet1/1.10. Three rules govern how they combine with zones:</p>
+<ul>
+<li>Each interface belongs to exactly one zone.</li>
+<li>A zone can contain many interfaces.</li>
+<li>An interface that is not assigned to a zone does not process traffic.</li>
+</ul>
+<p>Every zone has a type, and each type accepts only certain interfaces:</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Zone type</th><th scope="col">Interfaces it accepts</th></tr></thead>
+<tbody>
+<tr><td>Layer 3</td><td>Layer 3 interfaces and subinterfaces, VLAN interfaces, loopback interfaces, tunnel interfaces</td></tr>
+<tr><td>Layer 2</td><td>Layer 2 interfaces</td></tr>
+<tr><td>Virtual Wire</td><td>Virtual wire interfaces</td></tr>
+<tr><td>Tap</td><td>Tap interfaces</td></tr>
+<tr><td>Tunnel</td><td>None. Used for inspecting the contents of tunnels such as GRE, not for interfaces</td></tr>
+</tbody></table></div>
+<p>The MGT and HA interfaces are never in a zone. Create zones at <span class="path" data-path="Network > Zones > Add"></span>: give the zone a name, choose its type, and add interfaces of the matching type. You can also assign the zone from the interface's own configuration dialog.</p>
+<div class="activity" data-activity="sort" data-id="m5-a1">
+<p class="box-kicker">Activity 5.1</p><h3>Which zone type?</h3>
+<p class="box-note">About 4 minutes.</p>
+<script type="application/json">{"buckets":["Layer 3","Virtual Wire","Tap","Not in any zone"],"items":[
+{"text":"ethernet1/2, configured with the address 192.168.1.1/24","answer":"Layer 3","why":"An interface with an IP address that routes is a Layer 3 interface."},
+{"text":"A loopback interface used for management on a data port","answer":"Layer 3","why":"Loopback, VLAN, and tunnel interfaces go in Layer 3 zones."},
+{"text":"ethernet1/5, cabled to a switch's SPAN port","answer":"Tap","why":"A passive interface receiving mirrored traffic is a tap interface."},
+{"text":"ethernet1/6 and ethernet1/7, bound together with no IP addresses","answer":"Virtual Wire","why":"Virtual wire interfaces have no IP or MAC addresses."},
+{"text":"The MGT interface","answer":"Not in any zone","why":"MGT and HA interfaces are never assigned to zones."},
+{"text":"ethernet1/3.20, a VLAN-tagged subinterface with an IP address","answer":"Layer 3","why":"A Layer 3 subinterface belongs to a Layer 3 zone, which can differ from its parent interface's zone."}
+]}</script>
+</div>
+<div class="sim" id="sim-5-1">
+<p class="box-kicker">Simulation 5.1</p><h3>Zone mapper</h3>
+<p class="box-note">The lab firewall has three data interfaces. Assign each one to a zone and see how the firewall treats four everyday flows before any Security policy rule exists.</p>
+<div class="sim-grid"><div class="sim-controls"></div><div class="sim-output" aria-live="polite"></div></div>
+<div class="try-this"><h4>Try this</h4><ol>
+<li>Click "Put both inside interfaces in Trust." Which flow is now allowed without any rule, and why is that a problem?</li>
+<li>Set ethernet1/3 to (none). What happens to every flow that uses it?</li>
+<li>With the lab zones, how many Security policy rules would you need to let users browse the internet and reach the extranet server?</li>
+</ol></div>
+</div>
+</section>
+
+<section class="unit" id="s-modes" data-section="modes" data-label="5.3 Tap, virtual wire, Layer 3" data-part="Part A: Zones and interfaces">
+<header><span class="sec-n">5.3</span><h2>Tap, virtual wire, and Layer 3 deployments</h2></header>
+<p class="intro">Three ways to attach the firewall, from watching quietly to routing everything.</p>
+<h3>Tap: watch without touching</h3>
+<p>A <dfn data-term="tap-interface">tap interface</dfn> connects to a switch's SPAN or mirror port and receives a copy of the traffic. The firewall identifies applications, users, and threats and logs them, but it cannot block, shape, or change anything, because the original traffic never passes through it. Tap mode is for evaluations and audits: install the firewall for a few weeks, then use the Traffic log to show what is really on the network and to design the Security policy you will enforce later.</p>
+<h3>Virtual wire: inline and invisible</h3>
+<p>A <dfn data-term="virtual-wire">virtual wire</dfn> binds two interfaces together through a virtual wire object. Neither interface has an IP or MAC address, so the firewall drops into an existing link like a cable. Adjacent switches and routers need no configuration changes. Unlike tap mode, the firewall is inline, so it can enforce policy with App-ID, Content-ID, User-ID, and decryption, and it can even perform NAT.</p>
+<p>The virtual wire object, at <span class="path" data-path="Network > Virtual Wires"></span>, has a few options worth knowing:</p>
+<ul>
+<li><strong>Tag Allowed</strong> lists the 802.1Q VLAN tags the virtual wire accepts; <code>0</code> means untagged traffic.</li>
+<li><strong>Multicast Firewalling</strong> applies Security policy to multicast traffic instead of forwarding all of it.</li>
+<li><strong>Link State Pass Through</strong> brings one side down when the other loses link, so neighboring devices notice the failure and can fail over.</li>
+</ul>
+<h3>Layer 3: route between networks</h3>
+<p>A <dfn data-term="layer3-interface">Layer 3 interface</dfn> has an IP address and routes traffic between networks through a virtual router. Layer 3 mode includes everything virtual wire does plus routing, routing protocols, and site-to-site VPN. It usually requires changing the network around the firewall: hosts and routers must use the firewall's interface addresses as their gateways. The NDG lab firewall uses Layer 3 interfaces.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col"></th><th scope="col">Tap</th><th scope="col">Virtual wire</th><th scope="col">Layer 3</th></tr></thead>
+<tbody>
+<tr><td>Inline (can block)?</td><td>No</td><td>Yes</td><td>Yes</td></tr>
+<tr><td>IP addresses on interfaces?</td><td>No</td><td>No</td><td>Yes</td></tr>
+<tr><td>Network changes needed?</td><td>A SPAN port only</td><td>None</td><td>Usually: new gateway addresses</td></tr>
+<tr><td>App-ID, Content-ID, User-ID</td><td>Visibility only</td><td>Enforced</td><td>Enforced</td></tr>
+<tr><td>NAT</td><td>No</td><td>Yes</td><td>Yes</td></tr>
+<tr><td>Routing, VPN</td><td>No</td><td>No</td><td>Yes</td></tr>
+</tbody></table></div>
+<div class="activity" data-activity="sort" data-id="m5-a2">
+<p class="box-kicker">Activity 5.2</p><h3>Choose the deployment</h3>
+<p class="box-note">About 4 minutes.</p>
+<script type="application/json">{"buckets":["Tap","Virtual wire","Layer 3"],"items":[
+{"text":"A school wants a two-week report of every application on its network before buying, and will not risk disrupting traffic.","answer":"Tap","why":"Passive visibility with no chance of blocking anything."},
+{"text":"A hospital must add threat prevention between its core switch and the internet router today, without readdressing anything.","answer":"Virtual wire","why":"Inline enforcement with no IP changes on neighboring devices."},
+{"text":"A new branch office needs the firewall to be the default gateway, run OSPF, and build a VPN to headquarters.","answer":"Layer 3","why":"Routing and VPN require Layer 3 interfaces."},
+{"text":"Users must reach the internet through source NAT from private addresses, and the firewall routes between three internal subnets.","answer":"Layer 3","why":"Routing between subnets needs Layer 3; NAT works there too."}
+]}</script>
+</div>
+<div class="callout exam"><p class="c-title">Exam tip</p>
+<p>Tap mode never blocks. If a scenario says the firewall must "prevent" or "block" anything, tap is wrong. If it says "no changes to the existing network," look for virtual wire.</p></div>
+</section>
+
+<div class="part-head"><p class="part-n">Part B</p><h2>Layer 3 and routing</h2><p>Addresses, management on data ports, subinterfaces, and virtual routers.</p></div>
+
+<section class="unit" id="s-l3" data-section="l3" data-label="5.4 Layer 3 interfaces" data-part="Part B: Layer 3 and routing">
+<header><span class="sec-n">5.4</span><h2>Configuring Layer 3 interfaces</h2></header>
+<p class="intro">Each Layer 3 interface needs three things before it carries traffic: a virtual router, a zone, and an address.</p>
+<p>Open the interface at <span class="path" data-path="Network > Interfaces > Ethernet"></span> and set the Interface Type to Layer3. The dialog has three tabs that matter here:</p>
+<ul>
+<li><strong>Config</strong>: choose the <dfn data-term="virtual-router">virtual router</dfn> and the Layer 3 security zone.</li>
+<li><strong>IPv4</strong>: a static address in CIDR notation, such as <code>192.168.1.1/24</code>, or DHCP client. For IPv6 there is an IPv6 tab, but IPv6 must first be enabled firewall-wide at <span class="path" data-path="Device > Setup > Session > Session Settings"></span>.</li>
+<li><strong>Advanced</strong>: the Interface Management Profile, static ARP (IPv4) or neighbor discovery (IPv6) entries, LLDP, NDP proxy, and dynamic DNS.</li>
+</ul>
+<h3>Interface Management Profiles</h3>
+<p>The MGT port is not the only way to manage a firewall. An <dfn data-term="interface-management-profile">Interface Management Profile</dfn>, created at <span class="path" data-path="Network > Network Profiles > Interface Mgmt"></span>, lets a data interface answer management services: ping, HTTPS, SSH, SNMP, response pages, User-ID services, and others, optionally only from permitted addresses. You attach it on the interface's Advanced tab. It applies to interfaces that have IP addresses: Layer 3, loopback, VLAN, and tunnel.</p>
+<p>A common pattern: a profile that allows only ping on internet-facing interfaces, and a profile that allows ping plus response pages (for URL filtering block pages, Module 11) on user-facing interfaces. Never enable HTTPS or SSH management on an internet-facing interface.</p>
+<div class="callout exam"><p class="c-title">Exam tip</p>
+<p>If you can't ping a firewall interface from a host on its own subnet, the usual cause is that no Interface Management Profile allowing ping is attached. Security policy rules do not control pings to the firewall's own interface; the profile does.</p></div>
+<h3>Subinterfaces</h3>
+<p>A Layer 3 subinterface such as <code>ethernet1/3.20</code> splits one physical port into several logical interfaces, each with its own address and zone. The firewall decides which subinterface receives a packet by its 802.1Q VLAN tag (1 to 4094), by a source-IP classifier, or both. This is how one cable to a trunked switch port can carry the Engineering, HR, and data center VLANs into three separate zones, each with its own policy.</p>
+<p>To create one, select the parent interface and click Add Subinterface. The number after the dot is just the subinterface ID; the VLAN tag is a separate field, though matching them makes life easier.</p>
+<div class="activity" data-activity="tf" data-id="m5-a3">
+<p class="box-kicker">Activity 5.3</p><h3>Fact or myth: Layer 3 interfaces</h3>
+<p class="box-note">About 3 minutes.</p>
+<script type="application/json">{"items":[
+{"text":"Subinterfaces of the same physical port must all be in the same zone.","answer":false,"why":"Each subinterface is assigned its own zone. That is the point of using them."},
+{"text":"A Security policy rule is what allows hosts to ping the firewall's interface address.","answer":false,"why":"Management services on a data interface, including ping, come from the Interface Management Profile."},
+{"text":"You must enable IPv6 at the firewall level before IPv6 addresses work on interfaces.","answer":true,"why":"Enable IPv6 firewalling under Device > Setup > Session."},
+{"text":"An Interface Management Profile can restrict management access to specific source addresses.","answer":true,"why":"It has its own permitted IP list."}
+]}</script>
+</div>
+</section>
+
+<section class="unit" id="s-routing" data-section="routing" data-label="5.5 Virtual routers and routes" data-part="Part B: Layer 3 and routing">
+<header><span class="sec-n">5.5</span><h2>Virtual routers and static routes</h2></header>
+<p class="intro">Layer 3 interfaces route through a virtual router. It decides where each packet goes, and that decision also decides its destination zone.</p>
+<p>A virtual router holds the routing table for the interfaces assigned to it. Configure it at <span class="path" data-path="Network > Virtual Routers"></span>. On the General tab you add the interfaces it may forward through; their subnets appear automatically as connected routes. Beyond that, a virtual router supports:</p>
+<ul>
+<li><strong>Static routes</strong> that you enter yourself.</li>
+<li><strong>Dynamic routing</strong> with BGP, OSPFv2, OSPFv3, and RIPv2.</li>
+<li><strong>Multicast routing</strong> with PIM-SM and PIM-SSM.</li>
+</ul>
+<p>A firewall can have more than one virtual router, for example to keep a guest network's routing completely separate, and routes can point from one virtual router to another. Newer PAN-OS releases also offer an Advanced Routing Engine that calls these logical routers; the concepts are the same.</p>
+<h3>The default route</h3>
+<p>Almost every firewall needs a static default route, <code>0.0.0.0/0</code>, pointing to the internet router. Add it at <span class="path" data-path="Network > Virtual Routers > Static Routes > Add"></span> with the destination, the egress interface, and the next-hop address.</p>
+<h3>How the firewall picks a route</h3>
+<ol>
+<li>Find every active route that contains the destination address.</li>
+<li>Choose the one with the longest prefix, the most specific match. A /24 beats a /16, and anything beats the /0 default.</li>
+<li>If several routes have the same prefix length, choose the one with the lowest metric.</li>
+</ol>
+<p>The egress interface of the chosen route tells the firewall the <strong>destination zone</strong>. This is why routing comes before policy in the packet flow you will study in Module 6: the firewall cannot decide which Security policy rule applies until it knows where the packet is going.</p>
+<h3>Failover with path monitoring</h3>
+<p>You can configure two default routes to two ISPs with different metrics. The lower metric is used normally. <strong>Path monitoring</strong> on a static route pings one or more stable upstream addresses; if they stop answering, the firewall removes the route, and traffic shifts to the next-best route. It keeps testing, and when the path recovers the route returns automatically.</p>
+<p>To troubleshoot, the virtual router's More Runtime Stats shows the full routing table (RIB), the forwarding table actually used for packets (FIB), and the status of monitored paths.</p>
+<div class="sim" id="sim-5-2">
+<p class="box-kicker">Simulation 5.2</p><h3>Route lookup</h3>
+<p class="box-note">Enter a destination address and see which route the virtual router chooses, and which destination zone follows from it.</p>
+<div class="field" style="max-width:20rem"><label for="rt-dst">Destination IP address</label><input type="text" id="rt-dst" value="10.10.20.5" inputmode="decimal" autocomplete="off"></div>
+<div class="btn-row" role="group" aria-label="Example destinations">
+<button type="button" data-ip="8.8.8.8">8.8.8.8</button><button type="button" data-ip="10.10.20.5">10.10.20.5</button><button type="button" data-ip="10.10.99.1">10.10.99.1</button><button type="button" data-ip="192.168.50.80">192.168.50.80</button>
+</div>
+<div class="field-inline"><label><input type="checkbox" id="rt-down"> Path monitoring: primary ISP stops answering</label></div>
+<div class="table-wrap"><table>
+<caption class="visually-hidden">Virtual router routing table</caption>
+<thead><tr><th scope="col">Destination</th><th scope="col">Next hop</th><th scope="col">Interface</th><th scope="col">Metric</th><th scope="col">Notes</th><th scope="col">Result</th></tr></thead>
+<tbody></tbody></table></div>
+<p class="rt-result verdict" aria-live="polite"></p>
+<div class="try-this"><h4>Try this</h4><ol>
+<li>10.10.20.5 matches three routes. Which rule decides between them?</li>
+<li>Look up 8.8.8.8, then fail the primary ISP. What changes, and does the destination zone change?</li>
+<li>Find an address that leaves through ethernet1/2 even though it is not on the 192.168.1.0/24 subnet.</li>
+</ol></div>
+</div>
+<div class="activity" data-activity="order" data-id="m5-a4">
+<p class="box-kicker">Activity 5.4</p><h3>Bring a Layer 3 interface into service</h3>
+<p class="box-note">About 3 minutes. Put the steps in a workable order.</p>
+<script type="application/json">{"items":["Create the security zone (Layer 3 type)","Create or select the virtual router","Set the interface type to Layer3 and assign the virtual router and zone","Assign the IP address and attach an Interface Management Profile","Add a static default route to the virtual router","Commit and test connectivity"],"why":"Zones and the virtual router exist first so the interface can reference them; routes and testing come last."}</script>
+</div>
+</section>
+
+<section class="unit" id="s-lab" data-section="lab" data-label="Lab 4 companion" data-part="Lab">
+<header><span class="sec-n">Lab</span><h2>Lab 4 companion: Connecting the firewall to production networks with security zones</h2></header>
+<div class="lab">
+<dl class="lab-meta">
+<dt>Where</dt><dd>NDG Online</dd>
+<dt>Time</dt><dd>About 60 to 75 minutes</dd>
+<dt>Graded</dt><dd>Yes. Submit as directed in Canvas.</dd>
+<dt>Uses</dt><dd>Sections 5.2 to 5.5</dd>
+</dl>
+<h3>What you will do</h3>
+<p>Load a baseline configuration, create Layer 3 interfaces, create a virtual router with a default route, segment the network into security zones, test connectivity from the firewall to hosts in each zone, and create Interface Management Profiles.</p>
+<h3>The lab topology</h3>
+<p>The course topology has three data interfaces: ethernet1/1 toward the internet (203.0.113.20, gateway 203.0.113.1), ethernet1/2 for the user network (192.168.1.1/24), and ethernet1/3 for the extranet servers (192.168.50.1/24). If your lab guide shows different addresses, the lab guide wins.</p>
+<h3>Before you start</h3>
+<ul class="checklist" data-save="lab4-pre">
+<li><input type="checkbox" id="l4p1"><label for="l4p1">I can explain why an interface without a zone passes no traffic (5.2).</label></li>
+<li><input type="checkbox" id="l4p2"><label for="l4p2">I tried all three prompts in Simulation 5.1 and all three in Simulation 5.2.</label></li>
+<li><input type="checkbox" id="l4p3"><label for="l4p3">I know where Interface Management Profiles are attached (5.4).</label></li>
+<li><input type="checkbox" id="l4p4"><label for="l4p4">I know the CIDR form of the lab addresses, for example 192.168.1.1/24.</label></li>
+</ul>
+<h3>Watch out for</h3>
+<ul>
+<li><strong>Address without a mask.</strong> Enter interface addresses in CIDR form. An address without /24 becomes a /32 and nothing on the subnet is reachable.</li>
+<li><strong>Interface not in the virtual router.</strong> Assigning the interface on its Config tab adds it to the virtual router; if routes don't appear, check the virtual router's General tab.</li>
+<li><strong>Pings fail.</strong> Testing from the firewall uses the CLI <code>ping source &lt;interface-ip&gt; host &lt;target&gt;</code>. Pings <em>to</em> the firewall need an Interface Management Profile that allows ping.</li>
+<li><strong>Commit after each major step</strong> so an error is easy to trace.</li>
+</ul>
+<h3>After the lab</h3>
+<label for="l4-reflect">Your lab network uses three zones. Propose a fourth zone this organization should probably have, and say which traffic it would protect.</label>
+<textarea id="l4-reflect" data-save="lab4-reflect"></textarea>
+<p class="box-note">Saved in this browser only.</p>
+</div>
+</section>
+
+<section class="unit" id="s-wrap" data-section="wrap" data-label="Summary and self-check" data-part="Wrap-up">
+<header><span class="sec-n">✓</span><h2>Summary and self-check</h2></header>
+<ul>
+<li>Segmentation applies least privilege to the network. Security zones group interfaces with the same security needs, and policy is written between zones.</li>
+<li>Interzone traffic is denied by default; intrazone traffic is allowed by default. More zones means more controlled boundaries.</li>
+<li>Each interface is in one zone; a zone can hold many interfaces; unassigned interfaces pass no traffic. Interface type must match zone type. MGT and HA are never in zones.</li>
+<li>Tap mode watches a SPAN port and cannot block. Virtual wire is inline with no IP addresses or network changes. Layer 3 routes, and adds routing protocols and VPN.</li>
+<li>A Layer 3 interface needs a virtual router, a zone, and an address. Interface Management Profiles control management services, including ping, on data interfaces. Subinterfaces split one port by VLAN tag into separate zones.</li>
+<li>The virtual router chooses the longest-prefix match, then the lowest metric. The egress interface of the chosen route determines the destination zone. Path monitoring removes a failed static route so a backup can take over.</li>
+</ul>
+<h3>Key terms</h3>
+<p><dfn data-term="security-zone">Security zone</dfn>, <dfn data-term="interzone">interzone</dfn>, <dfn data-term="intrazone">intrazone</dfn>, <dfn data-term="tap-interface">tap interface</dfn>, <dfn data-term="virtual-wire">virtual wire</dfn>, <dfn data-term="layer3-interface">Layer 3 interface</dfn>, <dfn data-term="subinterface">subinterface</dfn>, <dfn data-term="interface-management-profile">Interface Management Profile</dfn>, <dfn data-term="virtual-router">virtual router</dfn>, <dfn data-term="static-route">static route</dfn>, <dfn data-term="path-monitoring">path monitoring</dfn>.</p>
+<h3 id="self-check">Self-check quiz</h3>
+<p class="box-note">Ungraded. Score 80% or better and this section marks itself complete. The graded Quiz 5 is in Canvas.</p>
+<div class="quiz" data-quiz="m05">
+<script type="application/json">{"questions":[
+{"q":"By default, what happens to traffic between two different security zones?","choices":["It is allowed","It is denied unless a rule allows it","It is allowed but logged","It is sent to the tap zone"],"answer":1,"why":"The interzone-default rule denies it. Section 5.1."},
+{"q":"How many zones can a single interface belong to?","choices":["One","Two, one for each direction","Up to four","Any number"],"answer":0,"why":"Each interface belongs to exactly one zone, though a zone can have many interfaces. Section 5.2."},
+{"q":"Which interfaces are never assigned to a security zone?","choices":["Loopback and tunnel","MGT and HA","VLAN and Layer 2","Subinterfaces"],"answer":1,"why":"Management and high-availability interfaces are outside the zone model. Section 5.2."},
+{"q":"Which deployment provides visibility only and can never block traffic?","choices":["Virtual wire","Layer 3","Tap","Layer 2"],"answer":2,"why":"Tap interfaces receive a mirrored copy of traffic. Section 5.3."},
+{"q":"A firewall must be inserted inline between two existing routers without any changes to their addressing. Which interface type fits?","choices":["Tap","Virtual wire","Layer 3","Loopback"],"answer":1,"why":"Virtual wire interfaces have no IP or MAC addresses. Section 5.3."},
+{"q":"In a virtual wire object, what does the Tag Allowed value 0 mean?","choices":["No traffic is allowed","Untagged traffic","All VLANs","VLAN 1 only"],"answer":1,"why":"0 represents untagged traffic. Section 5.3."},
+{"q":"Users cannot ping their default gateway, which is a firewall Layer 3 interface. Routing and addressing are correct. What is the most likely cause?","choices":["No Security policy rule allows ICMP","No Interface Management Profile allowing ping is attached to the interface","The virtual router has no default route","IPv6 is not enabled"],"answer":1,"why":"Services on the firewall's own interface come from the Interface Management Profile. Section 5.4."},
+{"q":"How does the firewall decide which Layer 3 subinterface receives an incoming packet?","choices":["By destination port","By the 802.1Q VLAN tag (and optionally a source IP classifier)","By the packet's application","Round robin"],"answer":1,"why":"Subinterfaces classify by VLAN tag, IP classifier, or both. Section 5.4."},
+{"q":"A virtual router has routes 10.0.0.0/8 (metric 10), 10.1.0.0/16 (metric 50), and 0.0.0.0/0. Which route is used for 10.1.4.7?","choices":["10.0.0.0/8, because its metric is lower","10.1.0.0/16, because it is the longest prefix","0.0.0.0/0","Both, load-balanced"],"answer":1,"why":"Longest prefix wins first; metric only breaks ties between equal prefixes. Section 5.5."},
+{"q":"What does path monitoring on a static route do?","choices":["Measures bandwidth and picks the fastest route","Pings upstream addresses and removes the route if they stop responding","Logs every packet that uses the route","Converts the static route to OSPF"],"answer":1,"why":"Failed monitoring removes the route so a backup route can take over; it returns when the path recovers. Section 5.5."}
+]}</script>
+</div>
+</section>
+
+<nav class="pager" id="pager" aria-label="Module navigation"></nav>
+</article>
+</div>
+</main>
+
+<footer id="site-footer"></footer>
+<script src="../assets/js/course.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/activities.js"></script>
+<script src="../assets/js/sims/m05.js"></script>
+</body>
+</html>

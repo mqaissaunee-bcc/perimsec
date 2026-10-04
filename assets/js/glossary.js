@@ -2,6 +2,14 @@
 (function () {
   "use strict";
   window.PS_GLOSSARY = {
+    "subinterface": { t: "Subinterface", d: "A logical interface on a physical port, such as ethernet1/3.20, that receives traffic by VLAN tag or IP classifier and can be in its own zone.", m: [5] },
+    "static-route": { t: "Static route", d: "A route entered by an administrator, giving a destination prefix, egress interface, next hop, and metric.", m: [5] },
+    "path-monitoring": { t: "Path monitoring", d: "Pinging upstream addresses to test a static route; if they stop responding the route is removed so a backup route takes over.", m: [5] },
+    "session": { t: "Session", d: "The firewall's record of one conversation, identified by its addresses, ports, protocol, and zones. A session has a client-to-server and a server-to-client flow.", m: [6] },
+    "universal-rule": { t: "Universal rule", d: "The default Security rule type. It matches both intrazone and interzone traffic among the zones listed.", m: [6] },
+    "address-object": { t: "Address object", d: "A named IP address, subnet, range, wildcard mask, or FQDN used in policy instead of raw addresses.", m: [6] },
+    "tag": { t: "Tag", d: "A named, colored label for rules and objects, used to filter, group, and, for dynamic address and user groups, to set membership.", m: [6] },
+    "nat-oversubscription": { t: "NAT oversubscription", d: "Letting one translated address and port serve several DIPP sessions at once, as long as their destinations differ.", m: [7] },
     "acc": { t: "Application Command Center (ACC)", d: "An interactive dashboard of widgets summarizing applications, users, threats, and blocked activity, with global filters that drill into logs.", m: [14] },
     "admin-role-profile": { t: "Admin Role Profile", d: "A custom set of permissions for the web interface, XML API, REST API, and CLI that you assign to an administrator account for role-based access control.", m: [4] },
     "anti-spyware-profile": { t: "Anti-Spyware Profile", d: "A Security Profile that detects command-and-control traffic and spyware, including DNS signatures that can sinkhole lookups for malicious domains.", m: [10] },

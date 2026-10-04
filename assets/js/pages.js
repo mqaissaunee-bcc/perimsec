@@ -69,7 +69,7 @@
   /* ---------- simulations index ---------- */
   if (page === "simulations.html") {
     var box = document.getElementById("sim-list");
-    box.innerHTML = (window.PS_SIMS || []).map(function (s) {
+    box.innerHTML = (window.PS_SIMS || []).slice().sort(function (a, b) { return a.module - b.module; }).map(function (s) {
       var m = mod(s.module);
       var label = "Module " + s.module + ": " + esc(m.title);
       if (m.available) {
