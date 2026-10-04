@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Module 14: Logs and Reports | Perimeter Security</title>
+<meta name="description" content="Everything you&#x27;ve configured has been writing records: every session, threat, URL, file, and verdict. This module is about turning those records into answers, quickly enough to matter, and getting them off the firewall to the people and systems that need them.">
+<link rel="stylesheet" href="../assets/css/site.css">
+<script src="../assets/js/prefs.js"></script>
+</head>
+<body data-root=".." data-module="14" data-page="">
+<a class="skip-link" href="#main">Skip to main content</a>
+<header id="site-header"></header>
+
+<main id="main" class="page">
+<div class="module-hero">
+<p class="kicker">Module 14 of 16, week 9. Corresponds to EDU-210 Module 14.</p>
+<h1>Logs and Reports</h1>
+<p class="lede">Everything you&#x27;ve configured has been writing records: every session, threat, URL, file, and verdict. This module is about turning those records into answers, quickly enough to matter, and getting them off the firewall to the people and systems that need them.</p>
+<ul class="facts"><li>About 3.5 hours plus Lab 13</li><li>6 reading sections</li><li>2 simulations</li><li>3 activities</li><li>Lab 13 in NDG Online</li><li>10-question self-check</li></ul>
+<!-- Overview video: add data-embed="https://...embed-url" for an inline player,
+     or data-link="https://..." to link out (e.g. a Screencast page). -->
+<div class="video-slot" data-title="Module 14 overview video" data-embed="" data-link="">
+<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="1" y="6" width="38" height="28" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="16,13 28,20 16,27" fill="currentColor"/></svg>
+<p><strong>Module overview video.</strong> Your instructor's walkthrough of this module will appear here.</p>
+</div>
+</div>
+
+<div class="objectives">
+<h2>By the end of this module you should be able to</h2>
+<ol><li>Use Dashboard widgets for an at-a-glance view of threats and applications.</li><li>Investigate traffic and threats with the ACC&#x27;s tabs, widgets, and global filters.</li><li>Explain what each log type records and what controls whether it&#x27;s written, and filter logs precisely.</li><li>Use the correlation engine, App Scope, and predefined reports.</li><li>Build and schedule custom reports with the query builder.</li><li>Forward logs to syslog, SNMP, email, HTTP, Panorama, or Strata Logging Service using server profiles and log forwarding profiles.</li></ol>
+</div>
+
+<h2>Plan your time</h2>
+<div class="table-wrap" style="max-width:860px"><table>
+<caption class="visually-hidden">Suggested time for each part of the module</caption>
+<thead><tr><th scope="col">Part</th><th scope="col">What's in it</th><th scope="col">Minutes</th></tr></thead>
+<tbody><tr><td>Part A: Seeing what happened</td><td>Sections 14.1–14.3, Simulations 14.1–14.2, Activities 14.1–14.2</td><td>80</td></tr><tr><td>Part B: Reports and forwarding</td><td>Sections 14.4–14.6, Activity 14.3</td><td>50</td></tr><tr><td>Lab 13 in NDG Online</td><td>Lab companion, then the lab</td><td>60–75</td></tr><tr><td>Wrap-up</td><td>Summary, key terms, self-check quiz</td><td>20</td></tr></tbody></table></div>
+<p class="box-note">This is the last EDU-210 module. Week 10 covers SASE and CASB, and week 11 is the capstone lab and final exam.</p>
+
+<div class="module-layout">
+<nav class="module-rail" aria-label="This module">
+<h2>This module</h2>
+<div class="progress-wrap"><span class="label" id="rail-meter-label">0 sections complete</span>
+<div class="meter" role="progressbar" aria-labelledby="rail-meter-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="rail-meter"></span></div></div>
+<ol id="rail-list"></ol>
+<p><a href="#self-check">Jump to the self-check quiz</a></p>
+</nav>
+<article>
+
+<div class="part-head"><p class="part-n">Part A</p><h2>Seeing what happened</h2><p>From a glance to a precise answer.</p></div>
+
+<section class="unit" id="s-dash" data-section="dash" data-label="14.1 Dashboard" data-part="Part A: Seeing what happened">
+<header><span class="sec-n">14.1</span><h2>The Dashboard</h2></header>
+<p class="intro">The first screen after login: a glance, not an investigation.</p>
+<p>The Dashboard is a set of widgets, each a pane showing one kind of information. Add widgets from the Widgets menu, remove them, and drag them to rearrange. Your layout is saved per administrator.</p>
+<ul>
+<li><strong>Threat widgets</strong>: Threat Logs, URL Filtering Logs, and Data Filtering Logs show the last 10 entries from the last hour.</li>
+<li><strong>Application widgets</strong>: Top Applications and Top High Risk Applications show what's on the network, colored by Palo Alto Networks risk rating (4 in orange, 5 in red). Point to an application for details; click it to open the ACC filtered to that application.</li>
+<li><strong>System widgets</strong> such as General Information (model, PAN-OS and content versions, uptime), System Resources, and Logged In Admins.</li>
+</ul>
+</section>
+
+<section class="unit" id="s-acc" data-section="acc" data-label="14.2 The ACC" data-part="Part A: Seeing what happened">
+<header><span class="sec-n">14.2</span><h2>The Application Command Center</h2></header>
+<p class="intro">Interactive analysis: start broad, click to narrow.</p>
+<p>The <dfn data-term="acc">ACC</dfn> organizes widgets into tabs. Network Activity and Threat Activity are used most; Blocked Activity shows what the firewall prevented, which is useful when someone asks what the firewall is actually doing. You can add tabs of your own.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Mostly applications and traffic</th><th scope="col">Mostly threats</th></tr></thead>
+<tbody><tr>
+<td>Application Usage, User Activity, Source IP Activity, Destination IP Activity, Source and Destination Regions, GlobalProtect Host Information, Rule Usage</td>
+<td>Threat Activity, WildFire Activity by File Type and by Application, Hosts Visiting Malicious URLs, Hosts Resolving Malicious Domains, Applications Visiting Non-Standard Ports, Rules Allowing Apps on Non-Standard Ports, Compromised Hosts</td>
+</tr></tbody></table></div>
+<p>Each widget has a graph and a table. You can sort it, switch between sessions, bytes, and threats, and use <strong>Jump to Logs</strong> to open the matching log entries with the filter already built. The key tool is the <strong>global filter</strong>: hover over a value in any widget table (an application, user, or severity) and click the arrow to promote it. The filter then applies to every widget on every tab, so "web-browsing" on Network Activity also narrows Threat Activity. Set the time range at the top, and clear global filters when you're done.</p>
+<div class="callout think"><p class="c-title">Think of it this way</p>
+<p>The ACC is a funnel. Start with everything from the last week, drop in one application, then one user, then one threat, and each step narrows every view at once.</p></div>
+</section>
+
+<section class="unit" id="s-logs" data-section="logs" data-label="14.3 Logs and filters" data-part="Part A: Seeing what happened">
+<header><span class="sec-n">14.3</span><h2>Logs and log filters</h2></header>
+<p class="intro">The detailed record, and how to find one line in a million.</p>
+<p>A log is a timestamped list of events, one per row, with columns of detail you can show, hide, and rearrange. Whether an entry is written at all depends on your configuration:</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Log</th><th scope="col">Records</th><th scope="col">Written when</th></tr></thead>
+<tbody>
+<tr><td><dfn data-term="traffic-log">Traffic</dfn></td><td>One entry per session: zones, addresses, user, application, rule, action, bytes, session end reason</td><td>The Security rule logs at session start or end (end recommended). In-progress sessions don't appear with log at end.</td></tr>
+<tr><td><dfn data-term="threat-log">Threat</dfn></td><td>Threats in allowed traffic: name, severity, action</td><td>Antivirus, Anti-Spyware, or Vulnerability Protection profiles detect something.</td></tr>
+<tr><td>URL Filtering</td><td>URLs, categories, actions</td><td>A URL Filtering profile action of at least alert applies.</td></tr>
+<tr><td>WildFire Submissions</td><td>Analyzed files and links: sender, receiver, file name, verdict</td><td>A WildFire Analysis profile forwards a file (benign and grayware only if reporting is enabled).</td></tr>
+<tr><td>Data Filtering</td><td>Blocked or alerted files and sensitive data</td><td>File Blocking or Data Filtering profile with at least alert.</td></tr>
+<tr><td>Decryption, User-ID, System, Configuration, and others</td><td>Their own events</td><td>Covered in earlier modules.</td></tr>
+</tbody></table></div>
+<p>The <strong>Unified log</strong> at <span class="path" data-path="Monitor > Logs > Unified"></span> combines several log types in one view, which helps when following an incident across traffic, threats, URLs, and WildFire. For the Threat log, a reasonable baseline is that critical and high-severity threats should always be blocked, medium threats often should be, and low and informational threats should at least alert.</p>
+<h3>Filters</h3>
+<p>You have built filters in nearly every lab. The pattern is always <code>( field operator value )</code>, joined with <code>and</code> or <code>or</code>. Click a value in a log to add it, or use the Add Log Filter button (the Filter Builder) to pick fields and operators from lists. Values with spaces or backslashes go in single quotes.</p>
+<pre class="cli">( severity geq high )
+( user.src eq 'chicago\escrooge' )
+( zone.src eq Users_Net ) and ( app eq web-browsing )
+( flags has proxy ) and ( session_end_reason eq threat )
+( addr.dst in 192.168.1.80 )</pre>
+<div class="sim" id="sim-14-2">
+<p class="box-kicker">Simulation 14.2</p><h3>Log filter builder</h3>
+<p class="box-note">Build filters the way the Add Log Filter dialog does. Pick a task to check your work, or practice freely.</p>
+<div class="field"><label for="lf-task">Task</label><select id="lf-task"></select></div>
+<div class="sim-grid">
+<div>
+<div class="field"><label for="lf-log">Log</label><select id="lf-log"><option value="traffic">Traffic</option><option value="threat">Threat</option><option value="url">URL Filtering</option></select></div>
+<div class="field"><label for="lf-conn">Connector (for the second clause onward)</label><select id="lf-conn"><option>and</option><option>or</option></select></div>
+<div class="field"><label for="lf-field">Attribute</label><select id="lf-field"></select></div>
+<div class="field"><label for="lf-op">Operator</label><select id="lf-op"></select></div>
+<div class="field"><label for="lf-val">Value</label><input type="text" id="lf-val" autocomplete="off" spellcheck="false"></div>
+<div class="btn-row"><button type="button" class="btn-primary" data-lf="add">Add clause</button><button type="button" data-lf="clear">Clear filter</button></div>
+</div>
+<div>
+<h4 style="margin-top:0">Filter</h4>
+<pre class="cli lf-filter" aria-live="polite"></pre>
+<button type="button" data-lf="check">Check against the task</button>
+<p class="lf-res" aria-live="polite"></p>
+</div>
+</div>
+</div>
+<div class="sim" id="sim-14-1">
+<p class="box-kicker">Simulation 14.1</p><h3>Where would you look?</h3>
+<p class="box-note">Each question has one best tool. Build a streak.</p>
+<p class="wl-q" style="font-size:var(--step-1);margin:0.4rem 0 0.8rem" aria-live="polite"></p>
+<div class="btn-row wl-opts" role="group" aria-label="Tools"></div>
+<p class="wl-fb" aria-live="polite"></p>
+<div class="btn-row"><button type="button" class="btn-primary" data-next>Next question</button><span class="wl-streak act-result" style="align-self:center"></span></div>
+</div>
+<h3>The correlation engine</h3>
+<p>The <dfn data-term="correlation-engine">correlation engine</dfn> looks across logs for patterns defined in correlation objects, which Palo Alto Networks' threat research team writes and delivers in content updates. Each object defines a pattern, the logs to examine, and a time window, such as a host that downloads an executable, then visits a malware URL, then beacons to a C2 domain. Matches become correlated events: notices of a probably compromised host, shown in the ACC's Compromised Hosts widget and under Monitor.</p>
+<div class="activity" data-activity="sort" data-id="m14-a1">
+<p class="box-kicker">Activity 14.1</p><h3>Why is the log empty?</h3>
+<p class="box-note">About 4 minutes. Match each symptom to its most likely cause.</p>
+<script type="application/json">{"buckets":["Rule logging setting","No profile, or action below alert","Session still in progress","Leftover filter"],"items":[
+{"text":"Denied pings never appear in the Traffic log.","answer":"Rule logging setting","why":"interzone-default doesn't log until overridden (Module 6)."},
+{"text":"Users browse all day, but the URL Filtering log is empty.","answer":"No profile, or action below alert","why":"allow doesn't log; alert does."},
+{"text":"A large download running for 20 minutes isn't in the Traffic log yet.","answer":"Session still in progress","why":"With log at session end, it appears when the session ends."},
+{"text":"Yesterday the Threat log was full; today it shows three entries.","answer":"Leftover filter","why":"Check the filter bar before assuming the network is quiet."}
+]}</script>
+</div>
+</section>
+
+<div class="part-head"><p class="part-n">Part B</p><h2>Reports and forwarding</h2><p>Summaries, scheduled answers, and getting logs off the box.</p></div>
+
+<section class="unit" id="s-appscope" data-section="appscope" data-label="14.4 App Scope and predefined reports" data-part="Part B: Reports and forwarding">
+<header><span class="sec-n">14.4</span><h2>App Scope and predefined reports</h2></header>
+<p class="intro">Trends over time, and reports you don't have to build.</p>
+<h3>App Scope</h3>
+<p><dfn data-term="app-scope">App Scope</dfn>, under Monitor, shows changes in application and user activity, bandwidth hogs, and threats:</p>
+<ul>
+<li><strong>Summary</strong>: six charts in one pane, including the top 5 gainers and losers (biggest change in sessions over the last hour), top bandwidth sources, applications, and categories, and top threats.</li>
+<li><strong>Change Monitor</strong>: applications, users, sources, and destinations with the largest increase in sessions over a period you choose.</li>
+<li><strong>Threat Monitor</strong>: threats in the most sessions, by name, category, source, or destination.</li>
+<li><strong>Threat Map</strong> and <strong>Traffic Map</strong>: threats and traffic on a world map by country.</li>
+<li><strong>Network Monitor</strong>: the largest bandwidth consumers by application, user, source, and destination.</li>
+</ul>
+<h3>Predefined reports</h3>
+<p>At <span class="path" data-path="Monitor > Reports"></span>, more than 40 predefined reports are grouped into categories such as Application, Traffic, Threat, and URL Filtering. The firewall generates a new set every day from summary databases that are updated in 15-minute intervals. Pick a report, pick a date in the calendar (gray dates have no data), view it in the browser, or download a PDF.</p>
+</section>
+
+<section class="unit" id="s-custom" data-section="custom" data-label="14.5 Custom reports" data-part="Part B: Reports and forwarding">
+<header><span class="sec-n">14.5</span><h2>Custom reports</h2></header>
+<p class="intro">Exactly the columns, filters, and schedule you need.</p>
+<p>At <span class="path" data-path="Monitor > Manage Custom Reports"></span>, add a report and choose:</p>
+<ul>
+<li><strong>Database</strong>: a summary database (such as Traffic Summary or Threat Summary) for fast reports over long periods, or a detailed log for line-level detail.</li>
+<li><strong>Time frame</strong>, <strong>Sort By</strong> (for example sessions, top 100), and <strong>Group By</strong> (for example source zone, 5 groups).</li>
+<li><strong>Selected columns</strong>, in the order they should appear.</li>
+<li><strong>Query Builder</strong>: a filter in the same syntax as the logs, so only matching entries are included. For example, "category of application equals networking" lists every networking application seen, useful for tightening perimeter rules.</li>
+<li><strong>Scheduled</strong>: run it automatically each day.</li>
+</ul>
+<p>Run Now shows the result immediately. Reports can be exported as PDF, CSV, or XML, and report groups can be emailed on a schedule.</p>
+<div class="activity" data-activity="order" data-id="m14-a2">
+<p class="box-kicker">Activity 14.2</p><h3>Build a weekly report</h3>
+<p class="box-note">About 2 minutes.</p>
+<script type="application/json">{"items":["Choose the database (for example Traffic Summary)","Set the time frame and select the columns","Set Sort By and Group By","Add a Query Builder filter","Select Scheduled","Run Now to check the output"],"why":"Pick the data, shape it, narrow it, automate it, then verify."}</script>
+</div>
+</section>
+
+<section class="unit" id="s-forward" data-section="forward" data-label="14.6 Log forwarding" data-part="Part B: Reports and forwarding">
+<header><span class="sec-n">14.6</span><h2>Log forwarding</h2></header>
+<p class="intro">A firewall's disk is small and its logs are evidence. Send them somewhere safe.</p>
+<p>Forwarding gives you off-firewall backup, centralized analysis across many firewalls, longer retention, alerts for critical events, and automated responses. Destinations include Panorama, Palo Alto Networks' cloud logging service (Strata Logging Service, formerly Cortex Data Lake), syslog servers and SIEMs, SNMP managers (traps), email servers, and HTTP servers, which can trigger actions in other systems through their APIs.</p>
+<h3>Three steps</h3>
+<ol>
+<li><strong>Server profile</strong> at <span class="path" data-path="Device > Server Profiles"></span>, for example Syslog: the server's address, transport and port, format, and facility. It defines where and how to connect.</li>
+<li><strong>Log Forwarding profile</strong> at <span class="path" data-path="Objects > Log Forwarding"></span>: for each log type, a filter (All Logs means no filtering) and the server profiles to send matching entries to. It defines what to send where.</li>
+<li><strong>Apply it</strong>: on each Security rule's Actions tab, select the Log Forwarding profile. Threats found by Zone Protection profiles are forwarded through a setting on the zone itself at Network > Zones. System, configuration, and other device logs are forwarded under <span class="path" data-path="Device > Log Settings"></span>.</li>
+</ol>
+<div class="callout field"><p class="c-title">In the field</p>
+<p>Like Security Profile Groups, a Log Forwarding profile named <code>default</code> is applied automatically to new rules. Create one early so every rule forwards from the day it's written.</p></div>
+<div class="activity" data-activity="tf" data-id="m14-a3">
+<p class="box-kicker">Activity 14.3</p><h3>Fact or myth: reports and forwarding</h3>
+<p class="box-note">About 3 minutes.</p>
+<script type="application/json">{"items":[
+{"text":"An ACC global filter applies to every widget on every tab.","answer":true,"why":"That is what makes it global."},
+{"text":"Predefined reports are generated once a day.","answer":true,"why":"Pick a date to see that day's report."},
+{"text":"A syslog server profile alone causes traffic logs to be forwarded.","answer":false,"why":"You also need a Log Forwarding profile attached to Security rules."},
+{"text":"Custom reports can use the same filter syntax as the logs.","answer":true,"why":"The Query Builder uses it."},
+{"text":"The correlation engine's patterns are written by each administrator from scratch.","answer":false,"why":"Correlation objects come from Palo Alto Networks in content updates."}
+]}</script>
+</div>
+</section>
+
+<section class="unit" id="s-lab" data-section="lab" data-label="Lab 13 companion" data-part="Lab">
+<header><span class="sec-n">Lab</span><h2>Lab 13 companion: Locating valuable information using logs and reports</h2></header>
+<div class="lab">
+<dl class="lab-meta">
+<dt>Where</dt><dd>NDG Online, PAN-OS 11.0 Firewall Essentials, Lab 13</dd>
+<dt>Time</dt><dd>About 60 to 75 minutes</dd>
+<dt>Graded</dt><dd>Yes. Submit as directed in Canvas.</dd>
+<dt>Uses</dt><dd>Sections 14.1 to 14.5</dd>
+</dl>
+<h3>What you will do</h3>
+<p>No new configuration this time: the lab is about finding things. With a traffic script running, you use Dashboard widgets, the ACC's tabs and global filters, filtered Threat and Traffic logs, App Scope's Threat Monitor, predefined reports, and a custom report to answer questions about what the firewall has seen.</p>
+<p>The guide has two versions of the same lab: High-Level Lab Steps (Task 1) and Detailed Lab Steps (Task 2). Do one, not both. If this is your first time on a Palo Alto Networks firewall, use the detailed steps; if you try the high-level steps and get stuck, switch to the detailed steps at the same task.</p>
+<h3>Before you start</h3>
+<ul class="checklist" data-save="lab13-pre"><li><input type="checkbox" id="l13p1"><label for="l13p1">I can build a filter with the Add Log Filter button (Simulation 14.2).</label></li><li><input type="checkbox" id="l13p2"><label for="l13p2">I know what an ACC global filter does (14.2).</label></li><li><input type="checkbox" id="l13p3"><label for="l13p3">I know predefined reports are generated once a day (14.4).</label></li><li><input type="checkbox" id="l13p4"><label for="l13p4">I practiced choosing the right tool in Simulation 14.1.</label></li></ul>
+<h3>Your lab network</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Users_Net once Lab 4 builds the zones)</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.0/24</code></td><td>Firewall ethernet1/1 is .20; the ISP router is .1</td></tr>
+</tbody></table></div>
+<p class="box-note">Usernames and passwords are in the Lab Settings table on page 5 of each lab guide.</p>
+<h3>The lab at a glance</h3>
+<p>A tour of every viewing tool, in the order of this module.</p>
+<ol><li><strong>Every lab starts the same way.</strong> On the client desktop, open Firefox to <code>https://192.168.1.254</code>, log in with the credentials in your lab guide, then go to <span class="path" data-path="Device > Setup > Operations"></span> and click <em>Load named configuration snapshot</em>. Choose <code>edu-210-11.0a-13.xml</code>, open the Tasks window (lower right) to confirm the load completed, and then <strong>commit</strong>. Loading only changes the candidate (Module 3); skipping the commit is the most common reason a lab "doesn't match" the guide. If the login page doesn't appear right away, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li><strong>Generate traffic</strong>: in Remmina, connect to Server-Extranet and run <code>./UsingLogs-V1.sh</code> from the home directory. Let it run.</li><li><strong>Dashboard</strong>: add the Threat Logs, URL Filtering Logs, and Data Filtering Logs widgets, then Top Applications and Top High Risk Applications (risk 4 shows orange, risk 5 red).</li><li><strong>ACC</strong>: on Threat Activity, set Last 7 Days and promote a critical-severity entry to a global filter, then clear it, and find the widgets for hosts visiting malicious URLs or resolving malicious domains. On Network Activity, promote web-browsing to a global filter, set Rule Usage to Bytes, and use Jump to Logs.</li><li><strong>Logs</strong>: Threat log filters for severity greater than or equal to high, then source user chicago\escrooge. Traffic log filters for source zone Acquisition, then Users_Net and application web-browsing.</li><li><strong>Reports</strong>: App Scope Threat Monitor (Last 7 Days, Top 25, by source user); predefined Sources, Applications, and Web Sites reports; and a scheduled custom report, Apps Used by Internal Zones, on the Traffic Summary database grouped by source zone and filtered to exclude the Internet zone. Run Now.</li></ol>
+<h3>Watch out for</h3>
+<ul><li><strong>Let the script run first.</strong> Widgets, the ACC, and App Scope need data. If something is empty, wait a few minutes and refresh.</li><li><strong>Global filters stick.</strong> An ACC global filter applies to every widget and tab until you clear it. If numbers look oddly small, check the Global Filters area.</li><li><strong>Gray dates in reports.</strong> Predefined reports are generated daily, so a lab environment may have data on only some days. Click through dates until you find one with data, as the guide says.</li><li><strong>Clear log filters between tasks.</strong> Each step expects to start from an empty filter. Leftover filters are the most common reason a step shows nothing.</li><li><strong>The source user filter has a backslash.</strong> chicago\escrooge includes the domain. If you type the filter by hand rather than building it, it needs quotes: <code>( user.src eq 'chicago\escrooge' )</code>.</li><li><strong>Read the custom report carefully.</strong> It's filtered to exclude traffic sourced from the Internet zone, and the guide notes what that leaves. Ask yourself why each zone does or doesn't appear.</li></ul>
+<h3>After the lab</h3>
+<label for="l13-reflect">Pick one question you'd want answered every week about this network. Which tool from this lab would answer it best, and how would you set it up to run without you?</label>
+<textarea id="l13-reflect" data-save="lab13-reflect"></textarea>
+<p class="box-note">Saved in this browser only. Copy it into Canvas if your instructor asks for it.</p>
+</div>
+</section>
+
+<section class="unit" id="s-wrap" data-section="wrap" data-label="Summary and self-check" data-part="Wrap-up">
+<header><span class="sec-n">✓</span><h2>Summary and self-check</h2></header>
+<ul>
+<li>The Dashboard gives a glance: last-hour threat widgets, top and high-risk applications, system status.</li>
+<li>The ACC's Network Activity, Threat Activity, and Blocked Activity tabs, with global filters and Jump to Logs, support interactive investigation.</li>
+<li>Security rules control Traffic logging; profiles control Threat, URL Filtering, WildFire Submissions, and Data Filtering logging. The Unified log combines them. Filters follow ( field operator value ).</li>
+<li>The correlation engine applies Palo Alto Networks' correlation objects across logs to flag likely compromised hosts.</li>
+<li>App Scope shows changes and top consumers; more than 40 predefined reports are generated daily; custom reports choose database, columns, grouping, filters, and schedule.</li>
+<li>Log forwarding needs a server profile, a Log Forwarding profile, and attachment to Security rules (or zones and Device > Log Settings for other logs).</li>
+</ul>
+<h3>Key terms</h3>
+<p><dfn data-term="acc">ACC</dfn>, <dfn data-term="traffic-log">Traffic log</dfn>, <dfn data-term="threat-log">Threat log</dfn>, <dfn data-term="unified-log">Unified log</dfn>, <dfn data-term="correlation-engine">correlation engine</dfn>, <dfn data-term="app-scope">App Scope</dfn>, <dfn data-term="custom-report">custom report</dfn>, <dfn data-term="log-forwarding">log forwarding</dfn>, <dfn data-term="server-profile">server profile</dfn>.</p>
+<h3 id="self-check">Self-check quiz</h3>
+<p class="box-note">Ungraded. Score 80% or better and this section marks itself complete. The graded Quiz 14 is in Canvas.</p>
+<div class="quiz" data-quiz="m14">
+<script type="application/json">{"questions":[
+{"q":"What do the Dashboard's Threat Logs, URL Filtering Logs, and Data Filtering Logs widgets show?","choices":["All entries for the day","The last 10 entries from the last hour","Weekly totals","Only blocked entries"],"answer":1,"why":"Section 14.1."},
+{"q":"In the ACC, what happens when you promote web-browsing to a global filter?","choices":["Only the current widget changes","Every widget on every tab is filtered to web-browsing","The application is blocked","A report is generated"],"answer":1,"why":"Section 14.2."},
+{"q":"Which ACC widget would you use to find hosts that looked up malicious domains?","choices":["Application Usage","Hosts Resolving Malicious Domains","Rule Usage","Source Regions"],"answer":1,"why":"Section 14.2."},
+{"q":"What determines whether a session is written to the Traffic log?","choices":["The Security rule's log setting","The URL Filtering profile","The correlation engine","The Dashboard"],"answer":0,"why":"Section 14.3."},
+{"q":"Which filter shows only critical and high severity threats?","choices":["( severity eq high )","( severity geq high )","( severity leq high )","( threat eq critical )"],"answer":1,"why":"Section 14.3."},
+{"q":"Which log view shows several log types in one place?","choices":["Traffic","Unified","System","Configuration"],"answer":1,"why":"Section 14.3."},
+{"q":"Where do correlation objects come from?","choices":["Each administrator writes them","Palo Alto Networks, through content updates","The ACC","Syslog servers"],"answer":1,"why":"Section 14.3."},
+{"q":"Which App Scope report shows applications with the biggest increase in sessions over a chosen period?","choices":["Threat Map","Change Monitor","Network Monitor","Traffic Map"],"answer":1,"why":"Section 14.4."},
+{"q":"How often are predefined reports generated?","choices":["Every 15 minutes","Daily","Weekly","Only on demand"],"answer":1,"why":"Section 14.4."},
+{"q":"What three things are needed to forward Traffic logs to a syslog server?","choices":["A syslog server profile, a Log Forwarding profile, and the profile attached to Security rules","Only a syslog server profile","A custom report and a schedule","A service route and an EDL"],"answer":0,"why":"Section 14.6."}
+]}</script>
+</div>
+</section>
+
+<nav class="pager" id="pager" aria-label="Module navigation"></nav>
+</article>
+</div>
+</main>
+
+<footer id="site-footer"></footer>
+<script src="../assets/js/course.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/activities.js"></script>
+<script src="../assets/js/sims/m14.js"></script>
+</body>
+</html>

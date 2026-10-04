@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Module 13: Encrypted Traffic and Decryption | Perimeter Security</title>
+<meta name="description" content="Most web traffic is now encrypted, and so is most malware delivery. Everything you built in Modules 8 through 12 works only on what the firewall can see. This module teaches the certificates and policies that let the firewall look inside, and the judgment about when it shouldn&#x27;t.">
+<link rel="stylesheet" href="../assets/css/site.css">
+<script src="../assets/js/prefs.js"></script>
+</head>
+<body data-root=".." data-module="13" data-page="">
+<a class="skip-link" href="#main">Skip to main content</a>
+<header id="site-header"></header>
+
+<main id="main" class="page">
+<div class="module-hero">
+<p class="kicker">Module 13 of 16, week 8. Corresponds to EDU-210 Module 13.</p>
+<h1>Encrypted Traffic and Decryption</h1>
+<p class="lede">Most web traffic is now encrypted, and so is most malware delivery. Everything you built in Modules 8 through 12 works only on what the firewall can see. This module teaches the certificates and policies that let the firewall look inside, and the judgment about when it shouldn&#x27;t.</p>
+<ul class="facts"><li>About 4 hours plus Lab 12</li><li>6 reading sections</li><li>1 simulation</li><li>4 activities</li><li>Lab 12 in NDG Online</li><li>10-question self-check</li></ul>
+<!-- Overview video: add data-embed="https://...embed-url" for an inline player,
+     or data-link="https://..." to link out (e.g. a Screencast page). -->
+<div class="video-slot" data-title="Module 13 overview video" data-embed="" data-link="">
+<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="1" y="6" width="38" height="28" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="16,13 28,20 16,27" fill="currentColor"/></svg>
+<p><strong>Module overview video.</strong> Your instructor's walkthrough of this module will appear here.</p>
+</div>
+</div>
+
+<div class="objectives">
+<h2>By the end of this module you should be able to</h2>
+<ol><li>Explain why decryption matters and review how TLS uses certificates and keys.</li><li>Describe PKI, certificate chains, and revocation checking, and manage certificates on the firewall.</li><li>Configure SSL Forward Proxy with Forward Trust and Forward Untrust certificates, a Decryption policy rule, and a Decryption profile.</li><li>Configure SSL Inbound Inspection for internal servers.</li><li>Exclude traffic from decryption with the exclusion list and no-decrypt rules, and troubleshoot decryption with the logs.</li><li>Describe SSH proxy, decryption port mirroring, Network Packet Broker, and hardware security modules.</li></ol>
+</div>
+
+<h2>Plan your time</h2>
+<div class="table-wrap" style="max-width:860px"><table>
+<caption class="visually-hidden">Suggested time for each part of the module</caption>
+<thead><tr><th scope="col">Part</th><th scope="col">What's in it</th><th scope="col">Minutes</th></tr></thead>
+<tbody><tr><td>Part A: Certificates</td><td>Sections 13.1–13.2, Activity 13.1</td><td>60</td></tr><tr><td>Part B: Decrypting</td><td>Sections 13.3–13.6, Simulation 13.1, Activities 13.2–13.4</td><td>80</td></tr><tr><td>Lab 12 in NDG Online</td><td>Lab companion, then the lab</td><td>75–90</td></tr><tr><td>Wrap-up</td><td>Summary, key terms, self-check quiz</td><td>20</td></tr></tbody></table></div>
+<p class="box-note">Week 8 is Thanksgiving week. Start this module the week before if you can.</p>
+
+<div class="module-layout">
+<nav class="module-rail" aria-label="This module">
+<h2>This module</h2>
+<div class="progress-wrap"><span class="label" id="rail-meter-label">0 sections complete</span>
+<div class="meter" role="progressbar" aria-labelledby="rail-meter-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="rail-meter"></span></div></div>
+<ol id="rail-list"></ol>
+<p><a href="#self-check">Jump to the self-check quiz</a></p>
+</nav>
+<article>
+
+<div class="part-head"><p class="part-n">Part A</p><h2>Certificates</h2><p>Why decryption is needed, and the trust system it depends on.</p></div>
+
+<section class="unit" id="s-why" data-section="why" data-label="13.1 Why decrypt" data-part="Part A: Certificates">
+<header><span class="sec-n">13.1</span><h2>Why decrypt, and how TLS works</h2></header>
+<p class="intro">You can't analyze what you can't see.</p>
+<p>TLS (still often called SSL) protects traffic in three ways: encryption for privacy, hashes for integrity, and certificates for authentication. Those same protections hide malware coming in and data going out. Without decryption, the firewall sees addresses, ports, the server name the client asks for, and the server's certificate; App-ID can often name the application from that. Antivirus, Vulnerability Protection, File Blocking, Data Filtering, and WildFire see only ciphertext. Simulation 10.1 showed the gap: malware over HTTPS passed every profile.</p>
+<h3>A quick TLS review</h3>
+<ol>
+<li>The client asks the server for a secure connection.</li>
+<li>The server sends its certificate: its public key, signed by a certificate authority (CA).</li>
+<li>The client checks the certificate against the CAs in its trusted root store.</li>
+<li>The client sends a session key, protected so that only the server's private key can recover it (or the two sides derive one together).</li>
+<li>Both sides switch to fast symmetric encryption with the session key.</li>
+</ol>
+<p>Decryption works by putting the firewall in the middle of that exchange, with the client's consent through its trust store (outbound) or the server owner's consent through its private key (inbound).</p>
+<h3>Three kinds of decryption</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Type</th><th scope="col">Protects</th><th scope="col">How</th></tr></thead>
+<tbody>
+<tr><td><dfn data-term="ssl-forward-proxy">SSL Forward Proxy</dfn></td><td>Internal users reaching external servers</td><td>The firewall is a proxy: it makes its own connection to the server and presents the client with a certificate it signed.</td></tr>
+<tr><td><dfn data-term="ssl-inbound-inspection">SSL Inbound Inspection</dfn></td><td>Your own servers receiving connections</td><td>No proxy: the firewall holds a copy of the server's certificate and private key and decrypts as traffic passes.</td></tr>
+<tr><td><dfn data-term="ssh-proxy">SSH Proxy</dfn></td><td>SSHv2 sessions</td><td>The firewall proxies SSH to detect and control tunneling.</td></tr>
+</tbody></table></div>
+</section>
+
+<section class="unit" id="s-pki" data-section="pki" data-label="13.2 PKI and certificates" data-part="Part A: Certificates">
+<header><span class="sec-n">13.2</span><h2>PKI and certificates on the firewall</h2></header>
+<p class="intro">Who vouches for whom.</p>
+<p>A public key infrastructure (PKI) answers the question "is this really the server's public key?" A <strong>root CA</strong> certifies <strong>intermediate CAs</strong>, which issue certificates to devices and servers. Each certificate carries the owner's name, public key, validity dates, intended uses, serial number, and the issuer's digital signature. A client trusts a certificate if it can follow the signatures up this chain to a root in its certificate store.</p>
+<h3>Checking certificates</h3>
+<p>To validate a certificate, the firewall checks each certificate in the chain: is the signature valid, is it within its date range, is it well formed, and has it been revoked? Certificates are revoked when a private key is compromised, the owner's name changes, a host is decommissioned or an employee leaves, or a counterfeit is found. Revocation is checked with a CRL (certificate revocation list) or OCSP (Online Certificate Status Protocol), configured at <span class="path" data-path="Device > Setup > Session > Certificate Revocation Checking"></span>.</p>
+<h3>Getting certificates onto the firewall</h3>
+<p>At <span class="path" data-path="Device > Certificate Management > Certificates"></span> you can generate, import, export, renew, revoke, and delete certificates, and set what each one is used for. The table shows the hierarchy, so you can see each chain. Three ways to get a CA certificate for decryption:</p>
+<ul>
+<li><strong>Self-signed</strong>: Generate, leave Signed By blank, and select Certificate Authority. Quick, as in Lab 12, but every client must be told to trust it.</li>
+<li><strong>Import</strong> a certificate and private key created by your internal CA.</li>
+<li><strong>CSR</strong>: the firewall generates a key pair and a certificate signing request; your enterprise CA signs it as a subordinate CA; you import the signed certificate. The private key never leaves the firewall, and clients that already trust your enterprise root automatically trust the firewall. This is the best practice for production.</li>
+</ul>
+<h3>Forward Trust and Forward Untrust</h3>
+<p>SSL Forward Proxy needs two CA certificates, marked by checkboxes on the certificate:</p>
+<ul>
+<li>The <dfn data-term="forward-trust">Forward Trust certificate</dfn> signs the firewall's copy of a server certificate that was <strong>valid</strong>. Clients must trust it, or every decrypted site shows a warning.</li>
+<li>The <dfn data-term="forward-untrust">Forward Untrust certificate</dfn> signs the copy when the server's certificate was <strong>not valid</strong>: expired, self-signed, or from an untrusted CA. Clients must <strong>not</strong> trust it, so users still see the warning the original certificate deserved. Without it, decryption could hide a bad certificate behind a trusted one.</li>
+</ul>
+<div class="callout think"><p class="c-title">Think of it this way</p>
+<p>The firewall is a notary re-stamping documents for the office. Genuine documents get the office's trusted stamp. Doubtful ones get a stamp that says "DO NOT TRUST" in red. A notary with only one stamp would be dangerous.</p></div>
+<div class="activity" data-activity="sort" data-id="m13-a1">
+<p class="box-kicker">Activity 13.1</p><h3>Trust or untrust?</h3>
+<p class="box-note">About 3 minutes. Which certificate signs the firewall's copy, if the session is decrypted?</p>
+<script type="application/json">{"buckets":["Forward Trust","Forward Untrust"],"items":[
+{"text":"A news site with a valid certificate from a public CA","answer":"Forward Trust","why":"The original certificate was valid."},
+{"text":"An internal web server using a self-signed certificate","answer":"Forward Untrust","why":"Self-signed means the client couldn't have trusted it."},
+{"text":"A site whose certificate expired yesterday","answer":"Forward Untrust","why":"Expired certificates are untrusted."},
+{"text":"A cloud app with a valid certificate chained to a well-known root","answer":"Forward Trust","why":"Valid chain."}
+]}</script>
+</div>
+</section>
+
+<div class="part-head"><p class="part-n">Part B</p><h2>Decrypting</h2><p>Policies, profiles, exceptions, and troubleshooting.</p></div>
+
+<section class="unit" id="s-forward" data-section="forward" data-label="13.3 SSL Forward Proxy" data-part="Part B: Decrypting">
+<header><span class="sec-n">13.3</span><h2>Configuring SSL Forward Proxy</h2></header>
+<p class="intro">Certificates, then a rule, then a profile, then client trust.</p>
+<ol>
+<li><strong>Certificates</strong>: a Forward Trust CA certificate and a Forward Untrust CA certificate (Section 13.2).</li>
+<li><strong>Decryption policy rule</strong> at <span class="path" data-path="Policies > Decryption"></span>: match on source and destination zones and addresses, users, service, and URL category; set the action to decrypt and the type to SSL Forward Proxy. Decryption rules decide what to decrypt; a Security policy rule must still allow the traffic.</li>
+<li><strong>Decryption profile</strong> at <span class="path" data-path="Objects > Decryption > Decryption Profile"></span>, attached to the rule: additional certificate and protocol checks, such as blocking sessions with expired certificates or untrusted issuers, blocking unsupported cipher suites, and setting the minimum and maximum TLS versions (including TLS 1.3; older versions and algorithms are no longer considered secure).</li>
+<li><strong>Client trust</strong>: deploy the Forward Trust CA certificate to clients' trusted root stores, through Group Policy, MDM, or by hand.</li>
+</ol>
+<p>Phase decryption in gradually, a few categories or user groups at a time, and watch the Decryption log for sites that break. Remember SSL on non-standard ports when writing match criteria.</p>
+<div class="sim" id="sim-13-1">
+<p class="box-kicker">Simulation 13.1</p><h3>What does the browser see?</h3>
+<p class="box-note">Configure the firewall and the client, pick a site, and see whether the session is decrypted and what certificate the user's browser gets.</p>
+<div class="sim-grid">
+<div>
+<div class="field"><label for="dc-site">Site</label><select id="dc-site"></select></div>
+<div class="field-inline"><label><input type="checkbox" id="dc-rule" checked> Decrypt rule (Users to Internet, SSL Forward Proxy)</label></div>
+<div class="field-inline"><label><input type="checkbox" id="dc-nodec"> No-Decryption rule above it for financial-services</label></div>
+<div class="field-inline"><label><input type="checkbox" id="dc-untrust" checked> Forward Untrust certificate configured</label></div>
+<div class="field-inline"><label><input type="checkbox" id="dc-block"> Decryption Profile blocks expired and untrusted certificates</label></div>
+<div class="field-inline"><label><input type="checkbox" id="dc-ca"> Client trusts the firewall's Forward Trust CA</label></div>
+</div>
+<div><h4 style="margin-top:0">What happens</h4><ol class="trace plain" aria-live="polite"></ol><p class="verdict" aria-live="polite"></p></div>
+</div>
+<div class="try-this"><h4>Try this</h4><ol>
+<li>Pick bing.com and toggle client trust. This is the before-and-after of Lab 12's certificate import.</li>
+<li>Pick the self-signed server with the client trusting the firewall CA. Why is a warning the right result?</li>
+<li>Pick the bank and enable the No-Decryption rule. What does the user see, and what can the firewall no longer inspect?</li>
+</ol></div>
+</div>
+</section>
+
+<section class="unit" id="s-inbound" data-section="inbound" data-label="13.4 Inbound inspection and exclusions" data-part="Part B: Decrypting">
+<header><span class="sec-n">13.4</span><h2>Inbound inspection and exclusions</h2></header>
+<p class="intro">Decrypting traffic to your own servers, and choosing what never to decrypt.</p>
+<h3>SSL Inbound Inspection</h3>
+<p>For connections from the internet to your own HTTPS servers, the firewall doesn't need to impersonate anyone: you own the server. Import the server's certificate and private key at Device > Certificate Management > Certificates, then create a Decryption rule with type SSL Inbound Inspection that names the certificate. The firewall decrypts and inspects as traffic passes, so Vulnerability Protection can catch attacks aimed at the server. The inbound Decryption profile has resource checks too; by default it lets encrypted traffic through undecrypted if the firewall is too busy to decrypt it.</p>
+<h3>What not to decrypt</h3>
+<ul>
+<li><strong>The SSL Decryption Exclusion list</strong> at <span class="path" data-path="Device > Certificate Management > SSL Decryption Exclusion"></span> lists sites known to break under decryption, typically because applications pin their certificates or require client certificates. Palo Alto Networks maintains entries through content updates, and you can add your own. Exclusions apply regardless of Decryption policy.</li>
+<li><strong>No-decrypt rules</strong>: a Decryption rule with action no-decrypt, usually matching URL categories such as financial-services and health-and-medicine, placed above the decrypt rule. Legal, privacy, HR, and regional rules often require this. A Decryption profile on a no-decrypt rule can still block sessions with expired or untrusted certificates.</li>
+</ul>
+<div class="callout field"><p class="c-title">In the field</p>
+<p>Decryption is a policy decision as much as a technical one. Before turning it on, get agreement from legal, HR, and privacy staff, tell users through the acceptable use policy, and document which categories are exempt and why.</p></div>
+<div class="activity" data-activity="sort" data-id="m13-a2">
+<p class="box-kicker">Activity 13.2</p><h3>Which decryption setting?</h3>
+<p class="box-note">About 4 minutes.</p>
+<script type="application/json">{"buckets":["SSL Forward Proxy rule","SSL Inbound Inspection rule","No-decrypt rule","SSL Decryption Exclusion list"],"items":[
+{"text":"Inspect employees' HTTPS browsing for malware.","answer":"SSL Forward Proxy rule","why":"Internal users to external servers."},
+{"text":"Inspect HTTPS attacks against the company's public web store.","answer":"SSL Inbound Inspection rule","why":"You own the server and its private key."},
+{"text":"Never decrypt employees' sessions to health and banking sites.","answer":"No-decrypt rule","why":"Category-based exemption in policy."},
+{"text":"A desktop app pins its certificate and breaks when decrypted, no matter which rule matches.","answer":"SSL Decryption Exclusion list","why":"The exclusion list overrides policy for known-incompatible sites."}
+]}</script>
+</div>
+</section>
+
+<section class="unit" id="s-trouble" data-section="trouble" data-label="13.5 Troubleshooting" data-part="Part B: Decrypting">
+<header><span class="sec-n">13.5</span><h2>Troubleshooting decryption</h2></header>
+<p class="intro">When a site breaks after you turn on decryption, the logs say why.</p>
+<ul>
+<li>The <strong>Decryption log</strong> at <span class="path" data-path="Monitor > Logs > Decryption"></span> records the TLS details of each session: version, cipher, certificate information, and errors such as a handshake failure or an untrusted issuer.</li>
+<li><strong>ACC > SSL Activity</strong> summarizes decrypted and undecrypted traffic, versions, and failures.</li>
+<li>The <strong>Traffic log</strong> has a Decrypted column, and the Session End Reason column shows why a session ended, such as threat or decrypt-error. A useful filter for decrypted sessions ended by a detected threat:</li>
+</ul>
+<pre class="cli">( flags has proxy ) and ( session_end_reason eq threat )</pre>
+<div class="guided">
+<p class="box-kicker">Guided problem 13.1</p><h3>"Every website shows a security warning"</h3>
+<p>You enable an SSL Forward Proxy rule for all users. Within minutes the help desk reports that every HTTPS site shows a certificate warning. Work out the cause and the fix.</p>
+<ol class="steps">
+<li>Every site, not some, points to something that affects all decrypted sessions equally: the certificate the firewall presents.</li>
+<li>For valid sites the firewall presents copies signed by its Forward Trust CA. The browser warns if it doesn't trust that CA.</li>
+<li>So clients don't have the Forward Trust CA in their trusted root stores. Check a warning's certificate details: the issuer will be the firewall's CA.</li>
+<li>Fix: deploy the Forward Trust CA certificate to clients (Group Policy or MDM in production; Lab 12 does it by hand in Firefox). Better still, use a CSR so the firewall's CA is subordinate to an enterprise root clients already trust.</li>
+</ol>
+</div>
+</section>
+
+<section class="unit" id="s-other" data-section="other" data-label="13.6 SSH and other features" data-part="Part B: Decrypting">
+<header><span class="sec-n">13.6</span><h2>SSH proxy and other decryption features</h2></header>
+<p class="intro">Beyond TLS.</p>
+<ul>
+<li><strong>SSH proxy</strong>: a Decryption rule of type SSH Proxy decrypts SSHv2 sessions using a key the firewall generates, so App-ID can tell ordinary <code>ssh</code> from <code>ssh-tunnel</code>, which carries other traffic inside SSH. Write Security rules that allow ssh and deny ssh-tunnel. It doesn't support SSH sessions that use passwordless key login.</li>
+<li><strong>Decryption port mirroring</strong> copies decrypted traffic out a dedicated interface to tools such as data loss prevention or forensic recorders. It requires a free license.</li>
+<li><strong>Network Packet Broker</strong> (which replaced Decryption Broker) forwards decrypted, undecrypted, and non-TLS traffic through a chain of other security tools, controlled by Packet Broker profiles.</li>
+<li><strong>Hardware security modules</strong> (<dfn data-term="hsm">HSMs</dfn>) store keys in tamper-resistant hardware. The firewall can use one for the Forward Trust key, private keys for inbound inspection, and its own master key.</li>
+</ul>
+<h3>Reasons not to decrypt some traffic</h3>
+<p>Some traffic shouldn't or can't be decrypted: privacy-sensitive categories, applications that pin certificates or need client authentication, regulated data in some jurisdictions, and traffic beyond what the firewall's hardware can decrypt at the needed rate. Decryption is resource-intensive; size firewalls for it.</p>
+<div class="activity" data-activity="tf" data-id="m13-a3">
+<p class="box-kicker">Activity 13.3</p><h3>Fact or myth: decryption</h3>
+<p class="box-note">About 3 minutes.</p>
+<script type="application/json">{"items":[
+{"text":"A Decryption policy rule allows traffic, so no Security rule is needed.","answer":false,"why":"Decryption rules decide what to decrypt; Security rules still decide what is allowed."},
+{"text":"Clients must trust the Forward Untrust certificate.","answer":false,"why":"They must not. It exists to keep warnings visible."},
+{"text":"SSL Inbound Inspection requires the server's private key.","answer":true,"why":"Import the server certificate and its key."},
+{"text":"SSH proxy lets App-ID distinguish ssh from ssh-tunnel.","answer":true,"why":"Then Security policy can deny the tunnel."},
+{"text":"Generating a CSR keeps the firewall's private key on the firewall.","answer":true,"why":"Only the CSR goes to the CA."}
+]}</script>
+</div>
+<div class="activity" data-activity="order" data-id="m13-a4">
+<p class="box-kicker">Activity 13.4</p><h3>Roll out SSL Forward Proxy</h3>
+<p class="box-note">About 3 minutes.</p>
+<script type="application/json">{"items":["Agree on scope and exemptions with legal, HR, and privacy staff","Create Forward Trust and Forward Untrust CA certificates","Deploy the Forward Trust CA to client trust stores","Create a Decryption profile and no-decrypt rules for exempt categories","Add a decrypt rule for a small pilot group","Watch the Decryption log, fix breakage, then expand"],"why":"Policy agreement first, client trust before decrypting, and a pilot before everyone."}</script>
+</div>
+</section>
+
+<section class="unit" id="s-lab" data-section="lab" data-label="Lab 12 companion" data-part="Lab">
+<header><span class="sec-n">Lab</span><h2>Lab 12 companion: Using decryption to block threats in encrypted traffic</h2></header>
+<div class="lab">
+<dl class="lab-meta">
+<dt>Where</dt><dd>NDG Online, PAN-OS 11.0 Firewall Essentials, Lab 12</dd>
+<dt>Time</dt><dd>About 75 to 90 minutes</dd>
+<dt>Graded</dt><dd>Yes. Submit as directed in Canvas.</dd>
+<dt>Uses</dt><dd>Sections 13.1 to 13.5</dd>
+</dl>
+<h3>What you will do</h3>
+<p>Prove that the firewall can't see malware inside HTTPS, then fix it. You create Forward Trust and Forward Untrust certificates, write an SSL Forward Proxy decryption rule, make the client trust the firewall's CA, and watch the same download get blocked. Then you read decryption in the logs and exempt sensitive categories with a no-decrypt rule.</p>
+<p>The guide has two versions of the same lab: High-Level Lab Steps (Task 1) and Detailed Lab Steps (Task 2). Do one, not both. If this is your first time on a Palo Alto Networks firewall, use the detailed steps; if you try the high-level steps and get stuck, switch to the detailed steps at the same task.</p>
+<h3>Before you start</h3>
+<ul class="checklist" data-save="lab12-pre"><li><input type="checkbox" id="l12p1"><label for="l12p1">I can explain the difference between the Forward Trust and Forward Untrust certificates (13.2).</label></li><li><input type="checkbox" id="l12p2"><label for="l12p2">I ran Simulation 13.1 with and without the client trusting the firewall's CA.</label></li><li><input type="checkbox" id="l12p3"><label for="l12p3">I know why a no-decrypt rule must be above the decrypt rule (13.4).</label></li><li><input type="checkbox" id="l12p4"><label for="l12p4">I know Security policy must still allow the traffic; decryption rules don't (13.3).</label></li></ul>
+<h3>Your lab network</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Users_Net once Lab 4 builds the zones)</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.0/24</code></td><td>Firewall ethernet1/1 is .20; the ISP router is .1</td></tr>
+</tbody></table></div>
+<p class="box-note">Usernames and passwords are in the Lab Settings table on page 5 of each lab guide.</p>
+<h3>The lab at a glance</h3>
+<p>Test, decrypt, trust, retest, exempt.</p>
+<ol><li><strong>Every lab starts the same way.</strong> On the client desktop, open Firefox to <code>https://192.168.1.254</code>, log in with the credentials in your lab guide, then go to <span class="path" data-path="Device > Setup > Operations"></span> and click <em>Load named configuration snapshot</em>. Choose <code>edu-210-11.0a-12.xml</code>, open the Tasks window (lower right) to confirm the load completed, and then <strong>commit</strong>. Loading only changes the candidate (Module 3); skipping the commit is the most common reason a lab "doesn't match" the guide. If the login page doesn't appear right away, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li><strong>Before decryption</strong>: http://192.168.50.80/eicar.com is blocked (the Antivirus profile sees it in clear text). The same test file from www.eicar.org over HTTPS downloads. Cancel the save.</li><li><strong>Certificates</strong> at <span class="path" data-path="Device > Certificate Management > Certificates"></span>: generate trusted-cert (common name 192.168.1.1, Certificate Authority, Forward Trust Certificate) and untrusted-cert (common name DO NOT TRUST, Certificate Authority, Forward Untrust Certificate).</li><li><strong>Decryption rule</strong> Decrypt_User_Traffic at <span class="path" data-path="Policies > Decryption"></span>: Users_Net to Internet and Extranet, action Decrypt, type SSL Forward Proxy. Commit. Browse to https://www.bing.com and see the firewall (192.168.1.1) as the certificate issuer, with a browser warning.</li><li><strong>Make the client trust it</strong>: export trusted-cert as Base64 (PEM), import it in Firefox's Certificate Manager under Authorities, and trust it to identify websites. Then visit https://192.168.50.80, whose self-signed certificate makes the firewall present DO NOT TRUST.</li><li><strong>Retest</strong>: the HTTPS download of eicar.com is now blocked. In the Traffic log add the Decrypted column, move Session End Reason to the front, and filter with <code>( flags has proxy ) and ( session_end_reason eq threat )</code>. Find the matching Threat log entry.</li><li><strong>Exempt categories</strong>: a No-Decryption rule at the top (government, financial-services, shopping; action No Decrypt). Commit, browse to https://texas.gov, and confirm the issuer is not 192.168.1.1.</li></ol>
+<h3>Watch out for</h3>
+<ul><li><strong>The high-level steps leave out the untrust certificate.</strong> Creating untrusted-cert (Task 2.4) and testing it against the extranet server's self-signed certificate (Task 2.9) appear only in the detailed steps. Do them either way: a forward proxy without a Forward Untrust certificate is incomplete (Section 13.2).</li><li><strong>The warnings are expected, twice.</strong> Before you import trusted-cert, every decrypted site shows a warning because the client doesn't trust the firewall's CA. After you import it, https://192.168.50.80 still warns, correctly, because the server's own certificate is untrustworthy and the firewall is passing that on.</li><li><strong>Import into Authorities, not Your Certificates.</strong> Firefox keeps CA certificates under Authorities. Check the box to trust it to identify websites, or nothing changes.</li><li><strong>Two test paths for eicar over HTTPS.</strong> The high-level steps use www.eicar.org; the detailed steps use https://192.168.50.80/eicar.com. Either shows decryption working.</li><li><strong>Rule order.</strong> No-Decryption must sit above Decrypt_User_Traffic, or the decrypt rule matches first and the exemption never applies.</li><li><strong>Privacy is a real concern.</strong> The guide's note is worth reading: which categories you exempt depends on company policy, privacy law, HR, and the destination's country.</li></ul>
+<h3>After the lab</h3>
+<label for="l12-reflect">Before decryption, the HTTP download of the test file was blocked but the HTTPS download wasn't. Explain why, and what that means for a network that doesn't decrypt.</label>
+<textarea id="l12-reflect" data-save="lab12-reflect"></textarea>
+<p class="box-note">Saved in this browser only. Copy it into Canvas if your instructor asks for it.</p>
+</div>
+</section>
+
+<section class="unit" id="s-wrap" data-section="wrap" data-label="Summary and self-check" data-part="Wrap-up">
+<header><span class="sec-n">✓</span><h2>Summary and self-check</h2></header>
+<ul>
+<li>Without decryption, threat profiles and WildFire can't inspect encrypted content. TLS uses certificates for authentication and keys for encryption.</li>
+<li>Certificates chain to trusted roots and are checked for signature, dates, form, and revocation (CRL, OCSP). Generate, import, or use a CSR at Device > Certificate Management > Certificates.</li>
+<li>SSL Forward Proxy needs a Forward Trust CA (trusted by clients) and a Forward Untrust CA (never trusted), a decrypt rule, a Decryption profile, and client trust deployment.</li>
+<li>SSL Inbound Inspection uses your server's certificate and private key, with no proxy.</li>
+<li>The SSL Decryption Exclusion list overrides policy; no-decrypt rules exempt categories and still allow certificate checks.</li>
+<li>Troubleshoot with the Decryption log, ACC SSL Activity, and Traffic log columns such as Decrypted and Session End Reason.</li>
+<li>SSH proxy separates ssh from ssh-tunnel. Port mirroring, Network Packet Broker, and HSMs extend decryption.</li>
+</ul>
+<h3>Key terms</h3>
+<p><dfn data-term="ssl-forward-proxy">SSL Forward Proxy</dfn>, <dfn data-term="ssl-inbound-inspection">SSL Inbound Inspection</dfn>, <dfn data-term="forward-trust">Forward Trust certificate</dfn>, <dfn data-term="forward-untrust">Forward Untrust certificate</dfn>, <dfn data-term="decryption-profile">Decryption profile</dfn>, <dfn data-term="ssh-proxy">SSH proxy</dfn>, <dfn data-term="hsm">HSM</dfn>, <dfn data-term="csr">certificate signing request</dfn>.</p>
+<h3 id="self-check">Self-check quiz</h3>
+<p class="box-note">Ungraded. Score 80% or better and this section marks itself complete. The graded Quiz 13 is in Canvas.</p>
+<div class="quiz" data-quiz="m13">
+<script type="application/json">{"questions":[
+{"q":"Without decryption, which can the firewall still use to identify an application in HTTPS traffic?","choices":["File contents","The server name (SNI) and the server's certificate","Data patterns","Antivirus signatures"],"answer":1,"why":"Section 13.1."},
+{"q":"Which decryption type protects internal users browsing external websites?","choices":["SSL Inbound Inspection","SSL Forward Proxy","SSH Proxy","Port mirroring"],"answer":1,"why":"Section 13.1."},
+{"q":"Which certificate signs the firewall's copy of a server certificate that was valid?","choices":["Forward Untrust","Forward Trust","The server's own","The root CA's"],"answer":1,"why":"Section 13.2."},
+{"q":"Why must clients not trust the Forward Untrust certificate?","choices":["It is expired","So users still see warnings for sites whose original certificates were invalid","It slows browsing","It is only for SSH"],"answer":1,"why":"Section 13.2."},
+{"q":"What is the main advantage of obtaining the firewall's CA certificate through a CSR?","choices":["It is free","The private key never leaves the firewall and clients that trust the enterprise root trust it automatically","It disables revocation checks","It works without a CA"],"answer":1,"why":"Section 13.2."},
+{"q":"After enabling SSL Forward Proxy, every HTTPS site shows a certificate warning. Most likely cause?","choices":["The Forward Untrust certificate is missing","Clients don't trust the Forward Trust CA","The Security policy is wrong","NAT is misconfigured"],"answer":1,"why":"Guided problem 13.1."},
+{"q":"What does SSL Inbound Inspection require?","choices":["A Forward Trust certificate","The internal server's certificate and private key","A client certificate","An HSM"],"answer":1,"why":"Section 13.4."},
+{"q":"A no-decrypt rule for financial-services must be placed where?","choices":["Below the decrypt rule","Above the decrypt rule","In Security policy","It doesn't matter"],"answer":1,"why":"Decryption rules are evaluated top-down. Section 13.4."},
+{"q":"Which Traffic log filter shows decrypted sessions ended because of a detected threat?","choices":["( app eq ssl )","( flags has proxy ) and ( session_end_reason eq threat )","( action eq deny )","( decrypted eq yes )"],"answer":1,"why":"Section 13.5."},
+{"q":"What does SSH proxy let the firewall do?","choices":["Replace SSH passwords","Tell ssh from ssh-tunnel so tunneling can be blocked","Encrypt HTTP","Bypass App-ID"],"answer":1,"why":"Section 13.6."}
+]}</script>
+</div>
+</section>
+
+<nav class="pager" id="pager" aria-label="Module navigation"></nav>
+</article>
+</div>
+</main>
+
+<footer id="site-footer"></footer>
+<script src="../assets/js/course.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/activities.js"></script>
+<script src="../assets/js/sims/m13.js"></script>
+</body>
+</html>

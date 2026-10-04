@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Module 12: WildFire | Perimeter Security</title>
+<meta name="description" content="Signatures only stop what someone has already seen. WildFire handles everything else: it detonates unknown files and links in the cloud, decides whether they are malicious, and turns each new discovery into protection for every firewall that subscribes, usually within minutes.">
+<link rel="stylesheet" href="../assets/css/site.css">
+<script src="../assets/js/prefs.js"></script>
+</head>
+<body data-root=".." data-module="12" data-page="">
+<a class="skip-link" href="#main">Skip to main content</a>
+<header id="site-header"></header>
+
+<main id="main" class="page">
+<div class="module-hero">
+<p class="kicker">Module 12 of 16, week 7. Corresponds to EDU-210 Module 11.</p>
+<h1>WildFire</h1>
+<p class="lede">Signatures only stop what someone has already seen. WildFire handles everything else: it detonates unknown files and links in the cloud, decides whether they are malicious, and turns each new discovery into protection for every firewall that subscribes, usually within minutes.</p>
+<ul class="facts"><li>About 2.5 hours plus Lab 10</li><li>4 reading sections</li><li>1 simulation</li><li>3 activities</li><li>Lab 10 in NDG Online</li><li>10-question self-check</li></ul>
+<!-- Overview video: add data-embed="https://...embed-url" for an inline player,
+     or data-link="https://..." to link out (e.g. a Screencast page). -->
+<div class="video-slot" data-title="Module 12 overview video" data-embed="" data-link="">
+<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="1" y="6" width="38" height="28" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="16,13 28,20 16,27" fill="currentColor"/></svg>
+<p><strong>Module overview video.</strong> Your instructor's walkthrough of this module will appear here.</p>
+</div>
+</div>
+
+<div class="objectives">
+<h2>By the end of this module you should be able to</h2>
+<ol><li>Describe how WildFire analyzes unknown files and links and distributes protections.</li><li>Define the four WildFire verdicts.</li><li>Compare free WildFire, the WildFire subscription, Advanced WildFire, and private and hybrid cloud deployments.</li><li>Configure WildFire settings, a WildFire Analysis profile, and the WildFire signature update schedule.</li><li>Verify submissions, read WildFire analysis reports, and report an incorrect verdict.</li></ol>
+</div>
+
+<h2>Plan your time</h2>
+<div class="table-wrap" style="max-width:860px"><table>
+<caption class="visually-hidden">Suggested time for each part of the module</caption>
+<thead><tr><th scope="col">Part</th><th scope="col">What's in it</th><th scope="col">Minutes</th></tr></thead>
+<tbody><tr><td>Part A: How WildFire works</td><td>Sections 12.1–12.2, Simulation 12.1, Activities 12.1–12.2</td><td>55</td></tr><tr><td>Part B: Configuring and reporting</td><td>Sections 12.3–12.4, Activity 12.3</td><td>40</td></tr><tr><td>Lab 10 in NDG Online</td><td>Lab companion, then the lab</td><td>45</td></tr><tr><td>Wrap-up</td><td>Summary, key terms, self-check quiz</td><td>20</td></tr></tbody></table></div>
+<p class="box-note">A lighter week. If you can, start Module 13 early: week 8 is Thanksgiving week.</p>
+
+<div class="module-layout">
+<nav class="module-rail" aria-label="This module">
+<h2>This module</h2>
+<div class="progress-wrap"><span class="label" id="rail-meter-label">0 sections complete</span>
+<div class="meter" role="progressbar" aria-labelledby="rail-meter-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="rail-meter"></span></div></div>
+<ol id="rail-list"></ol>
+<p><a href="#self-check">Jump to the self-check quiz</a></p>
+</nav>
+<article>
+
+<div class="part-head"><p class="part-n">Part A</p><h2>How WildFire works</h2><p>From unknown file to worldwide protection.</p></div>
+
+<section class="unit" id="s-flow" data-section="flow" data-label="12.1 The WildFire cycle" data-part="Part A: How it works">
+<header><span class="sec-n">12.1</span><h2>The WildFire cycle</h2></header>
+<p class="intro">Every subscribed firewall is a sensor, and every discovery protects all of them.</p>
+<p><dfn data-term="wildfire">WildFire</dfn> is Palo Alto Networks' cloud-based malware analysis service. Firewalls around the world forward unknown files and links to it; analysts and other products can also submit samples by hand or through the API. WildFire decides what each sample is, and when it finds malware it generates protections and distributes them to every subscribed firewall.</p>
+<h3>What happens to a file</h3>
+<ol>
+<li>A file crosses an allow rule that has a WildFire Analysis profile attached. The firewall calculates the file's hash.</li>
+<li>If the file is signed by a trusted signer, or exceeds the configured size limit for its type, it is not forwarded.</li>
+<li>The firewall asks whether WildFire has seen this hash. If so, it already has a verdict: benign or grayware files are allowed; malware and phishing are blocked (using the signature already delivered).</li>
+<li>If not, the firewall forwards the file. WildFire analyzes it with static analysis, machine learning, and dynamic analysis, actually running it in a sandbox on several operating systems to watch what it does.</li>
+<li>WildFire records a verdict and informs the firewall. For malware it generates a signature, sends it to firewalls (in near real time with a subscription, or in the daily Antivirus content otherwise), and updates the malware and phishing categories in PAN-DB.</li>
+</ol>
+<p>Analysis takes minutes, so the very first copy of a brand-new file is normally delivered while it is being analyzed. Every copy after the signature arrives is blocked. That is why the Antivirus profile's WildFire inline ML (Module 10) matters: it can stop many first copies on the spot.</p>
+<p>WildFire also analyzes links. Email links and attachments seen by the firewall can be submitted, and malicious URLs it finds feed PAN-DB, so URL Filtering (Module 11) starts blocking them too.</p>
+<div class="sim" id="sim-12-1">
+<p class="box-kicker">Simulation 12.1</p><h3>Follow a file through WildFire</h3>
+<p class="box-note">Pick a file and a license level, and trace what the firewall and WildFire do with it.</p>
+<div class="sim-grid">
+<div>
+<div class="field"><label for="wf-file">File</label><select id="wf-file"></select></div>
+<div class="field"><label for="wf-lic">License</label><select id="wf-lic"><option value="none">No WildFire subscription (free forwarding)</option><option value="wf" selected>WildFire subscription</option><option value="adv">Advanced WildFire</option></select></div>
+</div>
+<div><h4 style="margin-top:0">What happens</h4><ol class="trace plain" aria-live="polite"></ol><p class="verdict" aria-live="polite"></p></div>
+</div>
+<div class="try-this"><h4>Try this</h4><ol>
+<li>Pick the Office document and switch the license to none. What changes, and why?</li>
+<li>For the never-seen executable, compare how long other firewalls wait for protection with and without a subscription.</li>
+<li>Which two kinds of file are never forwarded at all?</li>
+</ol></div>
+</div>
+</section>
+
+<section class="unit" id="s-verdicts" data-section="verdicts" data-label="12.2 Verdicts and licenses" data-part="Part A: How it works">
+<header><span class="sec-n">12.2</span><h2>Verdicts, licenses, and deployments</h2></header>
+<p class="intro">Four verdicts, three tiers, and a choice of where analysis happens.</p>
+<h3>The four verdicts</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Verdict</th><th scope="col">Meaning</th></tr></thead>
+<tbody>
+<tr><td>Benign</td><td>Safe; shows no malicious behavior.</td></tr>
+<tr><td><dfn data-term="grayware">Grayware</dfn></td><td>Not a security threat, but obtrusive or unwanted: adware, some spyware, browser helper objects.</td></tr>
+<tr><td>Malicious (malware)</td><td>Malicious in nature and intent: viruses, worms, trojans, remote access tools, rootkits, botnets.</td></tr>
+<tr><td>Phishing</td><td>A link or page that tries to trick users into revealing credentials, judged by its properties and behavior.</td></tr>
+</tbody></table></div>
+<h3>Licensing</h3>
+<ul>
+<li><strong>Without a WildFire subscription</strong>, the firewall still forwards Windows PE files (EXE, DLL, SCR, and similar) automatically, and WildFire analyzes them across Windows, macOS, Android, and Linux environments. Resulting signatures arrive in the daily Antivirus update, typically 24 to 48 hours later, which requires a Threat Prevention license.</li>
+<li><strong>A WildFire subscription</strong> adds many more file types (Microsoft Office, PDF, Java, archives such as RAR and 7-Zip, Linux ELF, Android APK, macOS Mach-O, DMG, and PKG, and scripts such as JavaScript, VBScript, and PowerShell), real-time WildFire signature updates, and manual submission through the API.</li>
+<li><strong>Advanced WildFire</strong> adds analysis built for evasive malware: a custom hypervisor that observes malware from outside the virtual machine, intelligent run-time memory analysis, automated unpacking, malware family fingerprinting, dependency emulation, and configuration file analysis.</li>
+</ul>
+<h3>Where analysis happens</h3>
+<ul>
+<li><strong>Public cloud</strong>: Palo Alto Networks' global or regional WildFire clouds. The default.</li>
+<li><strong>Private cloud</strong>: a WF-500 or WF-600 appliance on your own network, for organizations that can't send files off-site.</li>
+<li><strong>Hybrid</strong>: send common file types such as PE and APK to the public cloud and sensitive documents to the private appliance, choosing per WildFire Analysis profile rule.</li>
+</ul>
+<div class="activity" data-activity="sort" data-id="m12-a1">
+<p class="box-kicker">Activity 12.1</p><h3>Name the verdict</h3>
+<p class="box-note">About 3 minutes.</p>
+<script type="application/json">{"buckets":["Benign","Grayware","Malicious","Phishing"],"items":[
+{"text":"A free PDF reader installer that does exactly what it claims.","answer":"Benign","why":"Safe, no malicious behavior."},
+{"text":"A screensaver that also installs a toolbar and shows pop-up ads.","answer":"Grayware","why":"Obtrusive but not malicious in intent."},
+{"text":"A document whose macro downloads a remote access tool.","answer":"Malicious","why":"A RAT is malware."},
+{"text":"A link in an email to a page imitating the company's Microsoft 365 sign-in.","answer":"Phishing","why":"Designed to steal credentials."},
+{"text":"An executable that joins the machine to a botnet.","answer":"Malicious","why":"Botnets are malware."}
+]}</script>
+</div>
+<div class="activity" data-activity="tf" data-id="m12-a2">
+<p class="box-kicker">Activity 12.2</p><h3>Fact or myth: WildFire</h3>
+<p class="box-note">About 3 minutes.</p>
+<script type="application/json">{"items":[
+{"text":"Without any WildFire subscription, the firewall can still forward Windows executables for analysis.","answer":true,"why":"Free forwarding covers Windows PE files."},
+{"text":"WildFire blocks the first copy of every new malware file before the user receives it.","answer":false,"why":"Analysis takes minutes; the first copy is usually delivered. Inline ML is what can stop it."},
+{"text":"A private WF-500 or WF-600 appliance keeps files on premises.","answer":true,"why":"That is its purpose."},
+{"text":"Malicious URLs WildFire discovers can update PAN-DB.","answer":true,"why":"URL Filtering then blocks them too."}
+]}</script>
+</div>
+</section>
+
+<div class="part-head"><p class="part-n">Part B</p><h2>Configuring and reporting</h2><p>Turning it on, and reading what it finds.</p></div>
+
+<section class="unit" id="s-config" data-section="config" data-label="12.3 Configuring WildFire" data-part="Part B: Configuring and reporting">
+<header><span class="sec-n">12.3</span><h2>Configuring WildFire</h2></header>
+<p class="intro">Three places: firewall settings, the profile, and the update schedule.</p>
+<h3>Firewall settings</h3>
+<p>At <span class="path" data-path="Device > Setup > WildFire"></span>:</p>
+<ul>
+<li><strong>WildFire cloud</strong>: which public cloud to use, and private cloud settings if you have an appliance.</li>
+<li><strong>File size limits</strong> per file type. Files larger than the limit aren't forwarded.</li>
+<li><strong>Report Benign Files and Report Grayware Files</strong>: by default only malicious and phishing results appear in the WildFire Submissions log. Turn these on to see everything that was analyzed.</li>
+<li><strong>Session information settings</strong>: which details (source and destination addresses, ports, users, URLs, and so on) accompany each submission and appear in reports.</li>
+</ul>
+<p>One related setting lives on a different tab. <strong>Allow forwarding of decrypted content</strong>, at <span class="path" data-path="Device > Setup > Content-ID"></span>, is off by default: files extracted from decrypted SSL traffic (Module 13) aren't sent to WildFire until you enable it.</p>
+<h3>The WildFire Analysis profile</h3>
+<p>At <span class="path" data-path="Objects > Security Profiles > WildFire Analysis"></span>, the predefined <code>default</code> profile sends every file type, for any application, in both directions, to the public cloud. Clone it or add your own. Each rule matches by application, file type, and direction (upload, download, or both) and names the analysis destination: public-cloud or private-cloud. Attach the profile to allow rules directly or, more practically, through the Security Profile Group.</p>
+<h3>Signature updates</h3>
+<p>With a subscription, set how often the firewall checks for new WildFire signatures at <span class="path" data-path="Device > Dynamic Updates"></span>; the shortest interval gives near real-time protection. Without one, WildFire signatures still arrive bundled in the daily Antivirus package.</p>
+<div class="callout exam"><p class="c-title">Exam tip</p>
+<p>"Files from decrypted traffic aren't showing up in WildFire" has a specific answer: enable Allow forwarding of decrypted content under Device > Setup > Content-ID. Decryption alone isn't enough.</p></div>
+<div class="activity" data-activity="order" data-id="m12-a3">
+<p class="box-kicker">Activity 12.3</p><h3>Turn on WildFire for a rulebase</h3>
+<p class="box-note">About 2 minutes.</p>
+<script type="application/json">{"items":["Confirm the WildFire license and cloud under Device > Setup > WildFire","Create or clone a WildFire Analysis profile","Add the profile to the Security Profile Group","Confirm the group is attached to every allow rule","Set the WildFire signature update schedule","Commit and verify submissions in the logs"],"why":"Settings and profile first, then attach it, then make sure protections flow back."}</script>
+</div>
+</section>
+
+<section class="unit" id="s-report" data-section="report" data-label="12.4 Reports and verdict disputes" data-part="Part B: Configuring and reporting">
+<header><span class="sec-n">12.4</span><h2>Submissions, reports, and verdict disputes</h2></header>
+<p class="intro">Confirm the file went, read what came back, and push back if WildFire is wrong.</p>
+<ul>
+<li><strong>Did it upload?</strong> In the CLI, <code>debug wildfire upload-log show</code> lists recent uploads and their status.</li>
+<li><strong>What was the verdict?</strong> <span class="path" data-path="Monitor > Logs > WildFire Submissions"></span> lists each analyzed file with its verdict. The detailed view's WildFire Analysis Report tab shows the full report: the behaviors observed in each sandbox environment, network activity, files created, and more, with links to download a PDF of the report and, for malware, the sample itself.</li>
+<li><strong>The bigger picture</strong>: the WildFire portal (wildfire.paloaltonetworks.com) shows submissions for all of your firewalls by serial number, with dashboards and reports.</li>
+<li><strong>Wrong verdict?</strong> From the report tab in the detailed log view, use the link to report an incorrect verdict and suggest the right one; you can also do it from the portal.</li>
+</ul>
+<pre class="cli"><span class="prompt">admin@PA-VM&gt;</span> debug wildfire upload-log show</pre>
+<div class="callout field"><p class="c-title">In the field</p>
+<p>When a malware verdict comes back, the first question is who else received the file. The WildFire Submissions log tells you which user and host got the first copy; search the Traffic and Threat logs for the file's hash and destination to find any others delivered before the signature arrived.</p></div>
+</section>
+
+<section class="unit" id="s-lab" data-section="lab" data-label="Lab 10 companion" data-part="Lab">
+<header><span class="sec-n">Lab</span><h2>Lab 10 companion: Blocking unknown threats with WildFire</h2></header>
+<div class="lab">
+<dl class="lab-meta">
+<dt>Where</dt><dd>NDG Online, PAN-OS 11.0 Firewall Essentials, Lab 10</dd>
+<dt>Time</dt><dd>About 45 minutes, including 5 to 15 minutes waiting for a verdict</dd>
+<dt>Graded</dt><dd>Yes. Submit as directed in Canvas.</dd>
+<dt>Uses</dt><dd>Sections 12.2 to 12.4</dd>
+</dl>
+<h3>What you will do</h3>
+<p>Create a WildFire Analysis profile that forwards every unknown file to the public cloud, put it in the Security Profile Group with the other profiles temporarily turned off, download a test executable, confirm the firewall uploaded it, and read WildFire's verdict and analysis report.</p>
+<p>The guide has two versions of the same lab: High-Level Lab Steps (Task 1) and Detailed Lab Steps (Task 2). Do one, not both. If this is your first time on a Palo Alto Networks firewall, use the detailed steps; if you try the high-level steps and get stuck, switch to the detailed steps at the same task.</p>
+<h3>Before you start</h3>
+<ul class="checklist" data-save="lab10-pre"><li><input type="checkbox" id="l10p1"><label for="l10p1">I can explain why the lab turns off the other profiles in the group (12.3).</label></li><li><input type="checkbox" id="l10p2"><label for="l10p2">I know where benign and grayware reporting is turned on (12.3).</label></li><li><input type="checkbox" id="l10p3"><label for="l10p3">I ran Simulation 12.1 for a never-seen executable.</label></li><li><input type="checkbox" id="l10p4"><label for="l10p4">I know WildFire analysis takes minutes, not seconds.</label></li></ul>
+<h3>Your lab network</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Users_Net once Lab 4 builds the zones)</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.0/24</code></td><td>Firewall ethernet1/1 is .20; the ISP router is .1</td></tr>
+</tbody></table></div>
+<p class="box-note">Usernames and passwords are in the Lab Settings table on page 5 of each lab guide.</p>
+<h3>The lab at a glance</h3>
+<p>Short lab, with a wait in the middle.</p>
+<ol><li><strong>Every lab starts the same way.</strong> On the client desktop, open Firefox to <code>https://192.168.1.254</code>, log in with the credentials in your lab guide, then go to <span class="path" data-path="Device > Setup > Operations"></span> and click <em>Load named configuration snapshot</em>. Choose <code>edu-210-11.0a-10.xml</code>, open the Tasks window (lower right) to confirm the load completed, and then <strong>commit</strong>. Loading only changes the candidate (Module 3); skipping the commit is the most common reason a lab "doesn't match" the guide. If the login page doesn't appear right away, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li><strong>Corp-WF profile</strong> at <span class="path" data-path="Objects > Security Profiles > WildFire Analysis"></span> with one rule, All_Files: any application, any file type, both directions, public-cloud.</li><li><strong>Edit Corp-Profiles-Group</strong>: add Corp-WF and set every other profile in the group to None.</li><li><strong>WildFire settings</strong> at <span class="path" data-path="Device > Setup > WildFire"></span>: enable Report Benign Files and Report Grayware Files. Commit.</li><li><strong>Test</strong>: download http://192.168.50.80/wildfire-test-pe-file.exe on the client, then in the firewall CLI (Remmina, Firewall-A) run <code>debug wildfire upload-log show</code> to confirm the upload.</li><li><strong>Read the result</strong> at <span class="path" data-path="Monitor > Logs > WildFire Submissions"></span>: refresh until the entry appears, open the detailed view, note the verdict, and download the PDF report.</li></ol>
+<h3>Watch out for</h3>
+<ul><li><strong>Wait for it.</strong> The guide's detailed steps say analysis can take 5 to 15 minutes, and the WildFire Submissions log stays empty until there's a verdict. Use the time to read the analysis-report section of this module. Don't reload the baseline or redo steps.</li><li><strong>Why turn the other profiles off?</strong> With Antivirus or inline ML active, the test file could be caught locally before WildFire ever sees it. The lab isolates WildFire so you can watch the cloud do its job. In production, all the profiles work together.</li><li><strong>The test file is harmless.</strong> It's built to be judged malicious so you can see a malware verdict safely.</li><li><strong>Download the file, don't just open the link.</strong> The firewall forwards files it sees transferred; save it when Firefox asks.</li><li><strong>If upload-log shows nothing</strong>, confirm the commit finished and that the rule the client's traffic matches uses Corp-Profiles-Group (check the Traffic log's rule column).</li></ul>
+<h3>After the lab</h3>
+<label for="l10-reflect">Which part of the WildFire report would be most useful to a security analyst deciding whether other machines are infected, and why?</label>
+<textarea id="l10-reflect" data-save="lab10-reflect"></textarea>
+<p class="box-note">Saved in this browser only. Copy it into Canvas if your instructor asks for it.</p>
+</div>
+</section>
+
+<section class="unit" id="s-wrap" data-section="wrap" data-label="Summary and self-check" data-part="Wrap-up">
+<header><span class="sec-n">✓</span><h2>Summary and self-check</h2></header>
+<ul>
+<li>WildFire analyzes unknown files and links from firewalls worldwide, returns verdicts, and distributes signatures and PAN-DB updates.</li>
+<li>The firewall hashes each file; known hashes get the existing verdict; unknown files are forwarded unless signed by a trusted signer or over the size limit.</li>
+<li>Verdicts: benign, grayware, malicious, phishing.</li>
+<li>Free forwarding covers Windows PE files with daily signatures; the subscription adds many file types and real-time signatures; Advanced WildFire adds analysis for evasive malware. Analysis can be public cloud, private (WF-500/WF-600), or hybrid.</li>
+<li>Configure Device > Setup > WildFire (size limits, benign and grayware reporting), decrypted content forwarding (Device > Setup > Content-ID), a WildFire Analysis profile, and the update schedule.</li>
+<li>Verify with debug wildfire upload-log show and the WildFire Submissions log; read reports there or in the portal; report incorrect verdicts.</li>
+</ul>
+<h3>Key terms</h3>
+<p><dfn data-term="wildfire">WildFire</dfn>, <dfn data-term="verdict">verdict</dfn>, <dfn data-term="grayware">grayware</dfn>, <dfn data-term="wildfire-analysis-profile">WildFire Analysis profile</dfn>.</p>
+<h3 id="self-check">Self-check quiz</h3>
+<p class="box-note">Ungraded. Score 80% or better and this section marks itself complete. The graded Quiz 12 is in Canvas.</p>
+<div class="quiz" data-quiz="m12">
+<script type="application/json">{"questions":[
+{"q":"What does the firewall do first when a file crosses a rule with a WildFire Analysis profile?","choices":["Uploads the whole file","Calculates its hash","Blocks it until analysis finishes","Asks the user"],"answer":1,"why":"The hash tells it whether WildFire has seen the file. Section 12.1."},
+{"q":"Which files are not forwarded to WildFire?","choices":["Files signed by a trusted signer and files over the size limit","All PDFs","Files from the internet","Executables"],"answer":0,"why":"Section 12.1."},
+{"q":"Which verdict describes adware that is obtrusive but not malicious?","choices":["Benign","Grayware","Malicious","Phishing"],"answer":1,"why":"Section 12.2."},
+{"q":"Without a WildFire subscription, which file types are forwarded?","choices":["None","Windows PE files","Office and PDF files only","All file types"],"answer":1,"why":"Free forwarding covers PE files. Section 12.2."},
+{"q":"Without a WildFire subscription, how do WildFire-generated signatures reach the firewall?","choices":["They don't","In the daily Antivirus content update","Every minute","Only through Panorama"],"answer":1,"why":"Roughly 24 to 48 hours later, with a Threat Prevention license. Section 12.2."},
+{"q":"An organization can't send any files off-site. What should it deploy?","choices":["Public cloud only","A WF-500 or WF-600 private cloud appliance","No WildFire","URL Filtering"],"answer":1,"why":"Section 12.2."},
+{"q":"Files from decrypted traffic don't appear in WildFire Submissions. What should you check?","choices":["The URL Filtering profile","The setting that allows forwarding of decrypted content","The NAT policy","The interface management profile"],"answer":1,"why":"It is off by default. Section 12.3."},
+{"q":"By default, which verdicts appear in the WildFire Submissions log?","choices":["All verdicts","Malicious and phishing; benign and grayware only if reporting is enabled","Benign only","None"],"answer":1,"why":"Section 12.3."},
+{"q":"Which CLI command shows whether files were uploaded to WildFire?","choices":["show wildfire status","debug wildfire upload-log show","test wildfire","show log wildfire"],"answer":1,"why":"Section 12.4."},
+{"q":"Where can you report a verdict you believe is wrong?","choices":["Only by phone","From the WildFire Analysis Report in the log's detailed view, or the WildFire portal","In the System log","You can't"],"answer":1,"why":"Section 12.4."}
+]}</script>
+</div>
+</section>
+
+<nav class="pager" id="pager" aria-label="Module navigation"></nav>
+</article>
+</div>
+</main>
+
+<footer id="site-footer"></footer>
+<script src="../assets/js/course.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/activities.js"></script>
+<script src="../assets/js/sims/m12.js"></script>
+</body>
+</html>

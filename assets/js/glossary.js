@@ -2,6 +2,11 @@
 (function () {
   "use strict";
   window.PS_GLOSSARY = {
+    "unified-log": { t: "Unified log", d: "A combined view of several log types, such as Traffic, Threat, URL Filtering, and WildFire Submissions, for following an incident in one place.", m: [14] },
+    "app-scope": { t: "App Scope", d: "Monitor reports showing changes in application and user activity, top bandwidth consumers, and threats, including maps by country.", m: [14] },
+    "custom-report": { t: "Custom report", d: "A report you define by database, time frame, columns, grouping, and query filter, run on demand or on a schedule.", m: [14] },
+    "wildfire-analysis-profile": { t: "WildFire Analysis profile", d: "A Security Profile whose rules choose which files (by application, file type, and direction) are forwarded to the WildFire public or private cloud.", m: [12] },
+    "csr": { t: "Certificate signing request (CSR)", d: "A request containing a public key and identity that a CA signs to issue a certificate. The private key stays on the requester.", m: [13] },
     "data-pattern": { t: "Data pattern", d: "An object describing sensitive data to detect, using predefined patterns such as card or Social Security numbers, regular expressions, or file properties.", m: [10] },
     "credential-phishing": { t: "Credential phishing prevention", d: "URL Filtering's User Credential Submission setting, which controls whether users may submit corporate credentials to sites in each category.", m: [11] },
     "application-shift": { t: "Application shift", d: "A change in the application App-ID identifies during a session, such as web-browsing becoming a site's chat application. Policy is re-evaluated on each shift.", m: [8] },

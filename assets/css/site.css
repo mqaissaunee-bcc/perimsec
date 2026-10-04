@@ -530,3 +530,6 @@ dfn[data-term] { font-style: normal; border-bottom: 1px dotted var(--ink-2); cur
 .po-out.verdict strong { font-weight: 700; }
 html, body { overflow-x: clip; }
 #sim-11-1 .verdict, #sim-10-1 .verdict { font-weight: 400; }
+#sim-12-1 .verdict, #sim-13-1 .verdict { font-weight: 400; }
+.wl-fb.verdict, .lf-res.verdict { font-weight: 400; }
+.lf-filter { white-space: pre-wrap; min-height: 3rem; }
