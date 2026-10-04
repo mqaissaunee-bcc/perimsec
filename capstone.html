@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Capstone | Perimeter Security</title>
+<meta name="description" content="Capstone lab companion: objectives mapped to modules and labs, guide pitfalls, and a verification checklist.">
+<link rel="stylesheet" href="assets/css/site.css">
+<script src="assets/js/prefs.js"></script>
+</head>
+<body data-root="." data-page="capstone.html">
+<a class="skip-link" href="#main">Skip to main content</a>
+<header id="site-header"></header>
+<main id="main" class="page">
+<div class="module-hero">
+<p class="kicker">Week 11. NDG Online Lab 14.</p>
+<h1>Capstone</h1>
+<p class="lede">One firewall, starting from a nearly empty configuration, built to a written specification: interfaces, routing, zones, User-ID, NAT, Security policy, URL categories, and a full set of Security Profiles. It is open book: your notes, this site, and your earlier labs are all fair game.</p>
+<ul class="facts"><li>About 2 to 3 hours</li><li>NDG Online, Lab 14</li><li>Graded, plus the final exam in Canvas</li></ul>
+</div>
+<div class="prose">
+<h2>How the capstone differs</h2>
+<p>Earlier labs told you each click. The capstone gives only objectives and tests, like a work ticket. Names must be spelled and capitalized exactly as written, because grading checks them. Every objective is something you have already done; the skill being tested is putting them together in the right order and proving each part works.</p>
+
+<h2>Where you learned each objective</h2>
+</div>
+<div class="table-wrap" style="max-width:900px"><table>
+<thead><tr><th scope="col">Objective</th><th scope="col">Reread</th><th scope="col">You did it in</th></tr></thead>
+<tbody><tr><td>Load the starting configuration and commit</td><td><a href="modules/module-03.html">Module 3: Configurations</a></td><td>Every lab, Lab 2</td></tr><tr><td>Layer 3 interfaces, VR-1, Default-Route</td><td><a href="modules/module-05.html">Module 5: Security Zones</a></td><td>Lab 4</td></tr><tr><td>Allow-ping Interface Management Profile on ethernet1/2</td><td><a href="modules/module-05.html">Module 5: Security Zones</a></td><td>Lab 4</td></tr><tr><td>Internet, Users, and Extranet zones; User-ID on Users</td><td><a href="modules/module-05.html">Module 5: Security Zones</a>, <a href="modules/module-09.html">Module 9: User-ID</a></td><td>Labs 4 and 11</td></tr><tr><td>Source NAT rules Users_to_Internet and Extranet_to_Internet</td><td><a href="modules/module-07.html">Module 7: NAT Policies</a></td><td>Lab 6</td></tr><tr><td>Log at session end on interzone-default</td><td><a href="modules/module-06.html">Module 6: Security Policies</a></td><td>Lab 5</td></tr><tr><td>Block_Bad_URLs using URL categories as match criteria</td><td><a href="modules/module-11.html">Module 11: URL Filtering</a></td><td>Lab 9</td></tr><tr><td>Application-based allow rules between zones</td><td><a href="modules/module-06.html">Module 6: Security Policies</a>, <a href="modules/module-08.html">Module 8: App-ID</a></td><td>Labs 5 and 7</td></tr><tr><td>Corp-URL, Corp-FB, Corp-AV, Corp-AS, Corp-Vuln, Corp-WF</td><td><a href="modules/module-10.html">Module 10: Security Profiles</a>, <a href="modules/module-11.html">Module 11: URL Filtering</a>, <a href="modules/module-12.html">Module 12: WildFire</a></td><td>Labs 8, 9, 10</td></tr><tr><td>Corp-Profiles group applied to the allow rules</td><td><a href="modules/module-10.html">Module 10: Security Profiles</a></td><td>Lab 8</td></tr></tbody></table></div>
+
+<div class="prose">
+<h2>Before you start</h2>
+<ul class="checklist" data-save="cap-plan"><li><input type="checkbox" id="capp0"><label for="capp0">Read the whole guide once before touching the firewall, and list every name you must create exactly.</label></li><li><input type="checkbox" id="capp1"><label for="capp1">I know which modules and labs to reopen for each objective (table above).</label></li><li><input type="checkbox" id="capp2"><label for="capp2">I have a plan for the order: networking and zones, then NAT, then Security rules, then profiles.</label></li><li><input type="checkbox" id="capp3"><label for="capp3">I'll commit after each section and test before moving on.</label></li></ul>
+
+<h2>Read the guide carefully</h2>
+<ul>
+<li><strong>The zone is Users, not Users_Net.</strong> Earlier labs used Users_Net; the capstone's zone is named Users, and one line calls it "the User zone." Name it exactly Users.</li>
+<li><strong>Two profile descriptions are swapped.</strong> The guide says Corp-AV should "block vulnerabilities" and Corp-Vuln should "block viruses." Go by the profile type: an Antivirus profile stops viruses and malware, and a Vulnerability Protection profile stops exploits (Module 10). Use the source profiles the guide suggests for each.</li>
+<li><strong>Same names, different rulebases.</strong> Users_to_Internet and Extranet_to_Internet are names for both NAT rules and Security rules. That's allowed, because NAT and Security policy are separate rulebases, but keep track of which one you're editing.</li>
+<li><strong>"Log access to all web categories."</strong> Allow doesn't write a URL Filtering log entry; alert does (Module 11). Plan your Corp-URL settings with the final test in mind.</li>
+<li><strong>"All outbound traffic" and rule order.</strong> Decide which source zones count as outbound, and where Block_Bad_URLs has to sit so it isn't shadowed (Modules 6 and 11).</li>
+<li><strong>"All applicable" rules.</strong> Profiles inspect allowed traffic; think about which rules the group belongs on (Module 10).</li>
+<li><strong>The default route needs a next hop.</strong> The guide names the route but not the gateway; your Lab 4 notes and the CLI ping tests tell you what it must be.</li>
+</ul>
+
+<h2>Proving it works</h2>
+<p>Check each test as it passes. When something fails, work through the flow from Module 6 in order: is the interface up and in the right zone, is there a route, does NAT match, which Security rule matched (Traffic log, Test Policy Match), and did a profile block it (Threat, URL Filtering, and Data Filtering logs)?</p>
+<ul class="checklist" data-save="cap-tests"><li><input type="checkbox" id="cap0"><label for="cap0">Client pings 192.168.1.1 and gets a reply.</label></li><li><input type="checkbox" id="cap1"><label for="cap1">Firewall CLI: ping source 203.0.113.20 host 203.0.113.1 succeeds.</label></li><li><input type="checkbox" id="cap2"><label for="cap2">Firewall CLI: ping source 203.0.113.20 host 8.8.8.8 succeeds.</label></li><li><input type="checkbox" id="cap3"><label for="cap3">Firewall CLI: ping source 192.168.1.1 host 192.168.1.20 succeeds.</label></li><li><input type="checkbox" id="cap4"><label for="cap4">Firewall CLI: ping source 192.168.50.1 host 192.168.50.150 succeeds.</label></li><li><input type="checkbox" id="cap5"><label for="cap5">Client pings 8.8.8.8 and google.com.</label></li><li><input type="checkbox" id="cap6"><label for="cap6">Client opens www.paloaltonetworks.com.</label></li><li><input type="checkbox" id="cap7"><label for="cap7">Client opens http://192.168.50.80.</label></li><li><input type="checkbox" id="cap8"><label for="cap8">Client connects by SSH to 192.168.50.150 with the account in the guide.</label></li><li><input type="checkbox" id="cap9"><label for="cap9">Extranet host pings 8.8.8.8 and google.com.</label></li><li><input type="checkbox" id="cap10"><label for="cap10">Client cannot open hacker9.com.</label></li><li><input type="checkbox" id="cap11"><label for="cap11">Client cannot download the test virus file from http://192.168.50.80.</label></li><li><input type="checkbox" id="cap12"><label for="cap12">Client cannot download http://192.168.50.80/badtarfile.tar.</label></li><li><input type="checkbox" id="cap13"><label for="cap13">Browsing https://www.paloaltonetworks.com creates a URL Filtering log entry.</label></li></ul>
+
+<div class="callout field"><p class="c-title">Stuck?</p>
+<p>The fastest tools are the ones you've used all term: Simulation 6.2 for rule order, Simulation 7.1 for NAT zones, Simulation 14.2 for log filters, and the Traffic log's Rule and Session End Reason columns for what actually happened.</p></div>
+
+<h2>After the capstone</h2>
+<label for="cap-reflect">Which part of the capstone took longest, and what would you do differently configuring a real firewall from scratch?</label>
+<textarea id="cap-reflect" data-save="cap-reflect"></textarea>
+<p class="box-note">Saved in this browser only.</p>
+</div>
+</main>
+<footer id="site-footer"></footer>
+<script src="assets/js/course.js"></script>
+<script src="assets/js/glossary.js"></script>
+<script src="assets/js/site.js"></script>
+<script src="assets/js/activities.js"></script>
+</body>
+</html>

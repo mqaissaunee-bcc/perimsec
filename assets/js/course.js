@@ -108,12 +108,14 @@
       title: "Logs and Reports",
       short: "Dashboard, ACC, log types, App Scope, predefined and custom reports, correlation, and log forwarding.",
       sections: 8 },
-    { n: 15, file: "module-15.html", available: false, edu: "Supplemental", lab: null,
+    { n: 15, file: "module-15.html", available: true, edu: "Supplemental", lab: null,
       title: "SASE Overview and Architecture",
-      short: "Why the perimeter moved, SASE building blocks (SWG, ZTNA, FWaaS, SD-WAN), and how Prisma Access implements them." },
-    { n: 16, file: "module-16.html", available: false, edu: "Supplemental", lab: null,
+      short: "Why the perimeter moved, SASE building blocks (SWG, ZTNA, FWaaS, SD-WAN), and how Prisma Access implements them.",
+      sections: 7 },
+    { n: 16, file: "module-16.html", available: true, edu: "Supplemental", lab: null,
       title: "Cloud Access Security Broker (CASB)",
-      short: "Shadow IT, inline and API-based CASB, SaaS posture and data protection, and Palo Alto Networks SaaS Security." }
+      short: "Shadow IT, inline and API-based CASB, SaaS posture and data protection, and Palo Alto Networks SaaS Security.",
+      sections: 7 }
   ];
 
   /* Simulations listed on simulations.html. anchor = element id on the module page. */
@@ -139,6 +141,8 @@
     { module: 13, anchor: "sim-13-1", title: "What does the browser see?", desc: "Toggle decrypt and no-decrypt rules, the Forward Untrust certificate, the Decryption profile, and client trust, then see what certificate the user gets." },
     { module: 14, anchor: "sim-14-1", title: "Where would you look?", desc: "Match investigation questions to the right tool: Dashboard, ACC, a specific log, App Scope, a report, or correlated events." },
     { module: 14, anchor: "sim-14-2", title: "Log filter builder", desc: "Build log filters clause by clause, the way the Add Log Filter dialog does, and check them against filters from the labs." },
+    { module: 15, anchor: "sim-15-1", title: "Where does the traffic go?", desc: "Compare hub-and-spoke backhaul with cloud-delivered inspection for users at headquarters, a branch, home, and on the road." },
+    { module: 16, anchor: "sim-16-1", title: "Triage discovered apps", desc: "Tag six discovered SaaS apps as sanctioned, tolerated, or unsanctioned and see the controls and reasoning for each." },
     { module: 4, anchor: "sim-4-1", title: "Authentication sequence tracer", desc: "Order LDAP, RADIUS, and local profiles, take servers offline, and trace exactly how the firewall authenticates and authorizes an admin." }
   ];
 })();

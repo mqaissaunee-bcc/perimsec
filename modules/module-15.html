@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Module 15: SASE Overview and Architecture | Perimeter Security</title>
+<meta name="description" content="For fourteen modules the perimeter has been a box at the edge of the network. But users now work from anywhere, and most of their applications live in the cloud. Secure Access Service Edge moves the firewall&#x27;s inspection into the cloud, close to wherever users are. This module explains the idea in vendor-neutral terms, then shows how Palo Alto Networks builds it with Prisma Access.">
+<link rel="stylesheet" href="../assets/css/site.css">
+<script src="../assets/js/prefs.js"></script>
+</head>
+<body data-root=".." data-module="15" data-page="">
+<a class="skip-link" href="#main">Skip to main content</a>
+<header id="site-header"></header>
+
+<main id="main" class="page">
+<div class="module-hero">
+<p class="kicker">Module 15 of 16, week 10. Corresponds to Supplemental (not part of EDU-210).</p>
+<h1>SASE Overview and Architecture</h1>
+<p class="lede">For fourteen modules the perimeter has been a box at the edge of the network. But users now work from anywhere, and most of their applications live in the cloud. Secure Access Service Edge moves the firewall&#x27;s inspection into the cloud, close to wherever users are. This module explains the idea in vendor-neutral terms, then shows how Palo Alto Networks builds it with Prisma Access.</p>
+<ul class="facts"><li>About 3 hours</li><li>5 reading sections</li><li>1 simulation</li><li>3 activities</li><li>Design challenge instead of a lab</li><li>10-question self-check</li></ul>
+<!-- Overview video: add data-embed="https://...embed-url" for an inline player,
+     or data-link="https://..." to link out (e.g. a Screencast page). -->
+<div class="video-slot" data-title="Module 15 overview video" data-embed="" data-link="">
+<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="1" y="6" width="38" height="28" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="16,13 28,20 16,27" fill="currentColor"/></svg>
+<p><strong>Module overview video.</strong> Your instructor's walkthrough of this module will appear here.</p>
+</div>
+</div>
+
+<div class="objectives">
+<h2>By the end of this module you should be able to</h2>
+<ol><li>Explain why traditional hub-and-spoke security struggles with remote users and cloud applications.</li><li>Define SASE and SSE and name their building blocks: SD-WAN, SWG, CASB, ZTNA, and FWaaS.</li><li>Contrast ZTNA with traditional remote-access VPN.</li><li>Describe the Prisma Access architecture: mobile users, remote networks, service connections, and security processing nodes.</li><li>Map SASE capabilities to the NGFW features learned in Modules 1 to 14.</li><li>Weigh on-premises, cloud-delivered, and hybrid designs for a given organization.</li></ol>
+</div>
+
+<h2>Plan your time</h2>
+<div class="table-wrap" style="max-width:860px"><table>
+<caption class="visually-hidden">Suggested time for each part of the module</caption>
+<thead><tr><th scope="col">Part</th><th scope="col">What's in it</th><th scope="col">Minutes</th></tr></thead>
+<tbody><tr><td>Part A: SASE in general</td><td>Sections 15.1–15.3, Simulation 15.1, Activities 15.1–15.2</td><td>75</td></tr><tr><td>Part B: SASE from Palo Alto Networks</td><td>Sections 15.4–15.5, Activity 15.3</td><td>50</td></tr><tr><td>Design challenge</td><td>Short written design for a scenario</td><td>30</td></tr><tr><td>Wrap-up</td><td>Summary, key terms, self-check quiz</td><td>20</td></tr></tbody></table></div>
+<p class="box-note">Week 10 has no NDG lab. Module 16 (CASB) is also due this week.</p>
+
+<div class="module-layout">
+<nav class="module-rail" aria-label="This module">
+<h2>This module</h2>
+<div class="progress-wrap"><span class="label" id="rail-meter-label">0 sections complete</span>
+<div class="meter" role="progressbar" aria-labelledby="rail-meter-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="rail-meter"></span></div></div>
+<ol id="rail-list"></ol>
+<p><a href="#self-check">Jump to the self-check quiz</a></p>
+</nav>
+<article>
+
+<div class="part-head"><p class="part-n">Part A</p><h2>SASE in general</h2><p>The problem, the idea, and the building blocks, in any vendor's terms.</p></div>
+
+<section class="unit" id="s-why" data-section="why" data-label="15.1 Why the perimeter moved" data-part="Part A: SASE in general">
+<header><span class="sec-n">15.1</span><h2>Why the perimeter moved</h2></header>
+<p class="intro">The classic design assumes users and applications are inside. Increasingly, neither is.</p>
+<p>Everything in this course so far fits a familiar picture: a firewall at headquarters inspects traffic between the internal network and the internet. Branch offices send their traffic back to headquarters over MPLS circuits or VPN tunnels so that it passes the same firewall. Remote employees connect a VPN to headquarters for the same reason. That design is called <strong>hub-and-spoke</strong>, and it worked when applications lived in the headquarters data center.</p>
+<p>Three changes strain it:</p>
+<ul>
+<li><strong>Applications moved to the cloud.</strong> Email, file storage, CRM, and collaboration are SaaS services on the internet. A branch user's traffic to Microsoft 365 travels to headquarters, out to the internet, and back the same way: the <strong>hairpin</strong>, or trombone.</li>
+<li><strong>Users left the building.</strong> Hybrid and remote work put most users outside the network most of the time. VPN concentrators sized for a few travelers become bottlenecks for everyone, and users who disconnect the VPN to "make it faster" have no protection at all.</li>
+<li><strong>The VPN model grants too much.</strong> Once connected, a VPN user is on the network and can often reach far more than their job needs, which is exactly the lateral-movement problem Zero Trust addresses (Module 1).</li>
+</ul>
+<div class="callout think"><p class="c-title">Think of it this way</p>
+<p>Hub-and-spoke security is a single airport security checkpoint for an entire country: every traveler must fly to the capital to be screened before going anywhere, even next door. SASE puts a checkpoint in every city.</p></div>
+<div class="sim" id="sim-15-1">
+<p class="box-kicker">Simulation 15.1</p><h3>Where does the traffic go?</h3>
+<p class="box-note">Choose a user, a destination, and an architecture. Delays are illustrative, chosen to show the pattern, not measured values.</p>
+<div class="sim-grid">
+<div>
+<div class="field"><label for="sa-user">User</label><select id="sa-user"></select></div>
+<div class="field"><label for="sa-dest">Destination</label><select id="sa-dest"></select></div>
+<div class="field"><label for="sa-arch">Architecture</label><select id="sa-arch"><option value="trad">Traditional: NGFW at headquarters, VPN and MPLS backhaul</option><option value="sase">SASE: cloud-delivered inspection</option></select></div>
+</div>
+<div><h4 style="margin-top:0">Path</h4><ol class="trace sa-path" aria-live="polite"></ol><dl class="readout"></dl><p class="box-note sa-notes"></p></div>
+</div>
+<div class="try-this"><h4>Try this</h4><ol>
+<li>Compare the traveling user reaching Microsoft 365 in both architectures. Where is the time going?</li>
+<li>For the headquarters user, does SASE change much? Why might an organization keep its headquarters firewall anyway?</li>
+<li>For the private HR application, what does SASE change besides the path?</li>
+</ol></div>
+</div>
+</section>
+
+<section class="unit" id="s-define" data-section="define" data-label="15.2 SASE and SSE defined" data-part="Part A: SASE in general">
+<header><span class="sec-n">15.2</span><h2>SASE and SSE defined</h2></header>
+<p class="intro">Networking and security, converged and delivered from the cloud.</p>
+<p><dfn data-term="sase">Secure Access Service Edge (SASE)</dfn>, a term introduced by the analyst firm Gartner in 2019, describes delivering wide-area networking and network security together as a cloud service, from points of presence close to users, with policy based on identity rather than location. Gartner later named the security half on its own: <dfn data-term="sse">Security Service Edge (SSE)</dfn>. SASE = SD-WAN + SSE.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Building block</th><th scope="col">What it does</th><th scope="col">Where you've seen it</th></tr></thead>
+<tbody>
+<tr><td><dfn data-term="sd-wan">SD-WAN</dfn></td><td>Connects sites over any mix of links, steering each application over the best path</td><td>Replaces the MPLS backhaul in Simulation 15.1</td></tr>
+<tr><td><dfn data-term="fwaas">Firewall as a Service (FWaaS)</dfn></td><td>Next-generation firewall inspection in the cloud</td><td>Everything in Modules 6 to 13</td></tr>
+<tr><td><dfn data-term="swg">Secure Web Gateway (SWG)</dfn></td><td>Filters and inspects web traffic</td><td>URL Filtering, threat profiles, decryption (Modules 10, 11, 13)</td></tr>
+<tr><td><dfn data-term="ztna">Zero Trust Network Access (ZTNA)</dfn></td><td>Per-application access to private apps after verifying identity and device</td><td>User-ID and least-privilege rules (Modules 6, 9), extended to remote users</td></tr>
+<tr><td><dfn data-term="casb">Cloud Access Security Broker (CASB)</dfn></td><td>Visibility and control over SaaS applications and the data in them</td><td>App-ID for SaaS (Module 8), Data Filtering (Module 10), and Module 16</td></tr>
+</tbody></table></div>
+<p>Many SASE offerings also include data loss prevention, DNS security, remote browser isolation, and digital experience monitoring. A <strong>single-vendor SASE</strong> provides everything in one platform with one policy; a <strong>multi-vendor</strong> design combines, say, one company's SD-WAN with another's SSE.</p>
+<div class="callout myth"><p class="c-title">Common misconception</p>
+<p>"SASE replaces the firewall." It moves firewall functions to where users are. Data centers, factories, and campuses still have on-premises NGFWs, and most organizations run both, ideally with one policy model across them.</p></div>
+<div class="activity" data-activity="sort" data-id="m15-a1">
+<p class="box-kicker">Activity 15.1</p><h3>Name the building block</h3>
+<p class="box-note">About 4 minutes.</p>
+<script type="application/json">{"buckets":["SD-WAN","FWaaS","SWG","ZTNA","CASB"],"items":[
+{"text":"A branch sends video calls over its cheap broadband link and payroll traffic over its more reliable link.","answer":"SD-WAN","why":"Application-aware path selection across links."},
+{"text":"A contractor can reach exactly one internal app, and the rest of the network is invisible to them.","answer":"ZTNA","why":"Per-application access."},
+{"text":"Users anywhere are blocked from phishing sites and malware downloads.","answer":"SWG","why":"Web filtering and inspection."},
+{"text":"Security finds 300 file-sharing apps in use and blocks all but the approved one.","answer":"CASB","why":"SaaS visibility and control."},
+{"text":"Branch traffic gets App-ID, User-ID, and threat prevention from a cloud service instead of a local appliance.","answer":"FWaaS","why":"Cloud-delivered NGFW."}
+]}</script>
+</div>
+</section>
+
+<section class="unit" id="s-ztna" data-section="ztna" data-label="15.3 ZTNA versus VPN" data-part="Part A: SASE in general">
+<header><span class="sec-n">15.3</span><h2>ZTNA versus VPN</h2></header>
+<p class="intro">Access to an application, not to a network.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col"></th><th scope="col">Traditional remote-access VPN</th><th scope="col">ZTNA</th></tr></thead>
+<tbody>
+<tr><td>What the user gets</td><td>A connection to the network</td><td>A connection to specific applications</td></tr>
+<tr><td>Trust</td><td>Verified once at connect, then implicit</td><td>Identity and device posture checked per application, and rechecked</td></tr>
+<tr><td>Visibility of other resources</td><td>Often reachable and discoverable</td><td>Hidden; unauthorized apps aren't even reachable</td></tr>
+<tr><td>Lateral movement after a compromise</td><td>Possible across what the network allows</td><td>Limited to the apps that user is granted</td></tr>
+<tr><td>Inbound exposure</td><td>VPN gateway listens on the internet</td><td>Often outbound-only connectors from the app's location to the cloud</td></tr>
+</tbody></table></div>
+<p>You've already built the ingredients on the firewall: User-ID ties traffic to people (Module 9), App-ID names the applications (Module 8), and Security rules allow specific applications to specific groups (Module 6). ZTNA applies the same least-privilege thinking to remote users and private applications, with device posture as an extra condition.</p>
+<div class="activity" data-activity="tf" data-id="m15-a2">
+<p class="box-kicker">Activity 15.2</p><h3>Fact or myth: SASE and ZTNA</h3>
+<p class="box-note">About 3 minutes.</p>
+<script type="application/json">{"items":[
+{"text":"SSE is the security portion of SASE, without the SD-WAN networking.","answer":true,"why":"SASE = SD-WAN + SSE."},
+{"text":"A ZTNA user who authenticates can then reach any internal server.","answer":false,"why":"ZTNA grants access per application."},
+{"text":"Backhauling branch internet traffic to headquarters adds latency to SaaS applications.","answer":true,"why":"That's the hairpin problem."},
+{"text":"Adopting SASE means removing every on-premises firewall.","answer":false,"why":"Most organizations run both."}
+]}</script>
+</div>
+</section>
+
+<div class="part-head"><p class="part-n">Part B</p><h2>SASE from Palo Alto Networks</h2><p>Prisma Access, and how it connects to what you already know.</p></div>
+
+<section class="unit" id="s-prisma" data-section="prisma" data-label="15.4 Prisma Access" data-part="Part B: Palo Alto Networks">
+<header><span class="sec-n">15.4</span><h2>Prisma Access architecture</h2></header>
+<p class="intro">The firewall you've learned, run by Palo Alto Networks in cloud locations around the world.</p>
+<p><dfn data-term="prisma-access">Prisma Access</dfn> is Palo Alto Networks' SASE platform. Palo Alto Networks deploys and operates the security infrastructure globally; you choose locations and write the policy. Its security processing nodes inspect traffic with the same App-ID, User-ID, and Content-ID engines you've used all semester, so a Security rule, a URL Filtering profile, or an antivirus profile means the same thing in Prisma Access as on the lab firewall.</p>
+<h3>Three ways in</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Connection type</th><th scope="col">Who or what it serves</th><th scope="col">How it connects</th></tr></thead>
+<tbody>
+<tr><td><strong>Mobile Users</strong></td><td>Remote and traveling users</td><td>An agent on the device connects to the nearest Mobile User security processing node (MU-SPN). Historically this agent was GlobalProtect (Module 9); Palo Alto Networks is moving customers to its newer Prisma Access Agent. Users can also connect through an explicit proxy, with or without an agent, including Palo Alto Networks' enterprise browser.</td></tr>
+<tr><td><strong>Remote Networks</strong></td><td>Branch offices and the users in them</td><td>An IPsec tunnel from the branch's router, firewall, or SD-WAN device to a Remote Network security processing node (RN-SPN).</td></tr>
+<tr><td><strong>Service Connections</strong></td><td>Headquarters and data centers</td><td>IPsec tunnels to corporate access nodes, so mobile users and branches can reach internal resources, and reach each other.</td></tr>
+</tbody></table></div>
+<p>For private applications, a <strong>ZTNA Connector</strong> deployed near the application makes an outbound connection to Prisma Access, so users reach the app through the service without any inbound VPN to the data center.</p>
+<h3>Running it</h3>
+<ul>
+<li><strong>Management</strong>: through Panorama with the Prisma Access plugin, or through <strong>Strata Cloud Manager</strong>, Palo Alto Networks' cloud management console, which can manage NGFWs and Prisma Access together.</li>
+<li><strong>Logging</strong>: Prisma Access sends its logs to Strata Logging Service (Module 14), where the familiar log types appear.</li>
+<li><strong>Identity</strong>: users authenticate through SAML or other identity providers, often via the Cloud Identity Engine, which also supplies group information for policy, the cloud counterpart of group mapping (Module 9).</li>
+</ul>
+<div class="callout field"><p class="c-title">Names change; concepts don't</p>
+<p>Product names in this space change often. GlobalProtect is giving way to the Prisma Access Agent (newer documentation calls it simply Prisma Agent), and the enterprise browser has been renamed more than once. Check current documentation for names. The architecture of agents and branches connecting to cloud processing nodes, with the same NGFW policy model, is what to remember.</p></div>
+<div class="activity" data-activity="sort" data-id="m15-a3">
+<p class="box-kicker">Activity 15.3</p><h3>Which Prisma Access component?</h3>
+<p class="box-note">About 3 minutes.</p>
+<script type="application/json">{"buckets":["Mobile Users","Remote Networks","Service Connections","ZTNA Connector"],"items":[
+{"text":"A sales rep in a hotel needs web security and access to the CRM.","answer":"Mobile Users","why":"An agent connects the device to an MU-SPN."},
+{"text":"Forty retail stores replace their local firewalls with IPsec tunnels to the cloud.","answer":"Remote Networks","why":"Branch sites connect to RN-SPNs."},
+{"text":"Branch users and remote users must reach file servers in the headquarters data center.","answer":"Service Connections","why":"IPsec to corporate access nodes links Prisma Access to internal networks."},
+{"text":"An app team wants one internal application reachable by remote staff with no inbound firewall openings.","answer":"ZTNA Connector","why":"It connects outbound to the service."}
+]}</script>
+</div>
+</section>
+
+<section class="unit" id="s-design" data-section="design" data-label="15.5 Choosing a design" data-part="Part B: Palo Alto Networks">
+<header><span class="sec-n">15.5</span><h2>Choosing a design</h2></header>
+<p class="intro">On-premises, cloud-delivered, or both.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Factor</th><th scope="col">Favors on-premises NGFW</th><th scope="col">Favors cloud-delivered (SASE)</th></tr></thead>
+<tbody>
+<tr><td>Where users are</td><td>Mostly on site</td><td>Remote, hybrid, or many small sites</td></tr>
+<tr><td>Where apps are</td><td>Data center, local systems, operational technology</td><td>SaaS and public cloud</td></tr>
+<tr><td>Traffic volume per site</td><td>Very high, such as a data center or campus core</td><td>Modest, spread across many locations</td></tr>
+<tr><td>Operations</td><td>Staff to run appliances, upgrades, and capacity planning</td><td>Prefers the provider to run infrastructure and scale it</td></tr>
+<tr><td>Data location rules</td><td>Strict requirements that traffic stay on premises</td><td>Provider locations satisfy the requirements</td></tr>
+</tbody></table></div>
+<p>Most real designs are hybrid: NGFWs protect the data center and segment internal zones, while Prisma Access secures remote users and small branches, all managed with one policy model. The skills from this course carry across both: the same zones, rules, App-ID, User-ID, profiles, decryption, and logs.</p>
+</section>
+
+<section class="unit" id="s-challenge" data-section="challenge" data-label="Design challenge" data-part="Apply it">
+<header><span class="sec-n">Apply</span><h2>Design challenge</h2></header>
+<div class="lab">
+<p>There's no NDG lab this week. Instead, apply the module to a realistic case. Your instructor may ask you to submit this in Canvas.</p>
+<div class="activity" data-activity="write" data-id="m15-design" style="border:0;padding:0;margin:0">
+<script type="application/json">{"prompt":"A community college has a main campus with a data center, three small satellite centers, about 400 staff who work hybrid schedules, and students who use Microsoft 365 and a cloud learning management system. Today, the satellites backhaul to the main campus over VPN, and staff use a remote-access VPN. In about 150 words, propose a design: what stays on premises, what moves to a cloud-delivered service, how staff reach the student information system in the data center, and one risk or trade-off of your design.","minWords":100,"model":"Keep the NGFW at the main campus to protect the data center and segment internal zones such as student labs, staff, and servers. Move the three satellite centers to remote network connections into a cloud service such as Prisma Access, so their Microsoft 365 and learning management traffic is inspected at a nearby cloud location instead of hairpinning through campus. Replace the staff remote-access VPN with an agent connecting to mobile user nodes, giving web and SaaS security everywhere. For the student information system, use a service connection or a ZTNA connector so staff reach that application, not the whole campus network, with access granted by directory group through the cloud identity service. Manage the campus firewall and the cloud service with one policy model and send all logs to one place. A trade-off: the college now depends on the provider's availability and must budget a subscription, and staff must learn a new management console."}</script>
+</div>
+</div>
+</section>
+
+<section class="unit" id="s-wrap" data-section="wrap" data-label="Summary and self-check" data-part="Wrap-up">
+<header><span class="sec-n">✓</span><h2>Summary and self-check</h2></header>
+<ul>
+<li>Hub-and-spoke security backhauls branch and remote traffic to headquarters, causing the SaaS hairpin, VPN bottlenecks, and broad network access.</li>
+<li>SASE converges SD-WAN and security (SSE) in cloud points of presence close to users, with identity-based policy. SSE's building blocks include SWG, CASB, ZTNA, and FWaaS.</li>
+<li>ZTNA grants per-application access with continuing identity and posture checks; a VPN grants network access after one check.</li>
+<li>Prisma Access connects mobile users (agent or explicit proxy to MU-SPNs), remote networks (IPsec to RN-SPNs), and service connections (to corporate access nodes), plus ZTNA Connectors for private apps. It's managed by Panorama or Strata Cloud Manager and logs to Strata Logging Service.</li>
+<li>Its inspection is the NGFW you've learned. Most organizations run a hybrid of on-premises NGFWs and cloud-delivered security.</li>
+</ul>
+<h3>Key terms</h3>
+<p><dfn data-term="sase">SASE</dfn>, <dfn data-term="sse">SSE</dfn>, <dfn data-term="sd-wan">SD-WAN</dfn>, <dfn data-term="fwaas">FWaaS</dfn>, <dfn data-term="swg">SWG</dfn>, <dfn data-term="ztna">ZTNA</dfn>, <dfn data-term="casb">CASB</dfn>, <dfn data-term="prisma-access">Prisma Access</dfn>, <dfn data-term="spn">security processing node</dfn>, <dfn data-term="service-connection">service connection</dfn>.</p>
+<h3 id="self-check">Self-check quiz</h3>
+<p class="box-note">Ungraded. Score 80% or better and this section marks itself complete. The graded Quiz 15 is in Canvas.</p>
+<div class="quiz" data-quiz="m15">
+<script type="application/json">{"questions":[
+{"q":"What is the hairpin (trombone) problem?","choices":["Firewalls inspecting traffic twice","Branch and remote traffic to cloud apps traveling through headquarters and back","A routing loop","Users bypassing the VPN"],"answer":1,"why":"Section 15.1."},
+{"q":"SASE combines which two things?","choices":["NGFW and Panorama","SD-WAN networking and SSE security, delivered from the cloud","VPN and MPLS","DNS and DHCP"],"answer":1,"why":"Section 15.2."},
+{"q":"Which SSE building block filters and inspects users' web traffic?","choices":["CASB","SWG","SD-WAN","ZTNA"],"answer":1,"why":"Section 15.2."},
+{"q":"How does ZTNA differ from a traditional remote-access VPN?","choices":["ZTNA is faster but grants the same access","ZTNA grants access to specific applications rather than the network","ZTNA requires no identity","ZTNA only works on campus"],"answer":1,"why":"Section 15.3."},
+{"q":"Which firewall features from this course are the foundation of ZTNA-style policy?","choices":["NAT and routing","User-ID, App-ID, and least-privilege Security rules","Tap interfaces","Dynamic updates"],"answer":1,"why":"Section 15.3."},
+{"q":"In Prisma Access, how does a branch office connect?","choices":["Through an agent on each PC","As a remote network, over IPsec to an RN-SPN","Only through a service connection","Through Panorama"],"answer":1,"why":"Section 15.4."},
+{"q":"What do service connections provide?","choices":["Internet access for branches","Connectivity between Prisma Access and headquarters or data center networks","User authentication","Log storage"],"answer":1,"why":"Section 15.4."},
+{"q":"Where does Prisma Access send its logs?","choices":["To each user's device","Strata Logging Service","The System log on a local firewall only","Nowhere"],"answer":1,"why":"Section 15.4."},
+{"q":"What inspection does a Prisma Access security processing node perform?","choices":["Only URL filtering","The same App-ID, User-ID, and Content-ID inspection as an NGFW","Only antivirus","None; it only routes"],"answer":1,"why":"Section 15.4."},
+{"q":"Which situation most favors keeping an on-premises NGFW?","choices":["A fully remote workforce","Many tiny branches using only SaaS","A high-volume data center with internal segmentation needs","Users who travel constantly"],"answer":2,"why":"Section 15.5."}
+]}</script>
+</div>
+</section>
+
+<nav class="pager" id="pager" aria-label="Module navigation"></nav>
+</article>
+</div>
+</main>
+
+<footer id="site-footer"></footer>
+<script src="../assets/js/course.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/activities.js"></script>
+<script src="../assets/js/sims/m15.js"></script>
+</body>
+</html>

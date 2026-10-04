@@ -19,7 +19,7 @@
     var tb = document.getElementById("schedule-body");
     tb.innerHTML = (window.PS_WEEKS || []).map(function (w) {
       var mods = w.modules.map(function (n) { return modLink(mod(n)); }).join("<br>");
-      if (w.checkpoint) { mods = mods ? mods + "<br>" : ""; mods += "<strong>" + esc(w.checkpoint) + "</strong>"; }
+      if (w.checkpoint) { mods = mods ? mods + "<br>" : ""; mods += '<a href="' + PS.url("capstone.html") + '"><strong>' + esc(w.checkpoint) + "</strong></a>"; }
       var labs = w.labs.length ? w.labs.map(function (l) { return "Lab " + l + ": " + esc(LABS[l]); }).join("<br>") : "None";
       var quizzes = w.quizzes.length ? w.quizzes.map(function (q) { return "Quiz " + q; }).join(", ") : (w.week === 11 ? "Final exam" : "None");
       return "<tr><th scope=\"row\">Week " + w.week + "</th><td>" + mods + (w.note ? "<br><small>" + esc(w.note) + "</small>" : "") +

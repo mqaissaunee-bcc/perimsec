@@ -17,7 +17,8 @@ syllabus.html       Syllabus draft: fill in the [bracketed] placeholders
 glossary.html       Searchable glossary (from glossary.js)
 simulations.html    Index of every simulation
 my-work.html        Progress summary, backup, restore, reset
-modules/            One page per module (module-01.html ...)
+capstone.html       Week 11 capstone companion (Lab 14): objective map, pitfalls, test checklist
+modules/            One page per module (module-01.html to module-16.html)
 assets/css/site.css Design tokens and all styles (light and dark)
 assets/js/
   prefs.js          Applies saved theme and text size before first paint

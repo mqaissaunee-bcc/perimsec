@@ -189,8 +189,8 @@
         return weekModuleLink(MODS.filter(function (m) { return m.n === n; })[0]);
       }).join("");
       if (w.checkpoint) {
-        items += '<div class="mod-link checkpoint locked"><span class="n">✓</span><span><span class="t">' + esc(w.checkpoint) +
-          '</span><span class="d">Lab ' + (w.labs[0] || "") + " in NDG Online, then the final exam in Canvas.</span></span><span class=\"s\">Checkpoint</span></div>";
+        items += '<a class="mod-link checkpoint" href="' + url("capstone.html") + '"><span class="n">✓</span><span><span class="t">' + esc(w.checkpoint) +
+          '</span><span class="d">Lab ' + (w.labs[0] || "") + " in NDG Online, then the final exam in Canvas. Open the capstone companion.</span></span><span class=\"s\">Checkpoint</span></a>";
       }
       return '<div class="week-block"><div class="week-label">Week ' + w.week + "<small>Due " + esc(w.due) + "</small></div>" +
         '<div class="week-items">' + items + "</div></div>";

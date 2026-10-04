@@ -114,7 +114,7 @@ code { background: var(--code-bg); padding: 0.08em 0.35em; border-radius: var(--
 table { border-collapse: collapse; width: 100%; font-size: var(--step--1); }
 th, td { text-align: left; padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
 th { font-weight: 600; }
-.table-wrap { overflow-x: auto; margin: 0 0 1.4rem; }
+.table-wrap { overflow-x: auto; margin: 0 0 1.4rem; position: relative; }
 
 .skip-link {
   position: absolute; left: 1rem; top: -4rem; z-index: 100;

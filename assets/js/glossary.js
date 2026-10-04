@@ -2,6 +2,13 @@
 (function () {
   "use strict";
   window.PS_GLOSSARY = {
+    "sse": { t: "Security Service Edge (SSE)", d: "The security half of SASE: cloud-delivered SWG, CASB, ZTNA, FWaaS, and related services, without the SD-WAN networking.", m: [15] },
+    "spn": { t: "Security processing node (SPN)", d: "A Prisma Access cloud instance that inspects traffic for mobile users (MU-SPN) or remote networks (RN-SPN) with NGFW engines.", m: [15] },
+    "service-connection": { t: "Service connection", d: "A Prisma Access IPsec connection to a headquarters or data center network so mobile users and branches can reach internal resources.", m: [15] },
+    "shadow-it": { t: "Shadow IT", d: "Applications and services employees use without IT's review or approval, often SaaS signed up for with a work email.", m: [16] },
+    "sspm": { t: "SaaS Security Posture Management (SSPM)", d: "Checking sanctioned SaaS apps' security settings and third-party integrations against best practices, and fixing misconfigurations.", m: [16] },
+    "sanctioned-app": { t: "Sanctioned, tolerated, unsanctioned", d: "A SaaS triage: sanctioned apps are approved and managed, tolerated apps are allowed with limits, and unsanctioned apps are blocked.", m: [16] },
+    "dlp": { t: "Data loss prevention (DLP)", d: "Detecting and controlling sensitive data as it moves or is stored, inline in traffic or by scanning apps through their APIs.", m: [10, 16] },
     "unified-log": { t: "Unified log", d: "A combined view of several log types, such as Traffic, Threat, URL Filtering, and WildFire Submissions, for following an incident in one place.", m: [14] },
     "app-scope": { t: "App Scope", d: "Monitor reports showing changes in application and user activity, top bandwidth consumers, and threats, including maps by country.", m: [14] },
     "custom-report": { t: "Custom report", d: "A report you define by database, time frame, columns, grouping, and query filter, run on demand or on a schedule.", m: [14] },

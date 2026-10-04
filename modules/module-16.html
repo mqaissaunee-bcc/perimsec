@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Module 16: Cloud Access Security Broker (CASB) | Perimeter Security</title>
+<meta name="description" content="Your organization&#x27;s most sensitive data probably lives in someone else&#x27;s application: a file-sharing service, a CRM, a collaboration suite. And employees use hundreds of SaaS apps nobody approved. A CASB finds them, decides which are allowed, and protects the data inside the ones that are. This module covers CASB in general, then Palo Alto Networks SaaS Security.">
+<link rel="stylesheet" href="../assets/css/site.css">
+<script src="../assets/js/prefs.js"></script>
+</head>
+<body data-root=".." data-module="16" data-page="">
+<a class="skip-link" href="#main">Skip to main content</a>
+<header id="site-header"></header>
+
+<main id="main" class="page">
+<div class="module-hero">
+<p class="kicker">Module 16 of 16, week 10. Corresponds to Supplemental (not part of EDU-210).</p>
+<h1>Cloud Access Security Broker (CASB)</h1>
+<p class="lede">Your organization&#x27;s most sensitive data probably lives in someone else&#x27;s application: a file-sharing service, a CRM, a collaboration suite. And employees use hundreds of SaaS apps nobody approved. A CASB finds them, decides which are allowed, and protects the data inside the ones that are. This module covers CASB in general, then Palo Alto Networks SaaS Security.</p>
+<ul class="facts"><li>About 2.5 hours</li><li>5 reading sections</li><li>1 simulation</li><li>3 activities</li><li>Design challenge instead of a lab</li><li>10-question self-check</li></ul>
+<!-- Overview video: add data-embed="https://...embed-url" for an inline player,
+     or data-link="https://..." to link out (e.g. a Screencast page). -->
+<div class="video-slot" data-title="Module 16 overview video" data-embed="" data-link="">
+<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="1" y="6" width="38" height="28" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="16,13 28,20 16,27" fill="currentColor"/></svg>
+<p><strong>Module overview video.</strong> Your instructor's walkthrough of this module will appear here.</p>
+</div>
+</div>
+
+<div class="objectives">
+<h2>By the end of this module you should be able to</h2>
+<ol><li>Explain the risks SaaS creates: shadow IT, data exposure, misconfiguration, and risky integrations.</li><li>Describe the four functions of a CASB: visibility, data security, threat protection, and compliance.</li><li>Compare inline and API-based CASB, and explain SaaS security posture management.</li><li>Classify SaaS apps as sanctioned, tolerated, or unsanctioned, and choose controls for each.</li><li>Describe Palo Alto Networks SaaS Security and how it builds on App-ID, URL Filtering, and Data Filtering.</li></ol>
+</div>
+
+<h2>Plan your time</h2>
+<div class="table-wrap" style="max-width:860px"><table>
+<caption class="visually-hidden">Suggested time for each part of the module</caption>
+<thead><tr><th scope="col">Part</th><th scope="col">What's in it</th><th scope="col">Minutes</th></tr></thead>
+<tbody><tr><td>Part A: CASB in general</td><td>Sections 16.1–16.3, Simulation 16.1, Activities 16.1–16.2</td><td>70</td></tr><tr><td>Part B: CASB from Palo Alto Networks</td><td>Sections 16.4–16.5, Activity 16.3</td><td>40</td></tr><tr><td>Design challenge</td><td>Short written policy for a scenario</td><td>25</td></tr><tr><td>Wrap-up</td><td>Summary, key terms, self-check quiz</td><td>20</td></tr></tbody></table></div>
+<p class="box-note">Next week is the capstone lab (Lab 14) and the final exam. Review Modules 5 through 14 as you finish this one.</p>
+
+<div class="module-layout">
+<nav class="module-rail" aria-label="This module">
+<h2>This module</h2>
+<div class="progress-wrap"><span class="label" id="rail-meter-label">0 sections complete</span>
+<div class="meter" role="progressbar" aria-labelledby="rail-meter-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="rail-meter"></span></div></div>
+<ol id="rail-list"></ol>
+<p><a href="#self-check">Jump to the self-check quiz</a></p>
+</nav>
+<article>
+
+<div class="part-head"><p class="part-n">Part A</p><h2>CASB in general</h2><p>What SaaS changes, and the two ways a CASB sees it.</p></div>
+
+<section class="unit" id="s-risk" data-section="risk" data-label="16.1 The SaaS problem" data-part="Part A: CASB in general">
+<header><span class="sec-n">16.1</span><h2>The SaaS problem</h2></header>
+<p class="intro">Data you're responsible for, in systems you don't run.</p>
+<p>In SaaS, the provider runs the infrastructure and application, but under the <strong>shared responsibility model</strong> the customer remains responsible for its data, its users, and how the service is configured. Several risks follow:</p>
+<ul>
+<li><strong>Shadow IT</strong>: employees sign up for apps with a work email and no review. A typical organization uses far more SaaS apps than IT knows about, and a firewall's App-ID view (Module 8) usually reveals the gap the first week.</li>
+<li><strong>Data exposure</strong>: files shared by public link, sensitive documents uploaded to personal accounts, or data copied from a sanctioned app into an unsanctioned one.</li>
+<li><strong>Misconfiguration</strong>: an admin setting such as "anyone with the link" sharing by default, or MFA not enforced, exposes everything in the app.</li>
+<li><strong>Compromised accounts and risky integrations</strong>: stolen credentials give attackers data without touching your network, and third-party apps granted OAuth access can read mailboxes or drives.</li>
+<li><strong>Malware in cloud storage</strong>: an infected file in a shared folder syncs to every user who has it.</li>
+</ul>
+<p>Apps fall into three practical groups: <strong>sanctioned</strong> (approved and managed by IT), <strong>tolerated</strong> (allowed for a business purpose but not managed, often with limits), and <strong>unsanctioned</strong> (blocked).</p>
+</section>
+
+<section class="unit" id="s-casb" data-section="casb" data-label="16.2 What a CASB does" data-part="Part A: CASB in general">
+<header><span class="sec-n">16.2</span><h2>What a CASB does, and how it connects</h2></header>
+<p class="intro">Four jobs, two vantage points.</p>
+<p>A <dfn data-term="casb">Cloud Access Security Broker</dfn> sits, logically, between users and cloud services. Its functions are commonly grouped into four:</p>
+<ul>
+<li><strong>Visibility</strong>: discover which apps are used, by whom, how much, and how risky each one is.</li>
+<li><strong>Data security</strong>: find and protect sensitive data, with data loss prevention (DLP) and control over sharing.</li>
+<li><strong>Threat protection</strong>: detect malware in SaaS storage, compromised accounts, and risky behavior.</li>
+<li><strong>Compliance</strong>: show auditors that regulated data is controlled and apps meet requirements.</li>
+</ul>
+<h3>Inline and API</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col"></th><th scope="col">Inline CASB</th><th scope="col">API-based CASB</th></tr></thead>
+<tbody>
+<tr><td>Where it sits</td><td>In the traffic path: an NGFW, a forward proxy, or a SASE service</td><td>Out of band, connected to the sanctioned app's own API</td></tr>
+<tr><td>What it sees</td><td>Traffic as it happens, to any app, sanctioned or not</td><td>Data at rest, sharing settings, users, and activity inside sanctioned apps, including what was there before you started</td></tr>
+<tr><td>Real-time blocking</td><td>Yes: block an upload or an app as it happens</td><td>No; it acts after the fact (remove a public link, quarantine a file)</td></tr>
+<tr><td>Unmanaged devices and outside collaborators</td><td>Only if their traffic passes through it</td><td>Yes, because it sees the app's data regardless of who connected</td></tr>
+<tr><td>Typical use</td><td>Discover shadow IT, block unsanctioned apps, control actions like uploads</td><td>Scan sanctioned apps for exposed sensitive data and malware</td></tr>
+</tbody></table></div>
+<p>The two are complementary, which is why most CASBs offer both. (Some also use a reverse proxy in front of a sanctioned app for unmanaged devices.)</p>
+<div class="activity" data-activity="sort" data-id="m16-a1">
+<p class="box-kicker">Activity 16.1</p><h3>Inline or API?</h3>
+<p class="box-note">About 4 minutes. Which mode handles it?</p>
+<script type="application/json">{"buckets":["Inline","API"],"items":[
+{"text":"Stop an employee from uploading a file to a personal file-sharing account right now.","answer":"Inline","why":"Real-time control requires being in the path."},
+{"text":"Find last year's spreadsheet of SSNs shared by public link in the company file-sharing app.","answer":"API","why":"Data at rest, in a sanctioned app."},
+{"text":"Discover which unsanctioned apps are in use across the network.","answer":"Inline","why":"Only traffic shows unsanctioned apps."},
+{"text":"Detect malware sitting in a shared folder, uploaded by an outside partner from their own laptop.","answer":"API","why":"The partner's traffic never crossed your network."},
+{"text":"Allow viewing a tolerated app but block posting to it.","answer":"Inline","why":"Action-level control in real time."}
+]}</script>
+</div>
+</section>
+
+<section class="unit" id="s-sspm" data-section="sspm" data-label="16.3 Posture and triage" data-part="Part A: CASB in general">
+<header><span class="sec-n">16.3</span><h2>Posture management and app triage</h2></header>
+<p class="intro">Configure the sanctioned apps safely, and decide about the rest.</p>
+<h3>SaaS Security Posture Management</h3>
+<p><dfn data-term="sspm">SSPM</dfn> connects to sanctioned apps and checks their settings against best practices and compliance frameworks: is MFA enforced, is external sharing restricted, how many people have admin rights, which third-party apps have been granted access? It reports misconfigurations and can often fix them. It's the SaaS equivalent of reviewing a firewall's configuration for bad rules.</p>
+<h3>Triage</h3>
+<p>For each discovered app, weigh its risk (the vendor's security practices, certifications, breach history, data handling terms, account options such as SSO and MFA) against its business value (how many people use it, for what, and whether a sanctioned app already does the job). Then tag it sanctioned, tolerated, or unsanctioned and apply controls to match.</p>
+<div class="sim" id="sim-16-1">
+<p class="box-kicker">Simulation 16.1</p><h3>Triage discovered apps</h3>
+<p class="box-note">An inline CASB found these six apps in a month of traffic (all invented). Tag each one, then compare your reasoning.</p>
+<div class="table-wrap"><table><caption class="visually-hidden">Discovered SaaS apps</caption>
+<thead><tr><th scope="col">App</th><th scope="col">Users</th><th scope="col">Uploaded</th><th scope="col">Risk</th><th scope="col">Your tag</th></tr></thead><tbody></tbody></table></div>
+<div class="btn-row"><button type="button" class="btn-primary" data-tri>Apply tags</button></div>
+<div class="tri-out" aria-live="polite"></div>
+<div class="try-this"><h4>Try this</h4><ol>
+<li>Why does the existence of a sanctioned file-sharing app change the decision about the free one?</li>
+<li>What would have to be true for the AI notetaker to become sanctioned?</li>
+</ol></div>
+</div>
+<div class="activity" data-activity="tf" data-id="m16-a2">
+<p class="box-kicker">Activity 16.2</p><h3>Fact or myth: CASB</h3>
+<p class="box-note">About 3 minutes.</p>
+<script type="application/json">{"items":[
+{"text":"Under shared responsibility, the SaaS provider is responsible for how the customer configures sharing.","answer":false,"why":"Configuration and data are the customer's responsibility."},
+{"text":"An API-based CASB can find sensitive files that were shared before the CASB was deployed.","answer":true,"why":"It scans data at rest."},
+{"text":"An inline CASB can block uploads to an unsanctioned app in real time.","answer":true,"why":"It sits in the traffic path."},
+{"text":"SSPM looks for misconfigured settings such as MFA not being enforced.","answer":true,"why":"That is its purpose."},
+{"text":"Tolerated apps are blocked by default.","answer":false,"why":"They're allowed, often with limits."}
+]}</script>
+</div>
+</section>
+
+<div class="part-head"><p class="part-n">Part B</p><h2>CASB from Palo Alto Networks</h2><p>SaaS Security, built on the NGFW and Prisma Access.</p></div>
+
+<section class="unit" id="s-saas" data-section="saas" data-label="16.4 SaaS Security" data-part="Part B: Palo Alto Networks">
+<header><span class="sec-n">16.4</span><h2>Palo Alto Networks SaaS Security</h2></header>
+<p class="intro">An integrated CASB that uses the firewall and Prisma Access as its inline path.</p>
+<p>Palo Alto Networks <strong>SaaS Security</strong> combines several components:</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Component</th><th scope="col">Mode</th><th scope="col">What it does</th></tr></thead>
+<tbody>
+<tr><td>SaaS Security Inline</td><td>Inline</td><td>Integrates with NGFWs and Prisma Access to discover SaaS apps, score their risk from dozens of attributes, and turn sanctioning decisions into policy.</td></tr>
+<tr><td>SaaS Security API</td><td>API</td><td>Connects to sanctioned apps to scan files and sharing for exposures, external collaborators, sensitive data, and malware.</td></tr>
+<tr><td>SSPM</td><td>API</td><td>Checks sanctioned apps' settings and third-party integrations.</td></tr>
+<tr><td>Enterprise DLP</td><td>Inline and API</td><td>Consistent data patterns and policies across the firewall, Prisma Access, and SaaS apps.</td></tr>
+</tbody></table></div>
+<p>In Strata Cloud Manager the inline discovery views are labeled Discovered Apps and the API scanning is labeled Data Security; older documentation uses the names in the table. Licenses are sold as bundles, so which components an organization has depends on what it bought.</p>
+<h3>How it builds on this course</h3>
+<ul>
+<li><strong>App-ID (Module 8)</strong> is the inline discovery engine: every SaaS app has an App-ID, and many have separate App-IDs for actions such as upload, post, or share.</li>
+<li><strong>Tags and application filters (Module 8)</strong>: tagging apps sanctioned, tolerated, or unsanctioned lets one Security rule block every unsanctioned app through an application filter, and new apps can be handled as they're discovered.</li>
+<li><strong>HTTP header insertion (Module 11)</strong> restricts users to the organization's own tenant of apps such as Microsoft 365 or Google Workspace, blocking personal accounts on the same service.</li>
+<li><strong>Data Filtering and File Blocking (Module 10)</strong> are the inline data controls; Enterprise DLP extends them.</li>
+<li><strong>Decryption (Module 13)</strong> makes it work: nearly all SaaS traffic is encrypted, and action-level control requires seeing inside it.</li>
+</ul>
+<div class="callout exam"><p class="c-title">Exam tip</p>
+<p>"Block personal accounts on a sanctioned SaaS service while allowing the corporate tenant" points to HTTP header insertion. "Block an entire category of unsanctioned apps, including future ones" points to an application filter on tags.</p></div>
+<div class="activity" data-activity="sort" data-id="m16-a3">
+<p class="box-kicker">Activity 16.3</p><h3>Which tool?</h3>
+<p class="box-note">About 3 minutes.</p>
+<script type="application/json">{"buckets":["SaaS Security Inline / App-ID","SaaS Security API","SSPM","HTTP header insertion"],"items":[
+{"text":"Find every SaaS app used on the network last month, with a risk score.","answer":"SaaS Security Inline / App-ID","why":"Inline discovery."},
+{"text":"Remove public links from files containing card numbers in the sanctioned storage app.","answer":"SaaS Security API","why":"Data at rest in a sanctioned app."},
+{"text":"Alert when an admin turns off MFA enforcement in the collaboration suite.","answer":"SSPM","why":"Posture of a sanctioned app."},
+{"text":"Allow the company's Microsoft 365 tenant but block employees' personal Microsoft accounts.","answer":"HTTP header insertion","why":"Tenant restriction headers."}
+]}</script>
+</div>
+</section>
+
+<section class="unit" id="s-together" data-section="together" data-label="16.5 A SaaS policy" data-part="Part B: Palo Alto Networks">
+<header><span class="sec-n">16.5</span><h2>Putting a SaaS policy together</h2></header>
+<p class="intro">Discover, decide, control, protect, review.</p>
+<ol>
+<li><strong>Discover</strong>: use inline visibility (App-ID, SaaS Security Inline) to see which apps are used and by whom.</li>
+<li><strong>Decide</strong>: triage each app as sanctioned, tolerated, or unsanctioned, with the business owners.</li>
+<li><strong>Control</strong>: block unsanctioned apps by tag; allow tolerated apps with action-level limits such as no uploads; restrict sanctioned apps to the corporate tenant.</li>
+<li><strong>Protect</strong>: connect sanctioned apps by API to scan data and sharing, and apply DLP inline and by API.</li>
+<li><strong>Review</strong>: monitor posture with SSPM, watch logs and reports (Module 14), and revisit tags as apps and needs change.</li>
+</ol>
+<p>The inline half of this list runs on Security policy, App-ID, profiles, and decryption, exactly the skills from this course, whether the enforcement point is the firewall in the lab or a security processing node in Prisma Access.</p>
+</section>
+
+<section class="unit" id="s-challenge" data-section="challenge" data-label="Design challenge" data-part="Apply it">
+<header><span class="sec-n">Apply</span><h2>Design challenge</h2></header>
+<div class="lab">
+<p>There's no NDG lab this week. Apply the module to a realistic case. Your instructor may ask you to submit this in Canvas.</p>
+<div class="activity" data-activity="write" data-id="m16-design" style="border:0;padding:0;margin:0">
+<script type="application/json">{"prompt":"A small accounting firm's sanctioned file storage is its Microsoft 365 tenant. Inline discovery shows staff also using personal Dropbox accounts, a free PDF converter, and an AI meeting notetaker. In about 150 words, write the firm's SaaS policy: how you'd classify each app, the specific controls (inline and API) you'd apply, and which firewall features from this course you'd use to enforce them.","minWords":100,"model":"Microsoft 365 is sanctioned. Restrict it to the firm's own tenant with HTTP header insertion so personal Microsoft accounts are blocked, connect it by API to find client files shared by public link or containing Social Security numbers, and use posture checks to keep MFA enforced and external sharing limited. Personal Dropbox is unsanctioned because it duplicates the sanctioned storage and puts client data in accounts the firm doesn't control; block it with a Security rule using an application filter on the unsanctioned tag, and show users a block page pointing to OneDrive. The PDF converter is also unsanctioned, since users upload client documents to a service that may keep them; block it and provide a local converter. The AI notetaker is unsanctioned until it passes a security review of where transcripts are stored and what calendar access it takes. All of this needs decryption so App-ID and Data Filtering can see the encrypted traffic, with logs forwarded for review."}</script>
+</div>
+</div>
+</section>
+
+<section class="unit" id="s-wrap" data-section="wrap" data-label="Summary and self-check" data-part="Wrap-up">
+<header><span class="sec-n">✓</span><h2>Summary and self-check</h2></header>
+<ul>
+<li>SaaS shifts infrastructure to providers, but customers stay responsible for data, users, and configuration. Risks include shadow IT, data exposure, misconfiguration, compromised accounts, risky integrations, and malware in storage.</li>
+<li>A CASB provides visibility, data security, threat protection, and compliance.</li>
+<li>Inline CASB sees live traffic to any app and can block in real time; API CASB sees data at rest and sharing in sanctioned apps, including from unmanaged devices. SSPM checks sanctioned apps' configuration.</li>
+<li>Apps are triaged as sanctioned, tolerated, or unsanctioned, each with matching controls.</li>
+<li>Palo Alto Networks SaaS Security combines inline discovery and control with NGFWs and Prisma Access, API scanning, SSPM, and Enterprise DLP, building on App-ID, tags and filters, header insertion, Data Filtering, and decryption.</li>
+</ul>
+<h3>Key terms</h3>
+<p><dfn data-term="casb">CASB</dfn>, <dfn data-term="shadow-it">shadow IT</dfn>, <dfn data-term="sspm">SSPM</dfn>, <dfn data-term="sanctioned-app">sanctioned app</dfn>, <dfn data-term="dlp">data loss prevention</dfn>.</p>
+<h3 id="self-check">Self-check quiz</h3>
+<p class="box-note">Ungraded. Score 80% or better and this section marks itself complete. The graded Quiz 16 is in Canvas.</p>
+<div class="quiz" data-quiz="m16">
+<script type="application/json">{"questions":[
+{"q":"Under the SaaS shared responsibility model, who is responsible for the app's sharing configuration?","choices":["The SaaS provider","The customer","The CASB vendor","Nobody"],"answer":1,"why":"Section 16.1."},
+{"q":"What is shadow IT?","choices":["Unpatched servers","Apps employees use without IT review or approval","Backup data centers","Encrypted traffic"],"answer":1,"why":"Section 16.1."},
+{"q":"Which CASB mode can block an upload to an unsanctioned app as it happens?","choices":["API","Inline","SSPM","None"],"answer":1,"why":"Section 16.2."},
+{"q":"Which CASB mode can find sensitive files shared by outside partners from their own devices?","choices":["Inline","API","Neither","Only a reverse proxy"],"answer":1,"why":"Section 16.2."},
+{"q":"What does SSPM check?","choices":["Packet captures","Sanctioned apps' security settings and integrations","URL categories","Firewall CPU"],"answer":1,"why":"Section 16.3."},
+{"q":"A tolerated app is typically:","choices":["Blocked","Allowed with limits and monitored","Fully managed by IT","Deleted"],"answer":1,"why":"Section 16.1."},
+{"q":"Which firewall feature lets one rule block every app tagged unsanctioned, including newly discovered ones?","choices":["Static application group","Application filter on tags","Custom URL category","NAT"],"answer":1,"why":"Section 16.4."},
+{"q":"How can you allow the corporate Microsoft 365 tenant while blocking personal accounts?","choices":["DNS sinkhole","HTTP header insertion","Application Override","Tap mode"],"answer":1,"why":"Section 16.4 and Module 11."},
+{"q":"Why does inline SaaS control usually depend on decryption?","choices":["SaaS traffic is almost all encrypted","Decryption speeds traffic","It isn't needed","Only for email"],"answer":0,"why":"Section 16.4."},
+{"q":"In Strata Cloud Manager, what is the API-based scanning component called?","choices":["Discovered Apps","Data Security","App Scope","Policy Optimizer"],"answer":1,"why":"Section 16.4."}
+]}</script>
+</div>
+</section>
+
+<nav class="pager" id="pager" aria-label="Module navigation"></nav>
+</article>
+</div>
+</main>
+
+<footer id="site-footer"></footer>
+<script src="../assets/js/course.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/activities.js"></script>
+<script src="../assets/js/sims/m16.js"></script>
+</body>
+</html>
