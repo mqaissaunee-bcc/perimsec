@@ -482,3 +482,10 @@
   initTips();
   initNotes();
 })();
+/* Course assistant: add the chat button to every page that loads site.js */
+(function () {
+  var s = document.createElement("script");
+  s.src = new URL("../../assistant.js", document.currentScript.src).href;
+  s.defer = true;
+  document.body.appendChild(s);
+})();
