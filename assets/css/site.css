@@ -476,7 +476,7 @@ dfn[data-term] { font-style: normal; border-bottom: 1px dotted var(--ink-2); cur
 .pager a.next { text-align: right; margin-left: auto; }
 
 /* Notes panel */
-.notes-fab { position: fixed; right: 1rem; bottom: 1rem; z-index: 40; background: var(--ink); color: var(--surface); border-color: var(--ink); box-shadow: 0 4px 14px rgba(0,0,0,0.25); }
+.notes-fab { position: fixed; right: 18px; bottom: 78px; z-index: 40; background: var(--ink); color: var(--surface); border-color: var(--ink); box-shadow: 0 4px 14px rgba(0,0,0,0.25); }
 .notes-panel {
   position: fixed; right: 0; top: 0; bottom: 0; width: min(420px, 100%); z-index: 50;
   background: var(--surface); border-left: 1px solid var(--rule); box-shadow: -8px 0 24px rgba(0,0,0,0.18);
@@ -545,3 +545,11 @@ html, body { overflow-x: clip; }
 .career q { quotes: "\201C" "\201D"; display: inline-block; margin-bottom: 0.25rem; }
 .career-cert { border-left: 4px solid var(--accent); background: var(--accent-soft); padding: 0.8rem 1rem; border-radius: 0 var(--radius-m) var(--radius-m) 0; }
 @media (max-width: 600px) { .career td:first-child { width: auto; } }
+
+/* ---------- Notes button + course assistant ----------
+   The assistant launcher (assistant.js) sits at right/bottom 18px and is 48px tall,
+   so the Notes button stacks 12px above it. Each open panel hides the other button
+   so neither covers the panel's controls. */
+body:has(.notes-panel:not([hidden])) .ca-launch,
+body:has(.notes-panel:not([hidden])) .ca-panel { display: none !important; }
+body:has(.ca-panel:not([hidden])) .notes-fab { visibility: hidden; }
