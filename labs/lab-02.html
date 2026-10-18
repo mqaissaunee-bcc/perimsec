@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab 2 companion: Managing Firewall Configurations | Perimeter Security</title>
+<meta name="description" content="Lab 2 companion for Perimeter Security: walkthrough of the detailed steps for Managing Firewall Configurations, screenshots to capture, troubleshooting, and a cheat sheet.">
+<link rel="stylesheet" href="../assets/css/site.css">
+<script src="../assets/js/prefs.js"></script>
+</head>
+<body data-root=".." data-lab="2" data-page="labs/index.html">
+<a class="skip-link" href="#main">Skip to main content</a>
+<header id="site-header"></header>
+
+<main id="main" class="page">
+<div class="module-hero">
+<p class="kicker">Lab 2 of 14 in NDG Online. Week 2, due Wed 10/14. Goes with Module 3: Managing Firewall Configurations.</p>
+<h1>Lab 2: Managing Firewall Configurations</h1>
+<p class="lede">Learn the safety net before you need it. You save and export a configuration snapshot, make a mistake on purpose and undo it, compare pending changes with the running configuration before committing, and learn to tame the System log with columns and filters.</p>
+<ul class="facts"><li>About 45 to 60 minutes</li><li>NDG Online, Lab 2</li><li>Uses Module 3, sections 3.1 to 3.5</li><li>Snapshot <code>edu-210-11.0a-02.xml</code></li><li>8 screenshots to capture</li></ul>
+<div class="lab-hero-links"><a class="btn" href="../modules/module-03.html#s-lab">Lab 2 briefing in Module 3</a><a class="btn btn-quiet" href="index.html">All lab companions</a><a class="btn btn-quiet" href="#s-evidence">Screenshot checklist</a></div>
+</div>
+
+<div class="module-layout">
+<nav class="module-rail" aria-label="This lab companion">
+<h2>This lab</h2>
+<div class="progress-wrap"><span class="label" id="rail-meter-label">0 sections reviewed</span>
+<div class="meter" role="progressbar" aria-labelledby="rail-meter-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="rail-meter"></span></div></div>
+<ol id="rail-list"></ol>
+<p><a href="#s-cheat">Jump to the cheat sheet</a></p>
+</nav>
+<article>
+<section class="unit" id="s-overview" data-section="overview" data-label="What this lab is for" data-part="Prepare">
+<header><span class="sec-n">01</span><h2>What this lab is for</h2></header>
+<p>Every firewall administrator eventually commits something they regret. This lab practices the tools that make that survivable: a <dfn data-term="snapshot">named snapshot</dfn> you can return to, an export that lives off the box, <strong>Revert Changes</strong> for mistakes you haven't committed yet, and <strong>Preview Changes</strong> so you see exactly what a commit will do before you click it.</p>
+<p>The second half is about logs. Every later lab asks you to find something in a log: a denied ping, a blocked file, a sinkholed lookup. The column, click-to-filter, and Filter Builder skills here work the same way in every log on the firewall.</p>
+<ul><li><strong>You'll leave with:</strong> a saved and exported snapshot, a reverted mistake, a previewed (uncommitted) SNMP change, and a filtered System log.</li><li><strong>Builds on:</strong> <a href="../modules/module-03.html">Module 3</a>, especially candidate versus running configuration (3.1 to 3.3) and log filter syntax (3.5). Simulation 3.1 lets you rehearse save, revert, and commit.</li><li><strong>Sets up:</strong> log filtering in every lab from Lab 5 on.</li></ul>
+</section>
+
+<section class="unit" id="s-setup" data-section="setup" data-label="Before you begin" data-part="Prepare">
+<header><span class="sec-n">02</span><h2>Before you begin</h2></header>
+<p>You work in the web interface from the client's Firefox browser. Exporting a snapshot downloads a file to the client's Downloads folder.</p>
+<div class="table-wrap"><table>
+<caption class="visually-hidden">Hosts in the lab network</caption>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td></tr>
+</tbody></table></div>
+<p class="box-note">Usernames and passwords are in the Lab Settings table on page 5 of each lab guide. They are not repeated here, because this site is public.</p>
+<h4>What's already in the baseline</h4>
+<p>The Lab 1 settings (DNS, NTP, banner, management access) are already in <code>edu-210-11.0a-02.xml</code>. There are still no data interfaces, zones, or policy.</p>
+<h4>Three configurations to keep straight</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Name</th><th scope="col">What it is</th></tr></thead><tbody><tr><td>Running configuration</td><td>What the firewall is enforcing right now. Changes only by commit (or by loading and committing).</td></tr><tr><td>Candidate configuration</td><td>Your working copy. Every OK writes here.</td></tr><tr><td>Saved snapshot</td><td>A copy of the candidate stored as a file on the firewall, such as <code>snapshot.xml</code> or a name you choose.</td></tr></tbody></table></div>
+</section>
+
+<section class="unit" id="s-walkthrough" data-section="walkthrough" data-label="Walkthrough" data-part="Do the lab">
+<header><span class="sec-n">03</span><h2>Walkthrough of the detailed steps</h2></header>
+<h3 class="task-head"><span class="tn">2.1</span>Load the lab configuration</h3>
+<p class="task-intro">Every lab starts from a known baseline, so your firewall matches the guide no matter what you did last time.</p>
+<ol class="steps-list" start="1"><li>On the client desktop, log in as <code>lab-user</code>, open Firefox, and browse to <code>https://192.168.1.254</code>. Log in as <code>admin</code> with the password from Lab Settings. If the login page does not appear, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li>Go to <span class="path" data-path="Device > Setup > Operations"></span> and click <strong>Load named configuration snapshot</strong>. Choose <code>edu-210-11.0a-02.xml</code> and click OK, then Close.</li><li>Open <strong>Tasks</strong> (lower right) and confirm the Load task shows completed.</li><li>Click <strong>Commit</strong> (upper right), then <strong>Commit</strong> in the dialog, and wait for it to finish.</li></ol>
+<div class="callout stuck"><p class="c-title">Loading is not committing</p><p>A loaded snapshot replaces only the candidate configuration. Until you commit, the firewall is still running whatever was there before, and nothing in the lab will match the guide.</p></div>
+<p class="shot" id="shot-1"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 1</span> The commit completing after loading the Lab 2 baseline.</span></p>
+<h3 class="task-head"><span class="tn">2.2</span>Save a named configuration snapshot</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Device &gt; Setup &gt; Operations"></span> and click <strong>Save named configuration snapshot</strong>.</li>
+<li>Name it <code>firewall-a-lab2</code> and click OK, then Close.</li>
+</ol>
+<div class="callout tip"><p class="c-title">Where the file went</p><p>Save writes the snapshot to the firewall's own storage. It is not on your workstation yet; that is what the next task does.</p></div>
+<div class="callout fix"><p class="c-title">The two halves use different names</p><p>The high-level steps (Task 1) name the snapshot <code>firewall-a</code> plus today's date. The detailed steps use <code>firewall-a-lab2</code>. Either is fine; use the detailed name if you're following this page.</p></div>
+<h3 class="task-head"><span class="tn">2.3</span>Export a named configuration snapshot</h3>
+<ol class="steps-list" start="1">
+<li>On the same Operations page, click <strong>Export named configuration snapshot</strong>.</li>
+<li>Choose <code>firewall-a-lab2</code> and click OK.</li>
+<li>When Firefox asks, save the file in <strong>Downloads</strong>.</li>
+</ol>
+<div class="callout why"><p class="c-title">Why export at all</p><p>A snapshot stored on the firewall dies with the firewall. An exported copy is your backup for hardware failure, a bad upgrade, or a replacement unit.</p></div>
+<p class="shot" id="shot-2"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 2</span> The Downloads folder (or Firefox's download list) showing firewall-a-lab2 saved on the client.</span></p>
+<h3 class="task-head"><span class="tn">2.4</span>Revert ongoing configuration changes</h3>
+<p class="task-intro">You'll introduce a believable typo, confirm it's there, then throw it away without committing.</p>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Device &gt; Setup &gt; Services"></span>, click the Services gear, and change <strong>Primary DNS Server</strong> to <code>88.8.8.8</code>. Click OK.</li>
+<li>Confirm the wrong value shows on the Services panel.</li>
+<li>At the upper right, click <strong>Changes</strong> and choose <strong>Revert Changes</strong>.</li>
+<li>Leave the scope as shown (device-and-network) and click <strong>Revert</strong>, then Close.</li>
+<li>Check the Services panel again: the primary DNS server is back to <code>8.8.8.8</code>.</li>
+</ol>
+<p class="shot" id="shot-3"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 3</span> The Services panel showing the mistaken 88.8.8.8 before you revert.</span></p>
+<p class="shot" id="shot-4"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 4</span> The Services panel showing 8.8.8.8 restored after Revert Changes.</span></p>
+<div class="callout stuck"><p class="c-title">Which revert is this?</p><p><strong>Revert Changes</strong> (under the Changes button) returns the candidate to the running configuration. That is different from <strong>Revert to running configuration</strong> and <strong>Revert to last saved configuration</strong> on the Operations page, covered in Module 3. Here they would all have the same effect, because the typo is the only pending change.</p></div>
+<h3 class="task-head"><span class="tn">2.5</span>Preview configuration changes</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Device &gt; Setup &gt; Operations"></span> and click <strong>SNMP Setup</strong> (Miscellaneous section).</li>
+<li>Set <strong>Physical Location</strong> to <code>Santa Clara, CA, USA</code>, <strong>Contact</strong> to <code>Unit 42</code>, and <strong>SNMP Community String</strong> to <code>paloalto42</code>. Click OK.</li>
+<li>Click <strong>Commit</strong>, but in the Commit window click <strong>Preview Changes</strong>, not Commit.</li>
+<li>Leave <strong>Lines of Context</strong> at 10 and click OK. A <strong>Device Config Audit</strong> window opens: running configuration on the left, candidate on the right.</li>
+<li>Find your SNMP lines. Green is added, yellow is modified, red is deleted.</li>
+<li>Close the audit window and click <strong>Cancel</strong> in the Commit window.</li>
+</ol>
+<div class="callout fix"><p class="c-title">A comma in the wrong place</p><p>The guide's step reads "Physical Location to Santa Clara, CA, USA for Contact". It means three separate fields: Physical Location is <code>Santa Clara, CA, USA</code>; Contact is <code>Unit 42</code>.</p></div>
+<p class="shot" id="shot-5"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 5</span> The Device Config Audit window with the SNMP changes highlighted on the candidate side.</span></p>
+<div class="callout tip"><p class="c-title">Leave it uncommitted</p><p>The lesson is seeing the difference, not applying it. Lab 3 loads a fresh baseline, so nothing carries over either way.</p></div>
+<h3 class="task-head"><span class="tn">2.6</span>Examine log files</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Monitor &gt; Logs &gt; System"></span>.</li>
+<li>Open any column header's drop-down arrow, choose <strong>Columns</strong>, and uncheck <strong>Object</strong>.</li>
+<li>Drag the <strong>Severity</strong> column header to the far left.</li>
+</ol>
+<div class="callout why"><p class="c-title">Why bother arranging columns</p><p>Every log has more columns than fit on screen. Putting the one you scan most (here, Severity) on the left saves time in every lab that follows. The same menu adds hidden columns, which you'll need in Labs 6, 11, and 12.</p></div>
+<p class="shot" id="shot-6"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 6</span> The System log with Object hidden and Severity as the first column.</span></p>
+<h3 class="task-head"><span class="tn">2.7</span>Create a log file filter</h3>
+<ol class="steps-list" start="1">
+<li>In the System log, click any <strong>informational</strong> value in the Severity column. The filter box fills in for you.</li>
+<li>Click <strong>Apply Filter</strong> (the arrow at the upper right of the filter box).</li>
+<li>Now click any <strong>general</strong> value in the Type column. The filter grows an <code>and</code> clause. Apply it again.</li>
+<li>Click <strong>Clear Filter</strong> when you're done.</li>
+</ol>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( severity eq informational )</span>
+<span class="cmd">( severity eq informational ) and ( subtype eq general )</span></pre>
+<div class="callout tip"><p class="c-title">Click to learn the syntax</p><p>Clicking a value is the fastest way to learn the field names. The System log calls the Type column <code>subtype</code> in filters, which you'd never guess.</p></div>
+<p class="shot" id="shot-7"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 7</span> The System log filtered to informational and general entries, with the filter text visible.</span></p>
+<h3 class="task-head"><span class="tn">2.8</span>Use the Filter Builder</h3>
+<ol class="steps-list" start="1">
+<li>Go to the <strong>Dashboard</strong> and note the current date and time under General Information.</li>
+<li>Back in <span class="path" data-path="Monitor &gt; Logs &gt; System"></span>, clear any filter, then click <strong>Add Filter</strong> (the plus icon).</li>
+<li>Build the first clause: connector <strong>and</strong>, attribute <strong>Severity</strong>, operator <strong>equal</strong>, value <strong>informational</strong>. Click <strong>Add</strong>.</li>
+<li>Build the second: <strong>and</strong>, <strong>Time Generated</strong>, <strong>greater than or equal to</strong>, today's date, and a time about 60 minutes before the time you noted. Click <strong>Add</strong>, then <strong>Apply</strong>.</li>
+<li>Click <strong>Apply Filter</strong> in the log. You see only the last hour of informational entries.</li>
+</ol>
+<div class="callout stuck"><p class="c-title">Your time is not the guide's time</p><p>The screenshots use 17:25. Use your own lab clock, which runs in UTC because of the time zone you set in Lab 1. The result should look roughly like this:</p></div>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( severity eq informational ) and ( time_generated geq '2026/10/21 16:25:00' )</span></pre>
+<p class="shot" id="shot-8"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 8</span> The Add Log Filter window showing both clauses and the generated filter text.</span></p>
+</section>
+
+<section class="unit" id="s-reference" data-section="reference" data-label="Reference" data-part="Understand">
+<header><span class="sec-n">04</span><h2>Configuration and log reference</h2></header>
+<h4>Where each operation lives</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Operation</th><th scope="col">Where</th><th scope="col">Effect</th></tr></thead><tbody><tr><td>Save named configuration snapshot</td><td><span class="path" data-path="Device &gt; Setup &gt; Operations"></span></td><td>Writes the candidate to a named file on the firewall</td></tr><tr><td>Export named configuration snapshot</td><td><span class="path" data-path="Device &gt; Setup &gt; Operations"></span></td><td>Downloads a snapshot file to your computer</td></tr><tr><td>Load named configuration snapshot</td><td><span class="path" data-path="Device &gt; Setup &gt; Operations"></span></td><td>Replaces the candidate with a saved file; commit to apply</td></tr><tr><td>Revert Changes</td><td>Changes button (upper right)</td><td>Discards uncommitted changes, by scope</td></tr><tr><td>Preview Changes</td><td>Commit window</td><td>Side-by-side diff of running versus candidate</td></tr><tr><td>Commit history</td><td><span class="path" data-path="Device &gt; Config Audit"></span> and the commit versions on Operations</td><td>Compare or load any earlier committed version</td></tr></tbody></table></div>
+<h4>Filter operators you'll use all term</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Operator</th><th scope="col">Meaning</th><th scope="col">Example</th></tr></thead><tbody><tr><td><code>eq</code> / <code>neq</code></td><td>equals, not equals</td><td><code>( severity eq high )</code></td></tr><tr><td><code>geq</code> / <code>leq</code></td><td>greater or less than, or equal</td><td><code>( severity geq high )</code></td></tr><tr><td><code>in</code></td><td>address in a network or equals</td><td><code>( addr.src in 192.168.1.0/24 )</code></td></tr><tr><td><code>has</code></td><td>flag is present</td><td><code>( flags has proxy )</code></td></tr><tr><td><code>and</code> / <code>or</code> / <code>not</code></td><td>combine clauses</td><td><code>( zone.src eq Users_Net ) and ( app eq ping )</code></td></tr></tbody></table></div>
+<h4>The same ideas in the CLI</h4>
+<p>These are read-only and safe to try once you have SSH access in Lab 4.</p>
+<p><code>show config diff</code> is the CLI version of Preview Changes.</p>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">show config diff</span></pre>
+</section>
+
+<section class="unit" id="s-stuck" data-section="stuck" data-label="Where people get stuck" data-part="Understand">
+<header><span class="sec-n">05</span><h2>Where people get stuck</h2></header>
+<div class="table-wrap"><table class="stuck-table"><thead><tr><th scope="col">Symptom</th><th scope="col">Likely cause</th><th scope="col">Fix</th></tr></thead><tbody><tr><td>Can't find the exported file</td><td>Firefox saved it somewhere else, or you cancelled</td><td>Check Firefox's download list (the arrow at the top right) and the Downloads folder.</td></tr><tr><td>Revert Changes is greyed out</td><td>Nothing is pending</td><td>Make the 88.8.8.8 change first and click OK.</td></tr><tr><td>Preview Changes shows nothing</td><td>You committed instead of previewing, or reverted the SNMP change</td><td>Make the SNMP change again and choose Preview Changes.</td></tr><tr><td>A log looks empty in a later task</td><td>A filter from earlier is still applied</td><td>Click Clear Filter. Filters persist while you move around.</td></tr><tr><td>The Filter Builder returns no rows</td><td>Your time is in the future, or a different date</td><td>Use the Dashboard clock (UTC) and subtract an hour.</td></tr><tr><td>Typed filter returns an error</td><td>Missing spaces or wrong case</td><td>Filters are case sensitive. Keep the spaces inside the parentheses.</td></tr></tbody></table></div>
+</section>
+
+<section class="unit" id="s-production" data-section="production" data-label="In production" data-part="Understand">
+<header><span class="sec-n">06</span><h2>How this looks on a real firewall</h2></header>
+<ul><li><strong>Snapshot before every change window.</strong> Many teams save a named snapshot (with a date and ticket number) before any significant change, then export it.</li><li><strong>Automate backups.</strong> Production firewalls usually export the running configuration on a schedule, or are managed by Panorama, which keeps every device's configuration centrally.</li><li><strong>Preview is your peer review.</strong> Teams that use change control often paste the Preview Changes diff into the change ticket so a second person can approve it.</li><li><strong>Lock when you share.</strong> On a firewall several admins use, configuration and commit locks (Module 3) keep two people from committing over each other.</li><li><strong>Use SNMPv3 in real networks.</strong> The lab uses an SNMPv2c community string. v2c sends it in clear text; SNMPv3 adds authentication and encryption.</li><li><strong>Every vendor has this.</strong> Diff before commit, rollback, and scheduled backups exist on Fortinet, Cisco, Juniper, and Check Point too.</li></ul>
+</section>
+
+<section class="unit" id="s-selfcheck" data-section="selfcheck" data-label="Check yourself" data-part="Wrap up">
+<header><span class="sec-n">07</span><h2>Check yourself</h2></header>
+<details class="qa"><summary>You load a named snapshot. What has changed on the firewall, and what hasn't?</summary><div class="qa-a"><p>Only the candidate configuration changed. The firewall keeps enforcing the running configuration until you commit.</p></div></details>
+<details class="qa"><summary>Why export a snapshot when it's already saved on the firewall?</summary><div class="qa-a"><p>Because a copy on the firewall is lost if the firewall fails or is replaced. The export is an off-box backup.</p></div></details>
+<details class="qa"><summary>What does Revert Changes compare your candidate configuration against?</summary><div class="qa-a"><p>The running configuration. It throws away uncommitted changes in the scope you choose.</p></div></details>
+<details class="qa"><summary>In Preview Changes, which side is the running configuration?</summary><div class="qa-a"><p>The left. The candidate, with your pending changes, is on the right.</p></div></details>
+<details class="qa"><summary>Write a System log filter for high or critical severity entries.</summary><div class="qa-a"><p><code>( severity geq high )</code>. You could also write <code>( severity eq high ) or ( severity eq critical )</code>.</p></div></details>
+</section>
+
+<section class="unit" id="s-evidence" data-section="evidence" data-label="What to submit" data-part="Wrap up">
+<header><span class="sec-n">08</span><h2>Screenshots to capture</h2></header>
+<p>Take each screenshot when you reach its marker in the walkthrough. Name the files by lab and number (for example <code>lab02-shot4.png</code>) and submit them in Canvas as your instructor directs.</p>
+<ul class="checklist evidence" data-save="lab2-evidence"><li><input type="checkbox" id="ev2-0"><div><label for="ev2-0">Screenshot 1: The commit completing after loading the Lab 2 baseline.</label><a class="ev-where" href="#shot-1">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev2-1"><div><label for="ev2-1">Screenshot 2: The Downloads folder (or Firefox's download list) showing firewall-a-lab2 saved on the client.</label><a class="ev-where" href="#shot-2">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev2-2"><div><label for="ev2-2">Screenshot 3: The Services panel showing the mistaken 88.8.8.8 before you revert.</label><a class="ev-where" href="#shot-3">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev2-3"><div><label for="ev2-3">Screenshot 4: The Services panel showing 8.8.8.8 restored after Revert Changes.</label><a class="ev-where" href="#shot-4">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev2-4"><div><label for="ev2-4">Screenshot 5: The Device Config Audit window with the SNMP changes highlighted on the candidate side.</label><a class="ev-where" href="#shot-5">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev2-5"><div><label for="ev2-5">Screenshot 6: The System log with Object hidden and Severity as the first column.</label><a class="ev-where" href="#shot-6">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev2-6"><div><label for="ev2-6">Screenshot 7: The System log filtered to informational and general entries, with the filter text visible.</label><a class="ev-where" href="#shot-7">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev2-7"><div><label for="ev2-7">Screenshot 8: The Add Log Filter window showing both clauses and the generated filter text.</label><a class="ev-where" href="#shot-8">Find it in the walkthrough</a></div></li></ul>
+<p class="box-note">Checkmarks are saved in this browser only. They help you keep track; the screenshots themselves go to Canvas.</p>
+</section>
+
+<section class="unit" id="s-cheat" data-section="cheat" data-label="Cheat sheet" data-part="Wrap up">
+<header><span class="sec-n">09</span><h2>Cheat sheet</h2></header>
+<div class="cheat">
+<h4>Values used in this lab</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Item</th><th scope="col">Value</th></tr></thead><tbody><tr><td>Snapshot to load</td><td><code>edu-210-11.0a-02.xml</code></td></tr><tr><td>Snapshot to save and export</td><td><code>firewall-a-lab2</code></td></tr><tr><td>Deliberate typo</td><td>Primary DNS <code>88.8.8.8</code> (correct is <code>8.8.8.8</code>)</td></tr><tr><td>SNMP location, contact, community</td><td><code>Santa Clara, CA, USA</code>, <code>Unit 42</code>, <code>paloalto42</code></td></tr></tbody></table></div>
+<h4>Filters</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Purpose</th><th scope="col">Filter</th></tr></thead><tbody><tr><td>Informational entries</td><td><code>( severity eq informational )</code></td></tr><tr><td>Add a second condition</td><td><code>( severity eq informational ) and ( subtype eq general )</code></td></tr><tr><td>Last hour</td><td><code>( time_generated geq 'YYYY/MM/DD HH:MM:SS' )</code></td></tr></tbody></table></div>
+<h4>Remember</h4>
+<ul><li>Revert Changes discards what you haven't committed.</li><li>Preview Changes, then Cancel. Don't commit the SNMP change.</li><li>Clear filters before you leave a log.</li></ul>
+</div>
+<p><button type="button" class="btn" data-print="cheat">Print only this cheat sheet</button></p>
+</section>
+<nav class="pager" id="pager" aria-label="Lab navigation"></nav>
+</article>
+</div>
+</main>
+
+<footer id="site-footer"></footer>
+<script src="../assets/js/course.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/activities.js"></script>
+</body>
+</html>

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab 9 companion: Blocking Inappropriate Web Traffic with Advanced URL Filtering | Perimeter Security</title>
+<meta name="description" content="Lab 9 companion for Perimeter Security: walkthrough of the detailed steps for Blocking Inappropriate Web Traffic with Advanced URL Filtering, screenshots to capture, troubleshooting, and a cheat sheet.">
+<link rel="stylesheet" href="../assets/css/site.css">
+<script src="../assets/js/prefs.js"></script>
+</head>
+<body data-root=".." data-lab="9" data-page="labs/index.html">
+<a class="skip-link" href="#main">Skip to main content</a>
+<header id="site-header"></header>
+
+<main id="main" class="page">
+<div class="module-hero">
+<p class="kicker">Lab 9 of 14 in NDG Online. Week 6, due Wed 11/11. Goes with Module 11: Advanced URL Filtering.</p>
+<h1>Lab 9: Blocking Inappropriate Web Traffic with Advanced URL Filtering</h1>
+<p class="lede">Control the web two ways and compare them. You block risky URL categories with a Security rule, then with a URL Filtering profile that also logs everything allowed; add a custom category for specific sites and enforce it both ways; and finish by blocking a URL fed from an external dynamic list.</p>
+<ul class="facts"><li>About 60 to 75 minutes</li><li>NDG Online, Lab 9</li><li>Uses Module 11, sections 11.1 to 11.5</li><li>Snapshot <code>edu-210-11.0a-09.xml</code></li><li>7 screenshots to capture</li></ul>
+<div class="lab-hero-links"><a class="btn" href="../modules/module-11.html#s-lab">Lab 9 briefing in Module 11</a><a class="btn btn-quiet" href="index.html">All lab companions</a><a class="btn btn-quiet" href="#s-evidence">Screenshot checklist</a></div>
+</div>
+
+<div class="module-layout">
+<nav class="module-rail" aria-label="This lab companion">
+<h2>This lab</h2>
+<div class="progress-wrap"><span class="label" id="rail-meter-label">0 sections reviewed</span>
+<div class="meter" role="progressbar" aria-labelledby="rail-meter-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="rail-meter"></span></div></div>
+<ol id="rail-list"></ol>
+<p><a href="#s-cheat">Jump to the cheat sheet</a></p>
+</nav>
+<article>
+<section class="unit" id="s-overview" data-section="overview" data-label="What this lab is for" data-part="Prepare">
+<header><span class="sec-n">01</span><h2>What this lab is for</h2></header>
+<p>PAN-OS gives you two tools for web control, and this lab makes you use both on the same sites so the difference sticks:</p>
+<ul><li>A <strong>Security rule with URL categories</strong> as match criteria. It allows or denies whole sessions, and you see it in the Traffic log under the rule's name.</li><li>A <strong><dfn data-term="url-filtering">URL Filtering profile</dfn></strong> attached to allow rules. It acts per category (block, alert, allow, continue, override), and with alert it records every site users visit, not just blocked ones.</li></ul>
+<p>You'll also use a <dfn data-term="custom-url-category">custom URL category</dfn> for a short list of sites and an <dfn data-term="edl">external dynamic list</dfn> you can update without a commit.</p>
+<ul><li><strong>You'll leave with:</strong> Block-Bad-URLs (category deny rule), Corp-URL-Profile in Corp-Profiles-Group, the Block-Per-Company-Policy custom category, and malicious-urls-edl.</li><li><strong>Builds on:</strong> <a href="../modules/module-11.html">Module 11</a>. Simulation 11.1 (what happens to this URL?) covers precedence between custom categories, EDLs, and PAN-DB.</li><li><strong>Sets up:</strong> the capstone's Block_Bad_URLs rule and Corp-URL profile.</li></ul>
+</section>
+
+<section class="unit" id="s-setup" data-section="setup" data-label="Before you begin" data-part="Prepare">
+<header><span class="sec-n">02</span><h2>Before you begin</h2></header>
+<p>You'll use the web interface and Firefox private windows. The desktop also has a <strong>Clear Logs Firewall-A</strong> icon.</p>
+<div class="table-wrap"><table>
+<caption class="visually-hidden">Hosts in the lab network</caption>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td></tr>
+</tbody></table></div>
+<p class="box-note">Usernames and passwords are in the Lab Settings table on page 5 of each lab guide. They are not repeated here, because this site is public.</p>
+<h4>What's already in the baseline</h4>
+<p>Everything through Lab 8, including Corp-Profiles-Group on the allow rules (with URL Filtering still set to None).</p>
+<h4>Keep track of Block-Bad-URLs</h4>
+<p>You'll enable, disable, and re-enable this rule several times so that each test exercises only one tool. Before every test, check whether it's supposed to be on. Disabled rules appear in italics.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">Task</th><th scope="col">Block-Bad-URLs should be</th></tr></thead><tbody><tr><td>2.4</td><td>Enabled</td></tr><tr><td>2.6</td><td>Disabled</td></tr><tr><td>2.8</td><td>Enabled (with the custom category added)</td></tr><tr><td>2.10</td><td>Disabled</td></tr><tr><td>2.13</td><td>Enabled (with the EDL added)</td></tr></tbody></table></div>
+</section>
+
+<section class="unit" id="s-walkthrough" data-section="walkthrough" data-label="Walkthrough" data-part="Do the lab">
+<header><span class="sec-n">03</span><h2>Walkthrough of the detailed steps</h2></header>
+<h3 class="task-head"><span class="tn">2.1</span>Load the lab configuration</h3>
+<p class="task-intro">Every lab starts from a known baseline, so your firewall matches the guide no matter what you did last time.</p>
+<ol class="steps-list" start="1"><li>On the client desktop, log in as <code>lab-user</code>, open Firefox, and browse to <code>https://192.168.1.254</code>. Log in as <code>admin</code> with the password from Lab Settings. If the login page does not appear, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li>Go to <span class="path" data-path="Device > Setup > Operations"></span> and click <strong>Load named configuration snapshot</strong>. Choose <code>edu-210-11.0a-09.xml</code> and click OK, then Close.</li><li>Open <strong>Tasks</strong> (lower right) and confirm the Load task shows completed.</li><li>Click <strong>Commit</strong> (upper right), then <strong>Commit</strong> in the dialog, and wait for it to finish.</li></ol>
+<div class="callout stuck"><p class="c-title">Loading is not committing</p><p>A loaded snapshot replaces only the candidate configuration. Until you commit, the firewall is still running whatever was there before, and nothing in the lab will match the guide.</p></div>
+<h3 class="task-head"><span class="tn">2.2</span>Clear logs and test two sites</h3>
+<ol class="steps-list" start="1">
+<li>Double-click <strong>Clear Logs Firewall-A</strong> on the desktop, confirm the logs cleared, and press Enter.</li>
+<li>In Firefox, open <code>http://www.hacker9.com</code> (category hacking). It loads.</li>
+<li>Open <code>http://www.hidester.com/proxy</code> (category proxy-avoidance-and-anonymizers). It loads, redirecting to vpncentral.com. Close Firefox.</li>
+</ol>
+<div class="callout fix"><p class="c-title">Wrong task title</p><p>The guide calls this "Generate Traffic Without Security Profiles." It actually clears the logs and confirms two sites aren't blocked yet.</p></div>
+<h3 class="task-head"><span class="tn">2.3</span>Create a Security rule that blocks categories</h3>
+<ol class="steps-list" start="1">
+<li>In <span class="path" data-path="Policies &gt; Security"></span>, show the <strong>URL Category</strong> column if it's hidden (any column drop-down &gt; Columns).</li>
+<li>Click <strong>Add</strong>. Name <code>Block-Bad-URLs</code>, description <code>Blocks bad URLs based on categories</code>.</li>
+<li>Source zone <strong>Users_Net</strong>; destination zone <strong>Internet</strong>; Application <strong>Any</strong>.</li>
+<li><strong>Service/URL Category:</strong> Service <strong>application-default</strong>. Add these categories: adult, command-and-control, extremism, hacking, high-risk, malware, nudity, parked, peer-to-peer, phishing, proxy-avoidance-and-anonymizers, questionable.</li>
+<li><strong>Actions:</strong> <strong>Deny</strong>, Log at Session End checked. Click OK.</li>
+<li>Select the rule and choose <strong>Move &gt; Move Top</strong>. Commit.</li>
+</ol>
+<div class="callout fix"><p class="c-title">Name drift</p><p>Step 9 calls the rule "block-known-bad-urls." It's Block-Bad-URLs.</p></div>
+<div class="callout stuck"><p class="c-title">Move Top puts it above the known-bad address rules</p><p>That's fine for this lab. What matters is that it's above Users_to_Internet; below it, the deny would be shadowed.</p></div>
+<p class="shot" id="shot-1"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 1</span> The rulebase with Block-Bad-URLs at the top and its URL categories visible.</span></p>
+<h3 class="task-head"><span class="tn">2.4</span>Test the category deny rule</h3>
+<ol class="steps-list" start="1">
+<li>Open a <strong>private</strong> Firefox window. Browse to <code>http://www.hacker9.com</code>. You get a block page saying web-browsing was blocked.</li>
+<li>Browse to <code>http://www.hidester.com/proxy</code>. Same kind of page. Close Firefox.</li>
+<li>Go to <span class="path" data-path="Monitor &gt; Logs &gt; URL Filtering"></span> and find the blocked entries.</li>
+</ol>
+<div class="callout why"><p class="c-title">"Application web-browsing blocked"?</p><p>The page is the generic application block page, because a Security rule denied the session. The category is why the rule matched. A URL Filtering profile shows a different page that names the category, as you'll see in 2.10.</p></div>
+<p class="shot" id="shot-2"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 2</span> The block page for hacker9.com produced by the Block-Bad-URLs rule.</span></p>
+<p class="shot" id="shot-3"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 3</span> The URL Filtering log showing the blocked hacker9 and hidester entries.</span></p>
+<h3 class="task-head"><span class="tn">2.5</span>Create a URL Filtering profile</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Objects &gt; Security Profiles &gt; URL Filtering"></span> and click <strong>Add</strong>. Name <code>Corp-URL-Profile</code>, description <code>Company URL Filtering profile</code>.</li>
+<li>Click the small triangle on the <strong>Site Access</strong> column header and choose <strong>Set All Actions &gt; alert</strong>.</li>
+<li>Set <strong>block</strong> for: adult, command-and-control, copyright-infringement, extremism, hacking, high-risk, malware, nudity, parked, peer-to-peer, phishing, proxy-avoidance-and-anonymizers, questionable, unknown. Click OK.</li>
+</ol>
+<div class="callout why"><p class="c-title">alert versus allow</p><p>Both let the user through. <strong>alert</strong> writes a URL Filtering log entry; <strong>allow</strong> doesn't. Setting everything to alert first is what makes the profile a record of all web activity.</p></div>
+<div class="callout tip"><p class="c-title">Two more categories than the rule</p><p>The profile adds copyright-infringement and unknown. The guide's screenshot only shows four categories set; set all fourteen.</p></div>
+<h3 class="task-head"><span class="tn">2.6</span>Add the profile to the group and disable the rule</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Objects &gt; Security Profile Groups"></span>, open <strong>Corp-Profiles-Group</strong>, set <strong>URL Filtering Profile</strong> to <strong>Corp-URL-Profile</strong>, and click OK.</li>
+<li>In <span class="path" data-path="Policies &gt; Security"></span>, select Block-Bad-URLs and click <strong>Disable</strong>. It turns italic.</li>
+<li>Commit.</li>
+</ol>
+<div class="callout fix"><p class="c-title">Name drift</p><p>The guide's heading calls the profile "Corp-URL-Filtering." Select the Corp-URL-Profile you created.</p></div>
+<p class="shot" id="shot-4"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 4</span> Corp-Profiles-Group showing Corp-URL-Profile in the URL Filtering slot.</span></p>
+<h3 class="task-head"><span class="tn">2.7</span>Create a custom URL category</h3>
+<ol class="steps-list" start="1">
+<li>In a private window, open <code>http://www.nbcnews.com</code>. It loads. Close Firefox.</li>
+<li>Go to <span class="path" data-path="Objects &gt; Custom Objects &gt; URL Category"></span> and click <strong>Add</strong>. Cancel the trailing-slash notice.</li>
+<li>Name <code>Block-Per-Company-Policy</code>, description <code>URLs that are blocked by company policy.</code>, Type <strong>URL List</strong>. Add <code>*.nbcnews.com</code> and <code>*.theguardian.com</code>. Click OK.</li>
+<li>Open <strong>Block-Bad-URLs</strong>, and on <strong>Service/URL Category</strong> add <strong>Block-Per-Company-Policy</strong>. Click OK.</li>
+<li>Select Block-Bad-URLs and click <strong>Enable</strong>. Commit.</li>
+</ol>
+<div class="callout tip"><p class="c-title">Wildcard syntax</p><p><code>*.nbcnews.com</code> matches www.nbcnews.com and other subdomains. Enter the entries exactly as shown.</p></div>
+<h3 class="task-head"><span class="tn">2.8</span>Test the custom category in the Security rule</h3>
+<ol class="steps-list" start="1">
+<li>In a private window, browse to <code>www.nbcnews.com</code> and <code>www.theguardian.com</code>. Both show the application block page. Close Firefox.</li>
+<li>In <span class="path" data-path="Monitor &gt; Logs &gt; URL Filtering"></span>, apply the filter below.</li>
+</ol>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( action eq block-url )</span></pre>
+<p class="shot" id="shot-5"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 5</span> The URL Filtering log showing nbcnews and theguardian blocked.</span></p>
+<h3 class="task-head"><span class="tn">2.9</span>Add the custom category to the profile</h3>
+<ol class="steps-list" start="1">
+<li>Open <strong>Corp-URL-Profile</strong>. Under <strong>Custom URL Categories</strong>, set Block-Per-Company-Policy's Site Access to <strong>block</strong>. Click OK.</li>
+<li>Select Block-Bad-URLs and click <strong>Disable</strong>. Commit.</li>
+</ol>
+<h3 class="task-head"><span class="tn">2.10</span>Test the custom category in the profile</h3>
+<ol class="steps-list" start="1">
+<li>In a private window, browse to <code>www.nbcnews.com</code> and <code>www.theguardian.com</code>. This time you get <strong>Web Page Blocked</strong>, the URL Filtering block page, which names the category.</li>
+<li>Close Firefox.</li>
+</ol>
+<p class="shot" id="shot-6"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 6</span> The Web Page Blocked page from the URL Filtering profile, showing the category.</span></p>
+<h3 class="task-head"><span class="tn">2.11</span>Create an EDL of malicious URLs</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Objects &gt; External Dynamic Lists"></span> and click <strong>Add</strong>. Cancel the notice.</li>
+<li>Name <code>malicious-urls-edl</code>, Type <strong>URL List</strong>, description <code>List of malicious URLs maintained on Extranet server</code>, Source <code>http://192.168.50.80/malicious-urls.txt</code>, Check for updates <strong>Every Five Minutes</strong>. Click OK.</li>
+<li>Reopen it, cancel the notice, and click <strong>Test Source URL</strong>. Close, then OK.</li>
+</ol>
+<div class="callout tip"><p class="c-title">What's on the list</p><p>One test URL: www.popurls.com.</p></div>
+<h3 class="task-head"><span class="tn">2.12</span>Block the EDL with the Security rule</h3>
+<ol class="steps-list" start="1">
+<li>Open <strong>Block-Bad-URLs</strong>. On <strong>Service/URL Category</strong>, add <strong>malicious-urls-edl</strong>. Click OK.</li>
+<li>Select the rule and click <strong>Enable</strong>. Commit.</li>
+</ol>
+<h3 class="task-head"><span class="tn">2.13</span>Test the EDL</h3>
+<ol class="steps-list" start="1">
+<li>In a private window, browse to <code>www.popurls.com</code>. You get the application block page. Close Firefox.</li>
+<li>In the URL Filtering log, clear filters and apply <code>( action eq block-url )</code>. You see the popurls entries.</li>
+</ol>
+<div class="callout why"><p class="c-title">Why an EDL beats editing the rule</p><p>The firewall rereads the list every five minutes. Add a URL to the file on the server and it's blocked soon after, with no commit.</p></div>
+<p class="shot" id="shot-7"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 7</span> The URL Filtering log showing www.popurls.com blocked.</span></p>
+</section>
+
+<section class="unit" id="s-reference" data-section="reference" data-label="Reference" data-part="Understand">
+<header><span class="sec-n">04</span><h2>URL Filtering reference</h2></header>
+<h4>Rule match versus profile</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col"></th><th scope="col">Security rule with URL categories</th><th scope="col">URL Filtering profile</th></tr></thead><tbody><tr><td>Acts on</td><td>Whole session: allow or deny</td><td>Each URL, per category action</td></tr><tr><td>Logs</td><td>Traffic log under the rule name, plus URL log for blocks</td><td>URL Filtering log for alert, block, continue, override</td></tr><tr><td>User sees</td><td>Application block page</td><td>Web Page Blocked page with the category</td></tr><tr><td>Best for</td><td>Hard blocks of a few categories</td><td>Visibility and nuanced actions on everything</td></tr></tbody></table></div>
+<h4>Profile actions</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Action</th><th scope="col">User</th><th scope="col">Logged</th></tr></thead><tbody><tr><td>allow</td><td>Allowed</td><td>No</td></tr><tr><td>alert</td><td>Allowed</td><td>Yes</td></tr><tr><td>block</td><td>Blocked</td><td>Yes</td></tr><tr><td>continue</td><td>Warning page, may proceed</td><td>Yes</td></tr><tr><td>override</td><td>Needs a password to proceed</td><td>Yes</td></tr></tbody></table></div>
+<h4>Precedence when a URL matches several things</h4>
+<p>Custom categories and EDLs are checked before PAN-DB categories. If a URL is in more than one category with different actions, the most restrictive action wins (Module 11).</p>
+<h4>CLI check</h4>
+<p>Shows the category PAN-DB assigns to a URL.</p>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">test url www.hacker9.com</span></pre>
+</section>
+
+<section class="unit" id="s-stuck" data-section="stuck" data-label="Where people get stuck" data-part="Understand">
+<header><span class="sec-n">05</span><h2>Where people get stuck</h2></header>
+<div class="table-wrap"><table class="stuck-table"><thead><tr><th scope="col">Symptom</th><th scope="col">Likely cause</th><th scope="col">Fix</th></tr></thead><tbody><tr><td>Profile test shows the application block page</td><td>Block-Bad-URLs is still enabled</td><td>Disable it for 2.10; check the state table above.</td></tr><tr><td>Site loads when it should be blocked</td><td>Cached page, or not committed</td><td>Use a private window; commit.</td></tr><tr><td>Nothing in the URL Filtering log for allowed sites</td><td>Categories left at allow, not alert</td><td>Set All Actions &gt; alert, then the blocks.</td></tr><tr><td>Custom category doesn't match</td><td>Missing wildcard, or extra http:// in the entry</td><td>Use <code>*.nbcnews.com</code>.</td></tr><tr><td>Deny rule never hits</td><td>It's below Users_to_Internet</td><td>Move Top.</td></tr><tr><td>EDL test fails</td><td>URL typo</td><td><code>http://192.168.50.80/malicious-urls.txt</code></td></tr></tbody></table></div>
+</section>
+
+<section class="unit" id="s-production" data-section="production" data-label="In production" data-part="Understand">
+<header><span class="sec-n">06</span><h2>How this looks on a real firewall</h2></header>
+<ul><li><strong>Profiles do most of the work.</strong> Most organizations attach a URL Filtering profile to every internet allow rule and use category deny rules sparingly.</li><li><strong>Alert on everything.</strong> Logging all categories is what lets you answer "who visited this site?" during an incident.</li><li><strong>Block unknown and newly-registered domains.</strong> Many attacks use brand-new domains; blocking or warning on those categories is a common recommendation.</li><li><strong>HTTPS needs decryption for full detail.</strong> Without decryption, the firewall still sees the hostname (SNI) and can categorize it, but it can't see full URL paths or show block pages cleanly. Lab 12 adds decryption.</li><li><strong>Other vendors:</strong> Fortinet FortiGuard web filtering, Cisco Talos URL categories, and Check Point URL Filtering follow the same profile model.</li></ul>
+</section>
+
+<section class="unit" id="s-selfcheck" data-section="selfcheck" data-label="Check yourself" data-part="Wrap up">
+<header><span class="sec-n">07</span><h2>Check yourself</h2></header>
+<details class="qa"><summary>Both a deny rule and a profile can block hacker9.com. What does the profile give you that the rule doesn't?</summary><div class="qa-a"><p>Per-category actions and a log of every allowed site (with alert), plus a block page that names the category.</p></div></details>
+<details class="qa"><summary>Why disable Block-Bad-URLs before testing the profile?</summary><div class="qa-a"><p>Otherwise the rule blocks first and you never test the profile.</p></div></details>
+<details class="qa"><summary>What's the difference between allow and alert in a URL Filtering profile?</summary><div class="qa-a"><p>Both let the user through; alert also writes a URL Filtering log entry.</p></div></details>
+<details class="qa"><summary>You add a URL to the file behind malicious-urls-edl. Do you need to commit?</summary><div class="qa-a"><p>No. The firewall rereads the list on its schedule (every five minutes here).</p></div></details>
+<details class="qa"><summary>Does <code>*.nbcnews.com</code> match www.nbcnews.com?</summary><div class="qa-a"><p>Yes. The wildcard covers its subdomains.</p></div></details>
+</section>
+
+<section class="unit" id="s-evidence" data-section="evidence" data-label="What to submit" data-part="Wrap up">
+<header><span class="sec-n">08</span><h2>Screenshots to capture</h2></header>
+<p>Take each screenshot at its marker. Name the files by lab and number (for example <code>lab09-shot5.png</code>) and submit them in Canvas as your instructor directs.</p>
+<ul class="checklist evidence" data-save="lab9-evidence"><li><input type="checkbox" id="ev9-0"><div><label for="ev9-0">Screenshot 1: The rulebase with Block-Bad-URLs at the top and its URL categories visible.</label><a class="ev-where" href="#shot-1">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev9-1"><div><label for="ev9-1">Screenshot 2: The block page for hacker9.com produced by the Block-Bad-URLs rule.</label><a class="ev-where" href="#shot-2">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev9-2"><div><label for="ev9-2">Screenshot 3: The URL Filtering log showing the blocked hacker9 and hidester entries.</label><a class="ev-where" href="#shot-3">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev9-3"><div><label for="ev9-3">Screenshot 4: Corp-Profiles-Group showing Corp-URL-Profile in the URL Filtering slot.</label><a class="ev-where" href="#shot-4">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev9-4"><div><label for="ev9-4">Screenshot 5: The URL Filtering log showing nbcnews and theguardian blocked.</label><a class="ev-where" href="#shot-5">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev9-5"><div><label for="ev9-5">Screenshot 6: The Web Page Blocked page from the URL Filtering profile, showing the category.</label><a class="ev-where" href="#shot-6">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev9-6"><div><label for="ev9-6">Screenshot 7: The URL Filtering log showing www.popurls.com blocked.</label><a class="ev-where" href="#shot-7">Find it in the walkthrough</a></div></li></ul>
+<p class="box-note">Checkmarks are saved in this browser only. They help you keep track; the screenshots themselves go to Canvas.</p>
+</section>
+
+<section class="unit" id="s-cheat" data-section="cheat" data-label="Cheat sheet" data-part="Wrap up">
+<header><span class="sec-n">09</span><h2>Cheat sheet</h2></header>
+<div class="cheat">
+<h4>Objects</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Name</th><th scope="col">What</th></tr></thead><tbody><tr><td>Block-Bad-URLs</td><td>Users_Net to Internet, 12 categories + Block-Per-Company-Policy + malicious-urls-edl, Deny, top</td></tr><tr><td>Corp-URL-Profile</td><td>All alert; 14 categories block; custom category block</td></tr><tr><td>Block-Per-Company-Policy</td><td>URL List: <code>*.nbcnews.com</code>, <code>*.theguardian.com</code></td></tr><tr><td>malicious-urls-edl</td><td>URL List from <code>http://192.168.50.80/malicious-urls.txt</code>, every 5 minutes</td></tr></tbody></table></div>
+<h4>Test sites</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Site</th><th scope="col">Blocked by</th></tr></thead><tbody><tr><td>hacker9.com, hidester.com/proxy</td><td>Rule (2.4)</td></tr><tr><td>nbcnews.com, theguardian.com</td><td>Rule (2.8), then profile (2.10)</td></tr><tr><td>popurls.com</td><td>Rule with EDL (2.13)</td></tr></tbody></table></div>
+<h4>Remember</h4>
+<ul><li>Check whether Block-Bad-URLs is enabled before each test.</li><li>Private window every time. Filter: <code>( action eq block-url )</code>.</li></ul>
+</div>
+<p><button type="button" class="btn" data-print="cheat">Print only this cheat sheet</button></p>
+</section>
+<nav class="pager" id="pager" aria-label="Lab navigation"></nav>
+</article>
+</div>
+</main>
+
+<footer id="site-footer"></footer>
+<script src="../assets/js/course.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/activities.js"></script>
+</body>
+</html>

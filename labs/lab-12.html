@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab 12 companion: Using Decryption to Block Threats in Encrypted Traffic | Perimeter Security</title>
+<meta name="description" content="Lab 12 companion for Perimeter Security: walkthrough of the detailed steps for Using Decryption to Block Threats in Encrypted Traffic, screenshots to capture, troubleshooting, and a cheat sheet.">
+<link rel="stylesheet" href="../assets/css/site.css">
+<script src="../assets/js/prefs.js"></script>
+</head>
+<body data-root=".." data-lab="12" data-page="labs/index.html">
+<a class="skip-link" href="#main">Skip to main content</a>
+<header id="site-header"></header>
+
+<main id="main" class="page">
+<div class="module-hero">
+<p class="kicker">Lab 12 of 14 in NDG Online. Week 8, due Wed 11/25. Goes with Module 13: Encrypted Traffic and Decryption.</p>
+<h1>Lab 12: Using Decryption to Block Threats in Encrypted Traffic</h1>
+<p class="lede">Prove that encryption blinds the firewall, then fix it. You download a test virus over HTTP (blocked) and HTTPS (allowed), create forward trust and forward untrust certificates, write an SSL forward proxy rule, make the client trust the firewall's CA, block the same file over HTTPS, read the decryption evidence in the logs, and exempt sensitive categories from decryption.</p>
+<ul class="facts"><li>About 75 to 90 minutes</li><li>NDG Online, Lab 12</li><li>Uses Module 13, sections 13.1 to 13.5</li><li>Snapshot <code>edu-210-11.0a-12.xml</code></li><li>11 screenshots to capture</li></ul>
+<div class="lab-hero-links"><a class="btn" href="../modules/module-13.html#s-lab">Lab 12 briefing in Module 13</a><a class="btn btn-quiet" href="index.html">All lab companions</a><a class="btn btn-quiet" href="#s-evidence">Screenshot checklist</a></div>
+</div>
+
+<div class="module-layout">
+<nav class="module-rail" aria-label="This lab companion">
+<h2>This lab</h2>
+<div class="progress-wrap"><span class="label" id="rail-meter-label">0 sections reviewed</span>
+<div class="meter" role="progressbar" aria-labelledby="rail-meter-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="rail-meter"></span></div></div>
+<ol id="rail-list"></ol>
+<p><a href="#s-cheat">Jump to the cheat sheet</a></p>
+</nav>
+<article>
+<section class="unit" id="s-overview" data-section="overview" data-label="What this lab is for" data-part="Prepare">
+<header><span class="sec-n">01</span><h2>What this lab is for</h2></header>
+<p>Most web traffic is encrypted, and so is most malware delivery. Every profile from Labs 8 to 10 inspects content, and none of them can see content inside TLS. <dfn data-term="ssl-forward-proxy">SSL forward proxy</dfn> puts the firewall in the middle: it completes the TLS session with the client using a certificate it generates, opens its own session to the server, and inspects everything between.</p>
+<p>For that to work without warnings, clients must trust the CA certificate the firewall signs with (the <strong><dfn data-term="forward-trust">forward trust</dfn></strong> certificate). And for sites whose own certificates are bad, the firewall signs with a second CA nobody trusts (the <strong><dfn data-term="forward-untrust">forward untrust</dfn></strong> certificate), so users still get a warning.</p>
+<ul><li><strong>You'll leave with:</strong> trusted-cert and untrusted-cert, Decrypt_User_Traffic and No-Decryption rules in the right order, the firewall CA imported into Firefox, and log evidence of a decrypted, blocked threat.</li><li><strong>Builds on:</strong> <a href="../modules/module-13.html">Module 13</a>. Simulation 13.1 (what does the browser see?) predicts every certificate you'll meet in this lab.</li><li><strong>Sets up:</strong> nothing later depends on it, but it's the lab employers ask about most.</li></ul>
+</section>
+
+<section class="unit" id="s-setup" data-section="setup" data-label="Before you begin" data-part="Prepare">
+<header><span class="sec-n">02</span><h2>Before you begin</h2></header>
+<p>You'll use the web interface and Firefox, including its certificate manager.</p>
+<div class="table-wrap"><table>
+<caption class="visually-hidden">Hosts in the lab network</caption>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td></tr>
+</tbody></table></div>
+<p class="box-note">Usernames and passwords are in the Lab Settings table on page 5 of each lab guide. They are not repeated here, because this site is public.</p>
+<h4>What's already in the baseline</h4>
+<p>Everything through Lab 10. The allow rules carry Security Profiles, so the test virus is caught whenever the firewall can actually see it: the guide's first test proves that over HTTP.</p>
+<h4>The test file</h4>
+<p><code>eicar.com</code> is the industry-standard antivirus test file: harmless text that every security product is designed to detect. The extranet server offers it over both HTTP and HTTPS, and its HTTPS certificate is self-signed.</p>
+</section>
+
+<section class="unit" id="s-walkthrough" data-section="walkthrough" data-label="Walkthrough" data-part="Do the lab">
+<header><span class="sec-n">03</span><h2>Walkthrough of the detailed steps</h2></header>
+<h3 class="task-head"><span class="tn">2.1</span>Load the lab configuration</h3>
+<p class="task-intro">Every lab starts from a known baseline, so your firewall matches the guide no matter what you did last time.</p>
+<ol class="steps-list" start="1"><li>On the client desktop, log in as <code>lab-user</code>, open Firefox, and browse to <code>https://192.168.1.254</code>. Log in as <code>admin</code> with the password from Lab Settings. If the login page does not appear, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li>Go to <span class="path" data-path="Device > Setup > Operations"></span> and click <strong>Load named configuration snapshot</strong>. Choose <code>edu-210-11.0a-12.xml</code> and click OK, then Close.</li><li>Open <strong>Tasks</strong> (lower right) and confirm the Load task shows completed.</li><li>Click <strong>Commit</strong> (upper right), then <strong>Commit</strong> in the dialog, and wait for it to finish.</li></ol>
+<div class="callout stuck"><p class="c-title">Loading is not committing</p><p>A loaded snapshot replaces only the candidate configuration. Until you commit, the firewall is still running whatever was there before, and nothing in the lab will match the guide.</p></div>
+<h3 class="task-head"><span class="tn">2.2</span>See what the firewall misses without decryption</h3>
+<ol class="steps-list" start="1">
+<li>In a new Firefox tab, open <code>http://192.168.50.80/eicar.com</code>. The connection is reset. Close the tab.</li>
+<li>In <span class="path" data-path="Monitor &gt; Logs &gt; Threat"></span>, find the entry showing the firewall blocked the eicar download.</li>
+<li>Now open <code>https://192.168.50.80/eicar.com</code>. At the warning, click <strong>Advanced</strong>, then <strong>Accept the Risk and Continue</strong>.</li>
+<li>When asked to save the file, click <strong>Cancel</strong>. The download wasn't blocked. Close the tab.</li>
+</ol>
+<div class="callout fix"><p class="c-title">Misleading task title</p><p>The guide calls this "Examine Firewall Configuration." It's the before test: the same file over HTTP and over HTTPS.</p></div>
+<div class="callout why"><p class="c-title">The whole lab in one comparison</p><p>Same file, same server, same profiles. Over HTTP the firewall sees it; over HTTPS it can't.</p></div>
+<p class="shot" id="shot-1"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 1</span> The Threat log entry for the eicar file blocked over HTTP.</span></p>
+<p class="shot" id="shot-2"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 2</span> The Firefox prompt to save eicar.com over HTTPS, showing it was not blocked.</span></p>
+<h3 class="task-head"><span class="tn">2.3</span>Create the forward trust certificate</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Device &gt; Certificate Management &gt; Certificates"></span> and click <strong>Generate</strong>.</li>
+<li>Certificate Name <code>trusted-cert</code>, Common Name <code>192.168.1.1</code>, and check <strong>Certificate Authority</strong>. Click <strong>Generate</strong>, then OK.</li>
+<li>Open <strong>trusted-cert</strong>, check <strong>Forward Trust Certificate</strong>, and click OK.</li>
+</ol>
+<div class="callout why"><p class="c-title">It must be a CA</p><p>The firewall uses this certificate to sign a fresh certificate for every site a user visits. Only a CA certificate can sign other certificates.</p></div>
+<h3 class="task-head"><span class="tn">2.4</span>Create the forward untrust certificate</h3>
+<ol class="steps-list" start="1">
+<li>Click <strong>Generate</strong> again. Certificate Name <code>untrusted-cert</code>, Common Name <code>DO NOT TRUST</code>, <strong>Certificate Authority</strong> checked. Generate, then OK.</li>
+<li>Open <strong>untrusted-cert</strong>, check <strong>Forward Untrust Certificate</strong>, and click OK.</li>
+</ol>
+<div class="callout stuck"><p class="c-title">The high-level steps skip this</p><p>Creating untrusted-cert (here) and testing it (2.9) appear only in the detailed steps. A forward proxy without an untrust certificate is incomplete: users wouldn't be warned about servers with bad certificates.</p></div>
+<p class="shot" id="shot-3"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 3</span> The Certificates page showing trusted-cert as Forward Trust and untrusted-cert as Forward Untrust, both CAs.</span></p>
+<h3 class="task-head"><span class="tn">2.5</span>Create the decryption policy</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Policies &gt; Decryption"></span> and click <strong>Add</strong>.</li>
+<li><strong>General:</strong> name <code>Decrypt_User_Traffic</code>, description <code>Decrypts web traffic from Users_Net.</code></li>
+<li><strong>Source:</strong> zone <strong>Users_Net</strong>, address Any, user any.</li>
+<li><strong>Destination:</strong> zones <strong>Internet</strong> and <strong>Extranet</strong>, address Any.</li>
+<li><strong>Service/URL Category:</strong> Service any, URL Category Any.</li>
+<li><strong>Options:</strong> Action <strong>Decrypt</strong>, Type <strong>SSL Forward Proxy</strong>, Decryption Profile <strong>default</strong>. Click OK, then commit.</li>
+</ol>
+<div class="callout why"><p class="c-title">Why Extranet too?</p><p>The test server, 192.168.50.80, is in the Extranet zone. Without it here, the HTTPS eicar test would never be decrypted.</p></div>
+<div class="callout tip"><p class="c-title">Decrypting "any" category is a starting point</p><p>The guide notes it exposes personal data in categories like health, finance, and government. Task 2.12 adds exemptions.</p></div>
+<p class="shot" id="shot-4"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 4</span> The Decrypt_User_Traffic rule with action Decrypt and type SSL Forward Proxy.</span></p>
+<h3 class="task-head"><span class="tn">2.6</span>Test outbound decryption</h3>
+<ol class="steps-list" start="1">
+<li>In a new tab, open <code>https://paloaltonetworks.com</code>. You get a warning. Click <strong>Advanced</strong>, then <strong>View Certificate</strong>.</li>
+<li>Note the <strong>Issuer</strong>: 192.168.1.1. The firewall signed this certificate on the site's behalf.</li>
+<li>Close the certificate and warning tabs (keep the firewall tab).</li>
+</ol>
+<div class="callout why"><p class="c-title">Why the warning</p><p>Firefox doesn't yet trust the firewall's CA. The certificate is technically fine; the browser just doesn't know the issuer. The next two tasks fix that.</p></div>
+<p class="shot" id="shot-5"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 5</span> The certificate viewer showing www.paloaltonetworks.com issued by 192.168.1.1.</span></p>
+<h3 class="task-head"><span class="tn">2.7</span>Export the firewall's CA certificate</h3>
+<ol class="steps-list" start="1">
+<li>In <span class="path" data-path="Device &gt; Certificate Management &gt; Certificates"></span>, select (don't open) <strong>trusted-cert</strong> and click <strong>Export Certificate</strong>.</li>
+<li>File Format <strong>Base64 Encoded Certificate (PEM)</strong>, <strong>uncheck Export Private Key</strong>, and click OK. Save it in Downloads.</li>
+</ol>
+<div class="callout stuck"><p class="c-title">Never export the private key here</p><p>Clients need only the public certificate. Anyone with the private key could impersonate every site your users visit.</p></div>
+<h3 class="task-head"><span class="tn">2.8</span>Import it into Firefox</h3>
+<ol class="steps-list" start="1">
+<li>Open Firefox's menu (three lines) &gt; <strong>Settings</strong> &gt; <strong>Privacy &amp; Security</strong>, scroll to <strong>Certificates</strong>, and click <strong>View Certificates</strong>.</li>
+<li>On the <strong>Authorities</strong> tab, click <strong>Import</strong>, choose <code>cert_trusted-cert.crt</code> from Downloads, and click Open.</li>
+<li>Check both <strong>Trust this CA</strong> boxes and click OK. Confirm 192.168.1.1 appears in the list, then click OK and close Settings.</li>
+</ol>
+<div class="callout stuck"><p class="c-title">Authorities, not Your Certificates</p><p>CA certificates go on the Authorities tab, and the trust box must be checked. Imported anywhere else, nothing changes.</p></div>
+<div class="callout tip"><p class="c-title">If it isn't listed</p><p>Click OK, then View Certificates again; the list sometimes doesn't refresh.</p></div>
+<p class="shot" id="shot-6"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 6</span> Firefox's Authorities tab showing the 192.168.1.1 certificate imported.</span></p>
+<h3 class="task-head"><span class="tn">2.9</span>Test the forward untrust certificate</h3>
+<ol class="steps-list" start="1">
+<li>In a new tab, open <code>https://192.168.50.80</code>. Firefox still warns. Click <strong>Advanced</strong>, then <strong>View Certificate</strong>.</li>
+<li>The issuer is <strong>DO NOT TRUST</strong>: the firewall saw the server's self-signed certificate and passed that untrustworthiness on.</li>
+<li>Close the certificate tab and leave the warning tab open.</li>
+</ol>
+<div class="callout fix"><p class="c-title">The guide's note names the wrong issuer</p><p>After step 2 the guide repeats the earlier note that the certificate was "generated by the firewall (192.168.1.1)." For this site, the issuer you should see is <strong>DO NOT TRUST</strong>, the forward untrust certificate. That's the whole point of the task.</p></div>
+<div class="callout why"><p class="c-title">A warning here is correct</p><p>The warning after importing trusted-cert proves the forward proxy isn't hiding bad server certificates from users.</p></div>
+<p class="shot" id="shot-7"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 7</span> The certificate viewer showing 192.168.50.80's certificate issued by DO NOT TRUST.</span></p>
+<h3 class="task-head"><span class="tn">2.10</span>Test the virus download again</h3>
+<ol class="steps-list" start="1">
+<li>On the warning tab, click <strong>Accept the Risk and Continue</strong>. The server's default page loads.</li>
+<li>Change the address to <code>https://192.168.50.80/eicar.com</code> and press Enter. The connection fails: the firewall decrypted the session and the antivirus profile blocked the file.</li>
+<li>Close the tab.</li>
+</ol>
+<div class="callout fix"><p class="c-title">Two eicar paths</p><p>The high-level steps test with www.eicar.org; the detailed steps use https://192.168.50.80/eicar.com. Either proves decryption works.</p></div>
+<h3 class="task-head"><span class="tn">2.11</span>Review the logs</h3>
+<ol class="steps-list" start="1">
+<li>In <span class="path" data-path="Monitor &gt; Logs &gt; Traffic"></span>, add the <strong>Decrypted</strong> column and drag <strong>Session End Reason</strong> to the left.</li>
+<li>Apply the filter below. Wait a minute or two if it's empty.</li>
+</ol>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( flags has proxy ) and ( session_end_reason eq threat )</span></pre>
+<ol class="steps-list" start="3">
+<li>Open an entry's details (magnifying glass) and confirm <strong>Decrypted</strong> is checked.</li>
+<li>In <span class="path" data-path="Monitor &gt; Logs &gt; Threat"></span>, add the Decrypted column, clear filters, and apply the filter below. Open the vulnerability entry.</li>
+</ol>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( flags has proxy )</span></pre>
+<ol class="steps-list" start="5">
+<li>In the Details section, note the threat ID (the guide shows 39040) and the <strong>View in Threat Vault</strong> link. Select rows in the lower pane to see more about why the session was terminated.</li>
+</ol>
+<div class="callout tip"><p class="c-title">What "flags has proxy" means</p><p>The firewall acted as a proxy for the session, which is what decryption is. Those rows show yes in the Decrypted column.</p></div>
+<p class="shot" id="shot-8"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 8</span> The Traffic log filtered to decrypted sessions ended by a threat, with the Decrypted column showing yes.</span></p>
+<p class="shot" id="shot-9"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 9</span> The Threat log detail for the decrypted eicar entry showing the threat ID.</span></p>
+<h3 class="task-head"><span class="tn">2.12</span>Exclude sensitive categories from decryption</h3>
+<ol class="steps-list" start="1">
+<li>In <span class="path" data-path="Policies &gt; Decryption"></span>, click <strong>Add</strong>. Name <code>No-Decryption</code>, description <code>Do not decrypt URLs in gov, shopping and finance.</code></li>
+<li>Source zone <strong>Users_Net</strong>; destination zone <strong>Internet</strong>; Service any.</li>
+<li>URL Category: add <strong>government</strong>, <strong>financial-services</strong>, and <strong>shopping</strong>.</li>
+<li><strong>Options:</strong> Action <strong>No Decrypt</strong>, Decryption Profile <strong>default</strong>. Click OK.</li>
+<li>Look at the two rules' order, answer the guide's question, then drag <strong>No-Decryption</strong> above Decrypt_User_Traffic. Commit.</li>
+</ol>
+<div class="callout guideq"><p class="c-title">Q1: Is there anything wrong with these rules?</p><p><strong>a. Yes.</strong> Decrypt_User_Traffic matches any category and sits first, so No-Decryption would never be reached. No-decrypt rules always go at the top.</p></div>
+<div class="callout fix"><p class="c-title">Rule name drift</p><p>The guide's answer text calls the rule "Decrypt_Users_Traffic." It's Decrypt_User_Traffic.</p></div>
+<p class="shot" id="shot-10"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 10</span> The decryption policy with No-Decryption above Decrypt_User_Traffic.</span></p>
+<h3 class="task-head"><span class="tn">2.13</span>Test the exemption</h3>
+<ol class="steps-list" start="1">
+<li>Open Firefox and browse to <code>https://www.texas.gov</code>.</li>
+<li>Click the padlock &gt; the arrow next to <strong>Connection secure</strong> &gt; <strong>More Information</strong> &gt; <strong>View Certificate</strong>.</li>
+<li>The issuer is a public CA, <strong>not</strong> 192.168.1.1. The government category was exempt, so the firewall didn't decrypt.</li>
+</ol>
+<p class="shot" id="shot-11"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 11</span> The certificate for www.texas.gov showing an issuer other than 192.168.1.1.</span></p>
+</section>
+
+<section class="unit" id="s-reference" data-section="reference" data-label="Reference" data-part="Understand">
+<header><span class="sec-n">04</span><h2>Decryption reference</h2></header>
+<h4>The three certificates in forward proxy</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Certificate</th><th scope="col">Who signs it</th><th scope="col">When the user sees it</th></tr></thead><tbody><tr><td>Forward trust (trusted-cert, CN 192.168.1.1)</td><td>Your firewall CA, trusted by clients</td><td>Sites with valid certificates</td></tr><tr><td>Forward untrust (untrusted-cert, CN DO NOT TRUST)</td><td>A firewall CA nobody trusts</td><td>Sites with invalid, expired, or self-signed certificates</td></tr><tr><td>The real server certificate</td><td>A public CA</td><td>Sites exempted by a No Decrypt rule</td></tr></tbody></table></div>
+<h4>Decryption types</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Type</th><th scope="col">Protects</th><th scope="col">Needs</th></tr></thead><tbody><tr><td>SSL forward proxy</td><td>Users going out to any site</td><td>A CA certificate clients trust</td></tr><tr><td>SSL inbound inspection</td><td>Your own servers</td><td>The server's certificate and private key</td></tr><tr><td>SSH proxy</td><td>SSH sessions</td><td>Nothing extra; controls tunneling over SSH</td></tr></tbody></table></div>
+<h4>Useful filters and CLI</h4>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="cmd">( flags has proxy )</span>
+<span class="cmd">( flags has proxy ) and ( session_end_reason eq threat )</span>
+<span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">show counter global filter category proxy</span>
+<span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">show running decryption-policy</span></pre>
+</section>
+
+<section class="unit" id="s-stuck" data-section="stuck" data-label="Where people get stuck" data-part="Understand">
+<header><span class="sec-n">05</span><h2>Where people get stuck</h2></header>
+<div class="table-wrap"><table class="stuck-table"><thead><tr><th scope="col">Symptom</th><th scope="col">Likely cause</th><th scope="col">Fix</th></tr></thead><tbody><tr><td>Every site still warns after importing</td><td>Imported to the wrong tab, or trust not checked</td><td>Authorities tab; check Trust this CA.</td></tr><tr><td>eicar over HTTPS still downloads</td><td>Extranet not a destination zone, or not committed</td><td>Add Extranet to Decrypt_User_Traffic; commit.</td></tr><tr><td>texas.gov shows issuer 192.168.1.1</td><td>No-Decryption is below the decrypt rule</td><td>Move it to the top; commit; open a new tab.</td></tr><tr><td>192.168.50.80 warns after the import</td><td>That's correct</td><td>The server's own certificate is self-signed; the firewall used DO NOT TRUST.</td></tr><tr><td>Filter finds nothing</td><td>Logs not written yet</td><td>Wait one to two minutes and refresh.</td></tr><tr><td>Export includes a .key</td><td>Export Private Key left checked</td><td>Re-export with it unchecked.</td></tr></tbody></table></div>
+</section>
+
+<section class="unit" id="s-production" data-section="production" data-label="In production" data-part="Understand">
+<header><span class="sec-n">06</span><h2>How this looks on a real firewall</h2></header>
+<ul><li><strong>Use an enterprise CA, deployed by policy.</strong> Production firewalls usually get a subordinate CA certificate from the organization's PKI, and clients trust it through Group Policy or MDM, not manual browser imports.</li><li><strong>Decide exemptions with HR and legal.</strong> Which categories you don't decrypt depends on company policy, privacy law, and where users are. Health and finance are the common starting point.</li><li><strong>Plan for pinned and incompatible apps.</strong> Some applications break when decrypted; Palo Alto Networks maintains a predefined exclusion list, and you'll add your own.</li><li><strong>Tune the Decryption profile.</strong> The default profile allows a lot. Production profiles block expired and untrusted server certificates and weak protocol versions.</li><li><strong>Size for it.</strong> Decryption is CPU-intensive; it's a real factor in choosing a firewall model.</li><li><strong>Other vendors:</strong> Fortinet deep inspection, Cisco TLS server identity and decryption, and Check Point HTTPS Inspection work the same way and raise the same privacy questions.</li></ul>
+</section>
+
+<section class="unit" id="s-selfcheck" data-section="selfcheck" data-label="Check yourself" data-part="Wrap up">
+<header><span class="sec-n">07</span><h2>Check yourself</h2></header>
+<details class="qa"><summary>Before decryption, why did the HTTPS eicar download succeed when the HTTP one was blocked?</summary><div class="qa-a"><p>The antivirus profile couldn't see the file inside the encrypted session.</p></div></details>
+<details class="qa"><summary>Why must trusted-cert be a Certificate Authority?</summary><div class="qa-a"><p>The firewall uses it to sign a new certificate for each site, and only a CA can sign certificates.</p></div></details>
+<details class="qa"><summary>After importing trusted-cert, why does https://192.168.50.80 still warn?</summary><div class="qa-a"><p>The server's own certificate is self-signed, so the firewall signs with the forward untrust certificate, which the browser doesn't trust.</p></div></details>
+<details class="qa"><summary>Why must No-Decryption sit above Decrypt_User_Traffic?</summary><div class="qa-a"><p>Decryption rules are first-match; the decrypt rule matches any category, so the exemption below it would never apply.</p></div></details>
+<details class="qa"><summary>How do you tell from the browser whether the firewall decrypted a site?</summary><div class="qa-a"><p>View the certificate. If the issuer is 192.168.1.1, it was decrypted.</p></div></details>
+</section>
+
+<section class="unit" id="s-evidence" data-section="evidence" data-label="What to submit" data-part="Wrap up">
+<header><span class="sec-n">08</span><h2>Screenshots to capture</h2></header>
+<p>Take each screenshot at its marker. Name the files by lab and number (for example <code>lab12-shot9.png</code>) and submit them in Canvas as your instructor directs.</p>
+<ul class="checklist evidence" data-save="lab12-evidence"><li><input type="checkbox" id="ev12-0"><div><label for="ev12-0">Screenshot 1: The Threat log entry for the eicar file blocked over HTTP.</label><a class="ev-where" href="#shot-1">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev12-1"><div><label for="ev12-1">Screenshot 2: The Firefox prompt to save eicar.com over HTTPS, showing it was not blocked.</label><a class="ev-where" href="#shot-2">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev12-2"><div><label for="ev12-2">Screenshot 3: The Certificates page showing trusted-cert as Forward Trust and untrusted-cert as Forward Untrust, both CAs.</label><a class="ev-where" href="#shot-3">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev12-3"><div><label for="ev12-3">Screenshot 4: The Decrypt_User_Traffic rule with action Decrypt and type SSL Forward Proxy.</label><a class="ev-where" href="#shot-4">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev12-4"><div><label for="ev12-4">Screenshot 5: The certificate viewer showing www.paloaltonetworks.com issued by 192.168.1.1.</label><a class="ev-where" href="#shot-5">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev12-5"><div><label for="ev12-5">Screenshot 6: Firefox's Authorities tab showing the 192.168.1.1 certificate imported.</label><a class="ev-where" href="#shot-6">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev12-6"><div><label for="ev12-6">Screenshot 7: The certificate viewer showing 192.168.50.80's certificate issued by DO NOT TRUST.</label><a class="ev-where" href="#shot-7">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev12-7"><div><label for="ev12-7">Screenshot 8: The Traffic log filtered to decrypted sessions ended by a threat, with the Decrypted column showing yes.</label><a class="ev-where" href="#shot-8">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev12-8"><div><label for="ev12-8">Screenshot 9: The Threat log detail for the decrypted eicar entry showing the threat ID.</label><a class="ev-where" href="#shot-9">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev12-9"><div><label for="ev12-9">Screenshot 10: The decryption policy with No-Decryption above Decrypt_User_Traffic.</label><a class="ev-where" href="#shot-10">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev12-10"><div><label for="ev12-10">Screenshot 11: The certificate for www.texas.gov showing an issuer other than 192.168.1.1.</label><a class="ev-where" href="#shot-11">Find it in the walkthrough</a></div></li></ul>
+<p class="box-note">Checkmarks are saved in this browser only. They help you keep track; the screenshots themselves go to Canvas.</p>
+</section>
+
+<section class="unit" id="s-cheat" data-section="cheat" data-label="Cheat sheet" data-part="Wrap up">
+<header><span class="sec-n">09</span><h2>Cheat sheet</h2></header>
+<div class="cheat">
+<h4>Certificates</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Name</th><th scope="col">CN</th><th scope="col">Role</th></tr></thead><tbody><tr><td>trusted-cert</td><td><code>192.168.1.1</code></td><td>CA, Forward Trust; exported (no key) and imported into Firefox Authorities</td></tr><tr><td>untrusted-cert</td><td><code>DO NOT TRUST</code></td><td>CA, Forward Untrust</td></tr></tbody></table></div>
+<h4>Decryption rules (top to bottom)</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Rule</th><th scope="col">From / To</th><th scope="col">URL category</th><th scope="col">Action</th></tr></thead><tbody><tr><td>No-Decryption</td><td>Users_Net / Internet</td><td>government, financial-services, shopping</td><td>No Decrypt</td></tr><tr><td>Decrypt_User_Traffic</td><td>Users_Net / Internet, Extranet</td><td>any</td><td>Decrypt, SSL Forward Proxy</td></tr></tbody></table></div>
+<h4>Tests</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Test</th><th scope="col">Expect</th></tr></thead><tbody><tr><td><code>https://paloaltonetworks.com</code></td><td>Issuer 192.168.1.1</td></tr><tr><td><code>https://192.168.50.80</code></td><td>Issuer DO NOT TRUST (warning is correct)</td></tr><tr><td><code>https://192.168.50.80/eicar.com</code></td><td>Blocked</td></tr><tr><td><code>https://www.texas.gov</code></td><td>Real issuer, not decrypted</td></tr></tbody></table></div>
+<h4>Filter</h4>
+<p><code>( flags has proxy ) and ( session_end_reason eq threat )</code></p>
+</div>
+<p><button type="button" class="btn" data-print="cheat">Print only this cheat sheet</button></p>
+</section>
+<nav class="pager" id="pager" aria-label="Lab navigation"></nav>
+</article>
+</div>
+</main>
+
+<footer id="site-footer"></footer>
+<script src="../assets/js/course.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/activities.js"></script>
+</body>
+</html>

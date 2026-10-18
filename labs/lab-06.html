@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab 6 companion: Creating and Managing NAT Policy Rules | Perimeter Security</title>
+<meta name="description" content="Lab 6 companion for Perimeter Security: walkthrough of the detailed steps for Creating and Managing NAT Policy Rules, screenshots to capture, troubleshooting, and a cheat sheet.">
+<link rel="stylesheet" href="../assets/css/site.css">
+<script src="../assets/js/prefs.js"></script>
+</head>
+<body data-root=".." data-lab="6" data-page="labs/index.html">
+<a class="skip-link" href="#main">Skip to main content</a>
+<header id="site-header"></header>
+
+<main id="main" class="page">
+<div class="module-hero">
+<p class="kicker">Lab 6 of 14 in NDG Online. Week 4, due Wed 10/28. Goes with Module 7: NAT Policies.</p>
+<h1>Lab 6: Creating and Managing NAT Policy Rules</h1>
+<p class="lede">Fix the ping that Lab 5 left broken. You write a source NAT rule that sends users and servers to the internet behind the firewall's public address, then a destination NAT rule that publishes the extranet web server at a new address on the users' own network, and you watch both translations in the Traffic log.</p>
+<ul class="facts"><li>About 45 to 60 minutes</li><li>NDG Online, Lab 6</li><li>Uses Module 7, sections 7.2 to 7.4</li><li>Snapshot <code>edu-210-11.0a-06.xml</code></li><li>5 screenshots to capture</li></ul>
+<div class="lab-hero-links"><a class="btn" href="../modules/module-07.html#s-lab">Lab 6 briefing in Module 7</a><a class="btn btn-quiet" href="index.html">All lab companions</a><a class="btn btn-quiet" href="#s-evidence">Screenshot checklist</a></div>
+</div>
+
+<div class="module-layout">
+<nav class="module-rail" aria-label="This lab companion">
+<h2>This lab</h2>
+<div class="progress-wrap"><span class="label" id="rail-meter-label">0 sections reviewed</span>
+<div class="meter" role="progressbar" aria-labelledby="rail-meter-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="rail-meter"></span></div></div>
+<ol id="rail-list"></ol>
+<p><a href="#s-cheat">Jump to the cheat sheet</a></p>
+</nav>
+<article>
+<section class="unit" id="s-overview" data-section="overview" data-label="What this lab is for" data-part="Prepare">
+<header><span class="sec-n">01</span><h2>What this lab is for</h2></header>
+<p>Lab 5 ended with traffic that policy allowed but the internet couldn't answer, because 192.168.1.20 is a private address. <strong><dfn data-term="source-nat">Source NAT</dfn></strong> rewrites that source to the firewall's public interface address, 203.0.113.20, and keeps track of the session so replies find their way back.</p>
+<p>The second half runs NAT the other way. <strong><dfn data-term="destination-nat">Destination NAT</dfn></strong> lets clients reach a server at an address that isn't really the server's: here, users browse to 192.168.1.80 and land on the extranet web server at 192.168.50.80. It's the same mechanism used to publish an internal web server on a public address.</p>
+<ul><li><strong>You'll leave with:</strong> Inside_Nets_to_Internet (source NAT, DIPP) and Dest_NAT_To_Webserver (destination NAT), both tested.</li><li><strong>Builds on:</strong> <a href="../modules/module-07.html">Module 7</a>, especially the pre-NAT address, post-NAT zone rule (7.4). Simulation 7.1 is the best preparation.</li><li><strong>Sets up:</strong> every lab that touches the internet. From here on, the client can reach real websites.</li></ul>
+</section>
+
+<section class="unit" id="s-setup" data-section="setup" data-label="Before you begin" data-part="Prepare">
+<header><span class="sec-n">02</span><h2>Before you begin</h2></header>
+<p>You'll use the web interface, the client's Terminal Emulator, and Firefox.</p>
+<div class="table-wrap"><table>
+<caption class="visually-hidden">Hosts in the lab network</caption>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td></tr>
+</tbody></table></div>
+<p class="box-note">Usernames and passwords are in the Lab Settings table on page 5 of each lab guide. They are not repeated here, because this site is public.</p>
+<h4>What's already in the baseline</h4>
+<p>Interfaces, VR-1, and zones from Lab 4, plus the Lab 5 Security rules: the two known-bad block rules, Users_to_Extranet, Users_to_Internet, and Extranet_to_Internet. There are no NAT rules.</p>
+<h4>NAT and Security rules are separate rulebases</h4>
+<p>A NAT rule decides <strong>how addresses change</strong>. A Security rule decides <strong>whether the session is allowed</strong>. Traffic needs both. You won't add any Security rules in this lab; the Lab 5 rules already allow what you need, and seeing why is part of the lesson.</p>
+</section>
+
+<section class="unit" id="s-walkthrough" data-section="walkthrough" data-label="Walkthrough" data-part="Do the lab">
+<header><span class="sec-n">03</span><h2>Walkthrough of the detailed steps</h2></header>
+<h3 class="task-head"><span class="tn">2.1</span>Load the lab configuration</h3>
+<p class="task-intro">Every lab starts from a known baseline, so your firewall matches the guide no matter what you did last time.</p>
+<ol class="steps-list" start="1"><li>On the client desktop, log in as <code>lab-user</code>, open Firefox, and browse to <code>https://192.168.1.254</code>. Log in as <code>admin</code> with the password from Lab Settings. If the login page does not appear, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li>Go to <span class="path" data-path="Device > Setup > Operations"></span> and click <strong>Load named configuration snapshot</strong>. Choose <code>edu-210-11.0a-06.xml</code> and click OK, then Close.</li><li>Open <strong>Tasks</strong> (lower right) and confirm the Load task shows completed.</li><li>Click <strong>Commit</strong> (upper right), then <strong>Commit</strong> in the dialog, and wait for it to finish.</li></ol>
+<div class="callout stuck"><p class="c-title">Loading is not committing</p><p>A loaded snapshot replaces only the candidate configuration. Until you commit, the firewall is still running whatever was there before, and nothing in the lab will match the guide.</p></div>
+<h3 class="task-head"><span class="tn">2.2</span>Create a source NAT policy</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Policies &gt; NAT"></span> and click <strong>Add</strong>.</li>
+<li><strong>General:</strong> name <code>Inside_Nets_to_Internet</code>, NAT Type <strong>ipv4</strong>, description <code>Translates traffic from Users_Net and Extranet to 203.0.113.20 outbound to Internet</code>.</li>
+<li><strong>Original Packet:</strong> add source zones <strong>Users_Net</strong> and <strong>Extranet</strong>. Destination zone <strong>Internet</strong>. Destination interface <strong>ethernet1/1</strong>. Service <strong>any</strong>; source and destination addresses <strong>Any</strong>.</li>
+<li><strong>Translated Packet</strong>, Source Address Translation: Translation Type <strong>Dynamic IP And Port</strong>, Address Type <strong>Interface Address</strong>, Interface <strong>ethernet1/1</strong>, IP Address <strong>203.0.113.20/24</strong> chosen from the drop-down. Leave Destination Address Translation at <strong>None</strong>. Click OK.</li>
+<li>Confirm the rule appears, then commit.</li>
+</ol>
+<div class="callout stuck"><p class="c-title">Pick the address, don't type it</p><p>Choose 203.0.113.20/24 from the IP Address drop-down. Typing it in can produce a value that doesn't match the interface, and the rule won't translate.</p></div>
+<div class="callout why"><p class="c-title">One rule, two zones</p><p>Both Users_Net and Extranet leave through the same interface with the same public address, so one rule covers both. Two separate rules would work the same way.</p></div>
+<p class="shot" id="shot-1"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 1</span> The NAT policy showing Inside_Nets_to_Internet with Dynamic IP And Port on ethernet1/1.</span></p>
+<h4>Test source NAT</h4>
+<ol class="steps-list" start="6">
+<li>Open the Terminal Emulator and ping 8.8.8.8. This time it <strong>replies</strong>. Press Ctrl+C.</li>
+</ol>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">lab-user@client-a:~/Desktop/Lab-Files$</span> <span class="cmd">ping 8.8.8.8</span></pre>
+<ol class="steps-list" start="7">
+<li>In Firefox, open a new tab to <code>www.paloaltonetworks.com</code>. It loads. Close the tab.</li>
+<li>Go to <span class="path" data-path="Monitor &gt; Logs &gt; Traffic"></span>, clear any filter, and find allowed sessions matched by <strong>Users_to_Internet</strong>. Wait a minute and refresh if needed.</li>
+</ol>
+<div class="callout tip"><p class="c-title">See the translation</p><p>Add the <strong>NAT Source IP</strong> column (column drop-down &gt; Columns). Allowed internet sessions show source 192.168.1.20 and NAT source 203.0.113.20.</p></div>
+<p class="shot" id="shot-2"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 2</span> The terminal showing replies from 8.8.8.8.</span></p>
+<p class="shot" id="shot-3"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 3</span> The Traffic log showing allowed sessions on Users_to_Internet, ideally with the NAT Source IP column visible.</span></p>
+<h3 class="task-head"><span class="tn">2.3</span>Create a destination NAT policy</h3>
+<ol class="steps-list" start="1">
+<li>In <span class="path" data-path="Policies &gt; NAT"></span>, click <strong>Add</strong>.</li>
+<li><strong>General:</strong> name <code>Dest_NAT_To_Webserver</code>, NAT Type <strong>ipv4</strong>, description <code>Translates traffic to web server at 192.168.50.80</code>.</li>
+<li><strong>Original Packet:</strong> source zone <strong>Users_Net</strong>. Destination zone <strong>Users_Net</strong>. Destination interface <strong>ethernet1/2</strong>. Service <strong>any</strong>. Source address <strong>Any</strong>. Destination address: click <strong>Add</strong> and type <code>192.168.1.80</code>.</li>
+<li><strong>Translated Packet</strong>, Destination Address Translation: Translation Type <strong>Static IP</strong>, Translated Address <code>192.168.50.80</code>. Leave Source Address Translation at <strong>None</strong>. Click OK.</li>
+<li>Confirm the rule appears, then commit.</li>
+</ol>
+<div class="callout fix"><p class="c-title">The guide names two different servers</p><p>The task introduction says the firewall translates to "the DMZ server at 192.168.50.10." The rule, its description, and the test all use the web server, <strong>192.168.50.80</strong>. Use .80.</p></div>
+<div class="callout fix"><p class="c-title">The guide says "source NAT" here</p><p>Step 1 says "Add to define a new source NAT policy." This one is a destination NAT rule.</p></div>
+<div class="callout why"><p class="c-title">Why the destination zone is Users_Net</p><p>192.168.1.80 is on the users' own subnet, so before translation the firewall's route lookup points it at ethernet1/2, the Users_Net interface. NAT rules always use the <strong>pre-NAT</strong> zones.</p></div>
+<div class="callout tip"><p class="c-title">Who answers for 192.168.1.80?</p><p>No host has that address. Because it's in ethernet1/2's subnet and appears in a NAT rule, the firewall answers ARP for it on that interface.</p></div>
+<p class="shot" id="shot-4"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 4</span> The NAT policy showing Dest_NAT_To_Webserver with original destination 192.168.1.80 and translated address 192.168.50.80.</span></p>
+<h4>Test destination NAT</h4>
+<ol class="steps-list" start="6">
+<li>In Firefox, open a new tab to <code>http://192.168.1.80</code>. You see the extranet web server's page. Close the tab.</li>
+<li>In the Traffic log, filter for the original address and confirm the session was allowed by <strong>Users_to_Extranet</strong>.</li>
+</ol>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( addr.dst in 192.168.1.80 )</span></pre>
+<ol class="steps-list" start="8">
+<li>For a shortcut, go to <span class="path" data-path="Policies &gt; Security"></span>, open the drop-down next to <strong>Users_to_Extranet</strong>, and choose <strong>Log Viewer</strong>. It opens the Traffic log pre-filtered to that rule.</li>
+</ol>
+<div class="callout why"><p class="c-title">No new Security rule, and that's the point</p><p>Security policy uses the <strong>post-NAT zone</strong> (Extranet, where 192.168.50.80 lives) and the <strong>pre-NAT address</strong>. Users_to_Extranet goes from Users_Net to Extranet with destination address any, so it matches. If that rule had named a destination address, it would need 192.168.1.80, not .50.80.</p></div>
+<p class="shot" id="shot-5"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 5</span> The Traffic log entry for 192.168.1.80 showing rule Users_to_Extranet.</span></p>
+</section>
+
+<section class="unit" id="s-reference" data-section="reference" data-label="Reference" data-part="Understand">
+<header><span class="sec-n">04</span><h2>NAT reference</h2></header>
+<h4>Source NAT translation types</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Type</th><th scope="col">Translates</th><th scope="col">Typical use</th></tr></thead><tbody><tr><td>Dynamic IP and Port (DIPP)</td><td>Many private addresses to one address, using ports to tell sessions apart</td><td>Users to the internet. This lab.</td></tr><tr><td>Dynamic IP</td><td>Private addresses to a pool, one for one, no port change</td><td>When each session needs its own public address</td></tr><tr><td>Static IP</td><td>One address to one address, either direction</td><td>A server that must always appear as the same public address</td></tr></tbody></table></div>
+<h4>The rule that trips everyone</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Rulebase</th><th scope="col">Zones it uses</th><th scope="col">Addresses it uses</th></tr></thead><tbody><tr><td>NAT policy</td><td>Pre-NAT source and destination zones</td><td>Pre-NAT addresses</td></tr><tr><td>Security policy</td><td>Pre-NAT source zone, <strong>post-NAT destination zone</strong></td><td><strong>Pre-NAT</strong> addresses</td></tr></tbody></table></div>
+<h4>CLI checks</h4>
+<p><code>show session</code> lists live sessions with their translated addresses; <code>show running nat-policy</code> shows the NAT rules the firewall is enforcing.</p>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">show session all filter destination 8.8.8.8</span>
+<span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">show running nat-policy</span></pre>
+</section>
+
+<section class="unit" id="s-stuck" data-section="stuck" data-label="Where people get stuck" data-part="Understand">
+<header><span class="sec-n">05</span><h2>Where people get stuck</h2></header>
+<div class="table-wrap"><table class="stuck-table"><thead><tr><th scope="col">Symptom</th><th scope="col">Likely cause</th><th scope="col">Fix</th></tr></thead><tbody><tr><td>Ping to 8.8.8.8 still fails</td><td>Source NAT not committed, or wrong destination zone</td><td>Destination zone must be Internet, interface ethernet1/1. Commit.</td></tr><tr><td>Rule saved but doesn't translate</td><td>IP address typed instead of picked</td><td>Edit the rule and choose 203.0.113.20/24 from the drop-down.</td></tr><tr><td>http://192.168.1.80 times out</td><td>Destination zone set to Extranet</td><td>NAT uses the pre-NAT zone: Users_Net, interface ethernet1/2.</td></tr><tr><td>Test ignores your change</td><td>An old session is still open</td><td>Close the tab and try again; NAT applies to new sessions.</td></tr><tr><td>Log shows 192.168.50.80, not .1.80</td><td>Different column</td><td>The Destination column shows the original address; add NAT Destination IP to see the translated one.</td></tr><tr><td>Tempted to add a Security rule</td><td>Expecting NAT to need its own permission</td><td>Users_to_Extranet already matches. See the Why box above.</td></tr></tbody></table></div>
+</section>
+
+<section class="unit" id="s-production" data-section="production" data-label="In production" data-part="Understand">
+<header><span class="sec-n">06</span><h2>How this looks on a real firewall</h2></header>
+<ul><li><strong>Publishing a server uses public addresses.</strong> The lab publishes a server on an internal address. In production, destination NAT usually maps a public address on the internet interface to a server in a DMZ zone.</li><li><strong>Watch DIPP capacity.</strong> One public address has roughly 64,000 source ports to hand out, multiplied by the oversubscription rate; large networks add a pool of addresses (Module 7, Simulation 7.2).</li><li><strong>Bidirectional and U-turn NAT.</strong> When internal users must reach a published server by its public address, you need extra NAT logic. Module 7 covers it.</li><li><strong>Keep NAT and Security names distinct.</strong> The capstone reuses names across both rulebases. That's legal, but many teams prefix NAT rules (for example <code>NAT-</code>) to avoid confusion.</li><li><strong>Every vendor has the zone rule.</strong> On Fortinet, Cisco, and Check Point the details differ, but you always have to know which address (original or translated) each rule sees.</li></ul>
+</section>
+
+<section class="unit" id="s-selfcheck" data-section="selfcheck" data-label="Check yourself" data-part="Wrap up">
+<header><span class="sec-n">07</span><h2>Check yourself</h2></header>
+<details class="qa"><summary>Lab 5's ping to 8.8.8.8 was allowed. What did source NAT change that made it work?</summary><div class="qa-a"><p>It translated the private source 192.168.1.20 to the public 203.0.113.20, so the reply had a routable address to return to.</p></div></details>
+<details class="qa"><summary>For Dest_NAT_To_Webserver, why is the destination zone Users_Net and not Extranet?</summary><div class="qa-a"><p>NAT rules use pre-NAT zones. Before translation, 192.168.1.80 routes out ethernet1/2, which is in Users_Net.</p></div></details>
+<details class="qa"><summary>Which Security rule allows the destination NAT session, and why didn't you need a new one?</summary><div class="qa-a"><p>Users_to_Extranet. Security policy uses the post-NAT zone (Extranet) and its destination address is any, so it matches.</p></div></details>
+<details class="qa"><summary>If Users_to_Extranet had destination address 192.168.50.80 instead of any, would the session match it?</summary><div class="qa-a"><p>No. Security policy matches on the pre-NAT address, 192.168.1.80.</p></div></details>
+<details class="qa"><summary>What does the "and Port" in Dynamic IP and Port let the firewall do?</summary><div class="qa-a"><p>Share one public address among many clients by giving each session its own source port.</p></div></details>
+</section>
+
+<section class="unit" id="s-evidence" data-section="evidence" data-label="What to submit" data-part="Wrap up">
+<header><span class="sec-n">08</span><h2>Screenshots to capture</h2></header>
+<p>Take each screenshot at its marker. Name the files by lab and number (for example <code>lab06-shot2.png</code>) and submit them in Canvas as your instructor directs.</p>
+<ul class="checklist evidence" data-save="lab6-evidence"><li><input type="checkbox" id="ev6-0"><div><label for="ev6-0">Screenshot 1: The NAT policy showing Inside_Nets_to_Internet with Dynamic IP And Port on ethernet1/1.</label><a class="ev-where" href="#shot-1">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev6-1"><div><label for="ev6-1">Screenshot 2: The terminal showing replies from 8.8.8.8.</label><a class="ev-where" href="#shot-2">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev6-2"><div><label for="ev6-2">Screenshot 3: The Traffic log showing allowed sessions on Users_to_Internet, ideally with the NAT Source IP column visible.</label><a class="ev-where" href="#shot-3">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev6-3"><div><label for="ev6-3">Screenshot 4: The NAT policy showing Dest_NAT_To_Webserver with original destination 192.168.1.80 and translated address 192.168.50.80.</label><a class="ev-where" href="#shot-4">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev6-4"><div><label for="ev6-4">Screenshot 5: The Traffic log entry for 192.168.1.80 showing rule Users_to_Extranet.</label><a class="ev-where" href="#shot-5">Find it in the walkthrough</a></div></li></ul>
+<p class="box-note">Checkmarks are saved in this browser only. They help you keep track; the screenshots themselves go to Canvas.</p>
+</section>
+
+<section class="unit" id="s-cheat" data-section="cheat" data-label="Cheat sheet" data-part="Wrap up">
+<header><span class="sec-n">09</span><h2>Cheat sheet</h2></header>
+<div class="cheat">
+<h4>NAT rules</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Rule</th><th scope="col">Original packet</th><th scope="col">Translated packet</th></tr></thead><tbody><tr><td>Inside_Nets_to_Internet</td><td>Users_Net, Extranet to Internet, interface ethernet1/1</td><td>Source: DIPP, interface address 203.0.113.20/24</td></tr><tr><td>Dest_NAT_To_Webserver</td><td>Users_Net to Users_Net, ethernet1/2, destination 192.168.1.80</td><td>Destination: static IP 192.168.50.80</td></tr></tbody></table></div>
+<h4>Tests</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Test</th><th scope="col">Expect</th></tr></thead><tbody><tr><td><code>ping 8.8.8.8</code></td><td>Replies</td></tr><tr><td><code>www.paloaltonetworks.com</code></td><td>Page loads</td></tr><tr><td><code>http://192.168.1.80</code></td><td>Extranet web server page</td></tr><tr><td><code>( addr.dst in 192.168.1.80 )</code></td><td>Allowed by Users_to_Extranet</td></tr></tbody></table></div>
+<h4>Remember</h4>
+<ul><li>NAT rules: pre-NAT zones and addresses.</li><li>Security rules: post-NAT destination zone, pre-NAT addresses.</li></ul>
+</div>
+<p><button type="button" class="btn" data-print="cheat">Print only this cheat sheet</button></p>
+</section>
+<nav class="pager" id="pager" aria-label="Lab navigation"></nav>
+</article>
+</div>
+</main>
+
+<footer id="site-footer"></footer>
+<script src="../assets/js/course.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/activities.js"></script>
+</body>
+</html>

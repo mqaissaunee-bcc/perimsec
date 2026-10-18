@@ -1,0 +1,190 @@
+title: Controlling Application Usage with App-ID
+lede: Move from "allow anything between these zones" to "allow these applications." You build an application group, write a rule for the firewall's own update traffic, discover that an existing rule shadows it, fix the order, research an unfamiliar application, narrow two rules to named applications with their dependencies, and turn on the Application Block Page.
+snapshot: edu-210-11.0a-07.xml
+uses: Module 8, sections 8.1 to 8.6
+
+= overview | What this lab is for | What this lab is for | Prepare
+Ports no longer tell you what traffic is. Almost everything runs over TCP 443. {{app-id|App-ID}} identifies the actual application (dropbox, ms-office365, dailymotion) regardless of port, so policy can say what the business allows instead of which ports are open.
+
+This lab also shows {{rule-shadowing|rule shadowing}} in action. A broad rule you wrote in Lab 5 catches traffic before a more specific rule below it, and the commit warns you. And it shows why naming applications brings {{application-dependency|dependencies}} with it.
+
+- **You'll leave with:** the paloalto-apps group, an Allow-PANW-Apps rule in the right position, Users_to_Extranet and Users_to_Internet limited to named applications, and the Application Block Page enabled.
+- **Builds on:** ->Mod 8<-. Simulation 8.1 explains the labels App-ID writes in the Traffic log; Simulation 6.2 rehearses shadowing.
+- **Sets up:** User-ID rules in Lab 11 and profile groups in Lab 8, which attach to these allow rules.
+
+= setup | Before you begin | Before you begin | Prepare
+You'll use the web interface, Firefox, and the **App Generator** icon on the client desktop, which plays a mix of application traffic.
+
+@network
+
+### What's already in the baseline
+Interfaces, zones, NAT, and the Lab 5 rules: the two known-bad block rules at the top, then Users_to_Extranet, Users_to_Internet, and Extranet_to_Internet, all with Application **any**.
+
+### Why the firewall's own traffic hits a Security rule here
+In this lab the management interface (192.168.1.254) uses the vRouter as its gateway, and the vRouter sends internet-bound traffic back through ethernet1/2. So the firewall's update traffic enters Users_Net like a user's would and is checked by Security policy. That's a lab shortcut; in production the management network has its own path to the internet (Module 2).
+
+= walkthrough | Walkthrough | Walkthrough of the detailed steps | Do the lab
+@baseline
+
+## 2.2 Configure an application group
+1. Go to [[Objects > Application Groups]] and click **Add**.
+2. Name it `paloalto-apps` and add `paloalto-dns-security`, `paloalto-updates`, `paloalto-userid-agent`, `paloalto-wildfire-cloud`, and `pan-db-cloud`. Click OK.
+!tip An example, not a full list | The guide says so too: a production firewall may need more Palo Alto Networks applications than these five.
+
+## 2.3 Configure a Security rule for firewall update traffic
+1. Go to [[Policies > Security]] and click **Add**.
+2. **General:** name `Allow-PANW-Apps`, description `Allows PANW apps for firewall`.
+3. **Source:** zone **Users_Net**, address `192.168.1.254`.
+4. **Destination:** zone **Internet**, address **Any**.
+5. **Application:** add **paloalto-apps** (type the first few letters; groups appear at the end of the list).
+6. **Service/URL Category:** application-default and Any.
+7. **Actions:** Allow, **Log at Session End**. Click OK.
+8. The rule lands just above intrazone-default, at the bottom. Commit, and notice the commit result has a **Rule Shadow** tab. Close it for now.
+!why Positive enforcement | You're saying exactly what the firewall's own traffic may do, rather than listing what to block. That's the model App-ID is built for.
+
+## 2.4 Test the Allow-PANW-Apps rule
+1. Go to [[Device > Dynamic Updates]] and click **Check Now**.
+2. In [[Monitor > Logs > Traffic]], clear filters and apply the filter below. Leave it in place.
+$f ( app eq paloalto-updates )
+!q Q1: Which rule allowed the traffic? | **a. Users_to_Internet.** It sits above Allow-PANW-Apps and allows any application from Users_Net to Internet, so it matches first.
+!q Q2: Once Users_to_Internet matches, does the firewall keep checking later rules? | **True.** The first matching rule wins and evaluation stops. That's what makes Allow-PANW-Apps shadowed.
+!shot The Traffic log showing paloalto-updates sessions matched by Users_to_Internet.
+
+## 2.5 Identify shadowed rules
+1. Click **Tasks** (lower right) and click the **Commit** link for your last commit.
+2. Select the **Rule Shadow** tab and click the number under **Count** to see which rule is shadowed and by what.
+!shot The Rule Shadow tab showing Allow-PANW-Apps shadowed by Users_to_Internet.
+
+## 2.6 Fix the rule order
+1. In [[Policies > Security]], select (don't open) Allow-PANW-Apps.
+2. Drag it, or use **Move**, so it becomes **rule 3**: directly below the two block rules and above Users_to_Extranet and Users_to_Internet.
+3. Commit.
+!why Why not move it to the very top? | The known-bad block rules should stay first, so nothing, not even the firewall's own traffic, reaches a known-malicious address.
+
+## 2.7 Test the modified rule
+1. Click **Check Now** in [[Device > Dynamic Updates]] again.
+2. Reapply `( app eq paloalto-updates )`. New entries now show rule **Allow-PANW-Apps**.
+3. In a new tab, open `www.paloaltonetworks.com`, then close the tab.
+4. Apply the filter below. App-ID shows the browsing as **dns** and **ssl**, allowed by Users_to_Internet.
+$f ( addr.src eq 192.168.1.20 ) and ( rule eq Users_to_Internet )
+!shot The Traffic log showing paloalto-updates now matched by Allow-PANW-Apps.
+
+## 2.8 Generate application traffic
+1. Double-click **App Generator** on the client desktop and press Enter to start it. Press Enter again when it finishes, and give it 30 to 60 seconds.
+2. Apply the filter below and read the Application column.
+$f ( addr.src in 192.168.1.20 ) and ( app neq dns )
+!q Q3: How should you approach applications from Users_Net to the Extranet? | **b. Allow only specific applications based on a defined policy.** That's the App-ID model, and it's what task 2.10 does.
+!q Q4: Are there denied applications from Users_Net you should allow? | **b. Reevaluate and potentially allow specific denied applications based on security needs.** Decide case by case, from business need.
+!shot The Traffic log showing the variety of applications App Generator produced.
+
+## 2.9 Research an application
+1. Filter the Traffic log for dailymotion.
+$f ( addr.src in 192.168.1.20 ) and ( app eq dailymotion )
+2. Go to [[Objects > Applications]], search for `dailymotion`, and click its name.
+!q Q5: What category is dailymotion? | **c. media.**
+!q Q6: What risk level? | Read the **Risk** value on the application's entry. Palo Alto Networks can change risk ratings in content updates, so the entry on your firewall is the authoritative answer.
+!q Q7: Which characteristics might make you block it? | Read the checked characteristics in the entry's **Characteristics** section (evasive, used by malware, capable of file transfer, prone to misuse, and so on). Answer **e** only if every listed option is checked on your firewall.
+!q Q8: What ports does it use? | **b. TCP/80,443.** It's a web application, so its standard ports are HTTP and HTTPS.
+!shot The dailymotion entry in Objects > Applications showing category, risk, and characteristics.
+
+## 2.10 Narrow the rules to named applications
+1. Open **Users_to_Extranet**. On **Application**, uncheck **Any** and add `ssl`, `ssh`, `ping`, `dns`, `ldap`, `radius`, `web-browsing`. Click OK.
+2. Open **Users_to_Internet**. Uncheck **Any** and add `ping`, `dns`, `ssl`, `yelp`, `web-browsing`, `dropbox`, `ms-office365`.
+3. In the right pane, check the **Depends On** column header to select every dependency, then click **Add to Current Rule**. Confirm the extras now appear in the list, and click OK.
+4. Commit.
+!stuck Don't skip the dependencies | Applications like dropbox and ms-office365 ride on other applications. Without them, the commit warns about unresolved dependencies and the applications half-work.
+!tip Your dependency list will differ | Palo Alto Networks updates application definitions often, so the Depends On list may not match the screenshot.
+!shot Users_to_Internet's Application tab showing the named applications plus the added dependencies.
+
+## 2.11 Test the narrowed rules
+1. Run **App Generator** again and let it finish. Errors and pauses are expected: the firewall is now blocking much of what it plays.
+2. Clear filters and apply the filter below to see what's being denied, mostly by **interzone-default**.
+$f ( action neq allow )
+!fix A typo in the guide's filter | The guide prints `( action ne q allow )`. The operator is one word: `neq`.
+!shot The Traffic log showing denied applications after the rules were narrowed.
+
+## 2.12 Enable the Application Block Page
+1. In a new Firefox tab, try `http://www.shutterfly.com`. It just fails to load. Close the tab.
+2. Go to [[Device > Response Pages]] and click **Disabled** next to **Application Block Page**.
+3. Check **Enable Application Block Page** and click OK. Commit.
+
+## 2.13 Test the Application Block Page
+1. In a new tab, try `http://www.shutterfly.com` again, using **http** in Firefox. Now the firewall shows a page saying the application was blocked.
+!stuck It only works on unencrypted pages | The firewall can't insert a page into an HTTPS session it isn't decrypting. Type `http://` explicitly; Lab 12's decryption is what extends block pages to HTTPS.
+!tip Response Pages on the interface | The page is served from ethernet1/2, which works because Lab 4's Allow-mgt profile includes **Response Pages**.
+!shot The Application Blocked page for shutterfly.com.
+
+= reference | Reference | App-ID reference | Understand
+### Ways to name applications in a rule
+| Object | Where | Use |
+| Application | [[Objects > Applications]] | One specific App-ID |
+| Application group | [[Objects > Application Groups]] | A fixed list you maintain, such as paloalto-apps |
+| Application filter | [[Objects > Application Filters]] | A dynamic set by category, risk, or characteristic; new matching apps join automatically |
+
+### App-ID labels you'll see in the Traffic log
+| Label | Means |
+| `incomplete` | The handshake never finished; no data to identify |
+| `insufficient-data` | Too little payload to identify |
+| `not-applicable` | Denied by port before App-ID ran |
+| `unknown-tcp` / `unknown-udp` | Payload seen but matched no App-ID |
+
+### CLI checks
+$fw show running security-policy
+$fw test security-policy-match from Users_Net to Internet source 192.168.1.20 destination 8.8.8.8 protocol 6 destination-port 443 application dropbox-base
+
+= stuck | Where people get stuck | Where people get stuck | Understand
+| Symptom | Likely cause | Fix |
+| paloalto-updates still hits Users_to_Internet | Rule not moved, or not committed | Make Allow-PANW-Apps rule 3, commit, and Check Now again. |
+| Rule Shadow tab missing | You looked at a later commit with no shadow | Open the commit from task 2.3 in Tasks. |
+| Commit warns about dependencies | Depends On items not added | Reopen the rule, select Depends On, Add to Current Rule. |
+| dropbox or Office half-works | Same as above | Add dependencies. |
+| No block page | Used HTTPS, or block page not committed | Use `http://` in Firefox; commit the response page. |
+| Filter error | `ne q` typo from the guide | Use `neq`. |
+
+= production | In production | How this looks on a real firewall | Understand
+- **Migrate gradually.** Real rulebases move from port-based to App-ID rules with Policy Optimizer (Module 8), which shows the applications each broad rule actually saw.
+- **Use application filters for categories.** Blocking "all file-sharing" or "risk 5" with a filter catches new applications as Palo Alto Networks adds them.
+- **Give the firewall its own path.** Production management traffic usually leaves through the management port or a service route (Module 2), not through user zones.
+- **Plan for unknown-tcp.** Unknown traffic gets its own investigation: a custom App-ID, an application override, or a block.
+- **Other vendors call it something else.** Fortinet has Application Control, Cisco has AVC and Snort-based app detection, Check Point has Application Control. The policy idea is the same.
+
+= selfcheck | Check yourself | Check yourself | Wrap up
+?? Why did paloalto-updates match Users_to_Internet at first?
+=> Users_to_Internet allowed any application and sat above Allow-PANW-Apps. First match wins.
+
+?? What's wrong with moving Allow-PANW-Apps to the very top?
+=> It would sit above the known-bad block rules, which should catch everything first.
+
+?? You add ms-office365 to a rule but skip Depends On. What happens?
+=> The commit reports unresolved dependencies and the application may fail, because it relies on other App-IDs that aren't allowed.
+
+?? Why didn't the shutterfly block page appear over HTTPS?
+=> The firewall can't insert a response into encrypted traffic it isn't decrypting.
+
+?? An application group or an application filter: which picks up new applications automatically?
+=> An application filter.
+
+= evidence | What to submit | Screenshots to capture | Wrap up
+Take each screenshot at its marker. Name the files by lab and number (for example `lab07-shot6.png`) and submit them in Canvas as your instructor directs.
+
+= cheat | Cheat sheet | Cheat sheet | Wrap up
+<div class="cheat">
+### Objects and rules
+| Item | Value |
+| Group `paloalto-apps` | paloalto-dns-security, paloalto-updates, paloalto-userid-agent, paloalto-wildfire-cloud, pan-db-cloud |
+| `Allow-PANW-Apps` | Users_Net 192.168.1.254 to Internet, paloalto-apps, log at session end, **rule 3** |
+| `Users_to_Extranet` apps | ssl, ssh, ping, dns, ldap, radius, web-browsing |
+| `Users_to_Internet` apps | ping, dns, ssl, yelp, web-browsing, dropbox, ms-office365, plus dependencies |
+### Filters
+| Purpose | Filter |
+| Update traffic | `( app eq paloalto-updates )` |
+| Client apps | `( addr.src in 192.168.1.20 ) and ( app neq dns )` |
+| What's blocked | `( action neq allow )` |
+### Where things live
+| Task | Path |
+| Groups | [[Objects > Application Groups]] |
+| Research an app | [[Objects > Applications]] |
+| Check for updates | [[Device > Dynamic Updates]] |
+| Block page | [[Device > Response Pages]] |
+</div>
+@cheatprint

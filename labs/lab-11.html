@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab 11 companion: Controlling Access to Network Resources with User-ID | Perimeter Security</title>
+<meta name="description" content="Lab 11 companion for Perimeter Security: walkthrough of the detailed steps for Controlling Access to Network Resources with User-ID, screenshots to capture, troubleshooting, and a cheat sheet.">
+<link rel="stylesheet" href="../assets/css/site.css">
+<script src="../assets/js/prefs.js"></script>
+</head>
+<body data-root=".." data-lab="11" data-page="labs/index.html">
+<a class="skip-link" href="#main">Skip to main content</a>
+<header id="site-header"></header>
+
+<main id="main" class="page">
+<div class="module-hero">
+<p class="kicker">Lab 11 of 14 in NDG Online. Week 5, due Wed 11/4. Goes with Module 9: User-ID.</p>
+<h1>Lab 11: Controlling Access to Network Resources with User-ID</h1>
+<p class="lede">Write policy about people instead of addresses. You inspect an over-broad rule for a newly acquired company's zone, turn on User-ID for that zone, replace "allow everything" with an approved-apps rule, give only the marketing group its own applications, add an explicit deny, and confirm who was allowed what in the User-ID and Traffic logs.</p>
+<ul class="facts"><li>About 60 to 75 minutes</li><li>NDG Online, Lab 11</li><li>Uses Module 9, sections 9.1 to 9.5</li><li>Snapshot <code>edu-210-11.0a-11.xml</code></li><li>6 screenshots to capture</li></ul>
+<div class="lab-hero-links"><a class="btn" href="../modules/module-09.html#s-lab">Lab 11 briefing in Module 9</a><a class="btn btn-quiet" href="index.html">All lab companions</a><a class="btn btn-quiet" href="#s-evidence">Screenshot checklist</a></div>
+</div>
+
+<div class="module-layout">
+<nav class="module-rail" aria-label="This lab companion">
+<h2>This lab</h2>
+<div class="progress-wrap"><span class="label" id="rail-meter-label">0 sections reviewed</span>
+<div class="meter" role="progressbar" aria-labelledby="rail-meter-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="rail-meter"></span></div></div>
+<ol id="rail-list"></ol>
+<p><a href="#s-cheat">Jump to the cheat sheet</a></p>
+</nav>
+<article>
+<section class="unit" id="s-overview" data-section="overview" data-label="What this lab is for" data-part="Prepare">
+<header><span class="sec-n">01</span><h2>What this lab is for</h2></header>
+<p>IP addresses change; people and their roles don't. <dfn data-term="user-id">User-ID</dfn> maps addresses to usernames and usernames to directory groups, so a rule can say "marketing may use these applications" and keep saying it as laptops move between networks.</p>
+<p>The story: your company has acquired another, whose users sit in a new <strong>Acquisition</strong> zone. Another admin left a rule allowing them any application to anywhere. You'll tighten it in three layers: approved apps for everyone, extra apps for the marketing group, and an explicit deny for the rest.</p>
+<ul><li><strong>You'll leave with:</strong> User-ID enabled on Acquisition, Allow-Corp-Apps (renamed from Acquisition-Allow-All), Allow-Mktg-Apps for the marketing group, and Deny-All-Others at the bottom.</li><li><strong>Builds on:</strong> <a href="../modules/module-09.html">Module 9</a>. Simulation 9.2 (who gets what) mirrors this lab's results. You'll do this lab in <strong>week 5</strong>, before Labs 8 to 10, to match the module order.</li><li><strong>Sets up:</strong> the Acquisition-zone rules that Labs 8, 13, and 14 assume.</li></ul>
+</section>
+
+<section class="unit" id="s-setup" data-section="setup" data-label="Before you begin" data-part="Prepare">
+<header><span class="sec-n">02</span><h2>Before you begin</h2></header>
+<p>You'll use the web interface, <strong>Remmina</strong> (Server-Extranet to run the traffic script, Firewall-A for the CLI), and Firefox.</p>
+<div class="table-wrap"><table>
+<caption class="visually-hidden">Hosts in the lab network</caption>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td></tr>
+</tbody></table></div>
+<p class="box-note">Usernames and passwords are in the Lab Settings table on page 5 of each lab guide. They are not repeated here, because this site is public.</p>
+<h4>What's already in the baseline</h4>
+<p>Everything through Lab 7, plus an <strong>Acquisition</strong> zone, a rule named <strong>Acquisition-Allow-All</strong>, two application groups (<strong>Allowed-Corp-Apps</strong> and <strong>Allowed-Mktg-Apps</strong>), and a User-ID configuration that reads groups from the lab's LDAP directory. The <code>Appgenerator-2.sh</code> script on the extranet server simulates Acquisition users signing in and using applications.</p>
+</section>
+
+<section class="unit" id="s-walkthrough" data-section="walkthrough" data-label="Walkthrough" data-part="Do the lab">
+<header><span class="sec-n">03</span><h2>Walkthrough of the detailed steps</h2></header>
+<h3 class="task-head"><span class="tn">2.1</span>Load the lab configuration</h3>
+<p class="task-intro">Every lab starts from a known baseline, so your firewall matches the guide no matter what you did last time.</p>
+<ol class="steps-list" start="1"><li>On the client desktop, log in as <code>lab-user</code>, open Firefox, and browse to <code>https://192.168.1.254</code>. Log in as <code>admin</code> with the password from Lab Settings. If the login page does not appear, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li>Go to <span class="path" data-path="Device > Setup > Operations"></span> and click <strong>Load named configuration snapshot</strong>. Choose <code>edu-210-11.0a-11.xml</code> and click OK, then Close.</li><li>Open <strong>Tasks</strong> (lower right) and confirm the Load task shows completed.</li><li>Click <strong>Commit</strong> (upper right), then <strong>Commit</strong> in the dialog, and wait for it to finish.</li></ol>
+<div class="callout stuck"><p class="c-title">Loading is not committing</p><p>A loaded snapshot replaces only the candidate configuration. Until you commit, the firewall is still running whatever was there before, and nothing in the lab will match the guide.</p></div>
+<h3 class="task-head"><span class="tn">2.2</span>Examine the firewall configuration</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Policies &gt; Security"></span> and open <strong>Acquisition-Allow-All</strong>. Note: source zone Acquisition, destination zone <strong>any</strong>, application <strong>any</strong>, action Allow. Click OK.</li>
+<li>Click <strong>Reset Rule Hit Counter &gt; All rules</strong> and confirm.</li>
+<li>Go to <span class="path" data-path="Objects &gt; Application Groups"></span> and look at <strong>Allowed-Corp-Apps</strong> and <strong>Allowed-Mktg-Apps</strong>.</li>
+</ol>
+<div class="callout why"><p class="c-title">Why "any to any" is the problem</p><p>That rule lets every acquired user reach every zone with every application, including your users' network. It's common after a merger, and it's exactly what User-ID and App-ID together are meant to replace.</p></div>
+<h3 class="task-head"><span class="tn">2.3</span>Generate traffic from the Acquisition zone</h3>
+<ol class="steps-list" start="1">
+<li>Open <strong>Remmina</strong> and double-click <strong>Server-Extranet</strong>.</li>
+<li>Change to the scripts folder and run the generator. Let it finish.</li>
+</ol>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">paloalto42@extranet1:~$</span> <span class="cmd">cd /home/paloalto42/pcaps92019/app.pcaps/</span>
+<span class="prompt">paloalto42@extranet1:~$</span> <span class="cmd">./Appgenerator-2.sh</span></pre>
+<ol class="steps-list" start="3">
+<li>In <span class="path" data-path="Monitor &gt; Logs &gt; Traffic"></span>, clear filters. Almost everything hits <strong>Acquisition-Allow-All</strong>. Allow 3 to 6 minutes for logs to appear.</li>
+<li>Add the <strong>Source User</strong> column and drag it between Receive Time and Source.</li>
+</ol>
+<div class="callout fix"><p class="c-title">The guide describes a different task</p><p>The introduction to 2.3 talks about a data-plane packet capture for a custom application signature. Nothing like that happens: you just run the traffic script.</p></div>
+<div class="callout tip"><p class="c-title">Source User is empty for now</p><p>That's expected. The zone doesn't have User-ID turned on yet.</p></div>
+<p class="shot" id="shot-1"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 1</span> The Traffic log showing Acquisition traffic hitting Acquisition-Allow-All, with an empty Source User column.</span></p>
+<h3 class="task-head"><span class="tn">2.4</span>Enable User-ID on the Acquisition zone</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Network &gt; Zones"></span> and open <strong>Acquisition</strong>.</li>
+<li>Check <strong>Enable User Identification</strong> and click OK.</li>
+</ol>
+<div class="callout stuck"><p class="c-title">The high-level steps skip this</p><p>It appears only here in the detailed steps. Without it, the firewall never maps users in this zone, the Source User column stays empty, and the marketing rule can never match.</p></div>
+<p class="shot" id="shot-2"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 2</span> The Acquisition zone with Enable User Identification checked.</span></p>
+<h3 class="task-head"><span class="tn">2.5</span>Turn Acquisition-Allow-All into an approved-apps rule</h3>
+<ol class="steps-list" start="1">
+<li>Open <strong>Acquisition-Allow-All</strong> in <span class="path" data-path="Policies &gt; Security"></span>.</li>
+<li><strong>General:</strong> rename it <code>Allow-Corp-Apps</code>, description <code>Allows only approved apps for Acquisition users</code>.</li>
+<li><strong>Application:</strong> uncheck Any and add the <strong>Allowed-Corp-Apps</strong> group. Click OK.</li>
+</ol>
+<h3 class="task-head"><span class="tn">2.6</span>Create the marketing apps rule</h3>
+<ol class="steps-list" start="1">
+<li>Click <strong>Add</strong>. <strong>General:</strong> name <code>Allow-Mktg-Apps</code>, description <code>Allows only users of marketing group to access Mktg apps</code>.</li>
+<li><strong>Source:</strong> zone <strong>Acquisition</strong>. Under <strong>Source User</strong>, click <strong>Add</strong> and enter <code>marketing</code>.</li>
+<li><strong>Destination:</strong> set the zone drop-down to <strong>any</strong>.</li>
+<li><strong>Application:</strong> uncheck Any, add <strong>Allowed-Mktg-Apps</strong>, then check <strong>Depends On</strong> and click <strong>Add to Current Rule</strong>.</li>
+<li><strong>Actions:</strong> confirm Allow. Click OK.</li>
+</ol>
+<div class="callout why"><p class="c-title">A group, not a list of people</p><p>Source user <code>marketing</code> is a directory group. When someone joins marketing in the directory, they get access with no firewall change.</p></div>
+<p class="shot" id="shot-3"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 3</span> Allow-Mktg-Apps showing source zone Acquisition and source user marketing.</span></p>
+<h3 class="task-head"><span class="tn">2.7</span>Create the deny rule</h3>
+<ol class="steps-list" start="1">
+<li>Click <strong>Add</strong>. Name <code>Deny-All-Others</code>, description <code>Denies non-approved applications for users in Acquisition zone</code>.</li>
+<li><strong>Source:</strong> zone <strong>Acquisition</strong>, source user <strong>any</strong>. <strong>Destination:</strong> zone <strong>any</strong>. <strong>Application:</strong> Any.</li>
+<li><strong>Actions:</strong> change Action to <strong>Deny</strong>. Click OK.</li>
+<li>Make sure it sits at the bottom, just above intrazone-default. Commit.</li>
+</ol>
+<div class="callout why"><p class="c-title">Why deny explicitly if interzone-default already does?</p><p>Deny-All-Others states the intent, logs by default, and, because its destination zone is any, also catches Acquisition-to-Acquisition traffic that intrazone-default would otherwise allow.</p></div>
+<div class="callout stuck"><p class="c-title">Order matters</p><p>Above Allow-Mktg-Apps, the deny would shadow it. Last is the only correct place.</p></div>
+<p class="shot" id="shot-4"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 4</span> The rulebase with Allow-Corp-Apps, Allow-Mktg-Apps, and Deny-All-Others in that order.</span></p>
+<h3 class="task-head"><span class="tn">2.8</span>Generate traffic again</h3>
+<ol class="steps-list" start="1">
+<li>Back in the Server-Extranet Remmina window, run the script again from the same folder and let it finish. Then close the window.</li>
+</ol>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">paloalto42@extranet1:~$</span> <span class="cmd">./Appgenerator-2.sh</span></pre>
+<h3 class="task-head"><span class="tn">2.9</span>Examine User-ID mappings</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Monitor &gt; Logs &gt; User-ID"></span>. You should see username-to-IP mappings. If not, run the script again.</li>
+<li>In Remmina, open <strong>Firewall-A</strong> and show the mappings from the CLI. Then close it.</li>
+</ol>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">show user ip-user-mapping all</span></pre>
+<p class="shot" id="shot-5"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 5</span> The User-ID log or the CLI output showing chicago\ usernames mapped to addresses.</span></p>
+<h3 class="task-head"><span class="tn">2.10</span>Examine the Traffic log</h3>
+<p>Apply each filter and read the <strong>Rule</strong> and <strong>Source User</strong> columns.</p>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( app eq youtube-base )</span>
+<span class="cmd">( app eq dns )</span>
+<span class="cmd">( app eq facebook-base )</span>
+<span class="cmd">( app eq facebook-base ) and ( action eq allow )</span>
+<span class="cmd">( app eq instagram-base ) and ( user.src eq 'chicago\sholmes' )</span>
+<span class="cmd">( app eq instagram-base ) and ( user.src eq 'chicago\bbart' )</span></pre>
+<div class="callout fix"><p class="c-title">Curly quotes break the filter</p><p>The guide prints the user filters with curly quotes (‘chicago\sholmes’). The filter parser needs straight single quotes, as above. Use the Copy button.</p></div>
+<div class="callout guideq"><p class="c-title">Q1: Which rule handles youtube-base?</p><p>Read the Rule column. The answer depends on which group youtube-base is in. If it's in Allowed-Corp-Apps, you'll see Allow-Corp-Apps; if only in Allowed-Mktg-Apps, you'll see Allow-Mktg-Apps for marketing users and <strong>Deny-All-Others</strong> for everyone else. Open the two groups in Objects &gt; Application Groups to confirm.</p></div>
+<div class="callout guideq"><p class="c-title">Q2: Which rule handles dns?</p><p>You'll likely see two: <strong>Allow-Corp-Apps</strong> for Acquisition users and <strong>Users_to_Internet</strong> for the client's own lookups. Check the Source Zone column to tell them apart.</p></div>
+<div class="callout guideq"><p class="c-title">Q3: Which rules handle facebook-base?</p><p><strong>c and d: Allow-Mktg-Apps and Deny-All-Others.</strong> Marketing users are allowed; everyone else in Acquisition is denied.</p></div>
+<div class="callout guideq"><p class="c-title">Q4 to Q6: Which users get facebook-base and instagram-base?</p><p>The answers are whoever is in the marketing group in the lab directory. The allowed filter (Q4) lists them in Source User. For sholmes and bbart, an allowed entry means <strong>Yes</strong>; only denied entries (Deny-All-Others) means <strong>No</strong>.</p></div>
+<p class="shot" id="shot-6"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 6</span> The Traffic log filtered to facebook-base showing both Allow-Mktg-Apps and Deny-All-Others entries with their users.</span></p>
+</section>
+
+<section class="unit" id="s-reference" data-section="reference" data-label="Reference" data-part="Understand">
+<header><span class="sec-n">04</span><h2>User-ID reference</h2></header>
+<h4>The two halves of User-ID</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Half</th><th scope="col">Answers</th><th scope="col">Comes from</th></tr></thead><tbody><tr><td>User mapping</td><td>Which user is at this IP?</td><td>Server monitoring, agents, GlobalProtect, Authentication Portal, syslog, XML API</td></tr><tr><td>Group mapping</td><td>Which groups is this user in?</td><td>LDAP queries to the directory (a group mapping configuration)</td></tr></tbody></table></div>
+<h4>Useful CLI</h4>
+<p><code>show user group list</code> shows the groups the firewall has read from the directory. Follow it with <code>show user group name</code> and a group exactly as listed to see that group's members.</p>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">show user ip-user-mapping all</span>
+<span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">show user group list</span></pre>
+<h4>Filter fields</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Field</th><th scope="col">Example</th></tr></thead><tbody><tr><td><code>user.src</code></td><td><code>( user.src eq 'chicago\sholmes' )</code> (quotes required: the backslash)</td></tr><tr><td><code>zone.src</code></td><td><code>( zone.src eq Acquisition )</code></td></tr><tr><td><code>rule</code></td><td><code>( rule eq Deny-All-Others )</code></td></tr></tbody></table></div>
+</section>
+
+<section class="unit" id="s-stuck" data-section="stuck" data-label="Where people get stuck" data-part="Understand">
+<header><span class="sec-n">05</span><h2>Where people get stuck</h2></header>
+<div class="table-wrap"><table class="stuck-table"><thead><tr><th scope="col">Symptom</th><th scope="col">Likely cause</th><th scope="col">Fix</th></tr></thead><tbody><tr><td>Source User column stays empty</td><td>User-ID not enabled on Acquisition</td><td>Do task 2.4 and commit.</td></tr><tr><td>User-ID log is empty</td><td>Script not run since the commit</td><td>Run Appgenerator-2.sh again and wait a few minutes.</td></tr><tr><td>Marketing users are denied</td><td>Deny-All-Others above Allow-Mktg-Apps</td><td>Move the deny to the bottom.</td></tr><tr><td>facebook-base never allowed</td><td>Group typed wrong, or no dependencies</td><td>Re-enter <code>marketing</code>; add Depends On.</td></tr><tr><td>User filter returns an error</td><td>Curly quotes or no quotes</td><td>Use straight quotes: <code>'chicago\sholmes'</code>.</td></tr><tr><td>Logs still show Acquisition-Allow-All</td><td>Old entries from before the rename</td><td>Look at entries after your last commit time.</td></tr></tbody></table></div>
+</section>
+
+<section class="unit" id="s-production" data-section="production" data-label="In production" data-part="Understand">
+<header><span class="sec-n">06</span><h2>How this looks on a real firewall</h2></header>
+<ul><li><strong>Mapping is the hard part.</strong> In production, the firewall learns users from domain controller logs (server monitoring), GlobalProtect, or an identity provider. Every unmapped user falls into "any," so coverage matters.</li><li><strong>Enable User-ID only on internal zones.</strong> Never on the internet-facing zone; it would try to identify untrusted sources.</li><li><strong>Watch group mapping scope.</strong> Limit group mapping to the groups policy actually uses, so the firewall isn't reading the whole directory.</li><li><strong>Mergers are a real use case.</strong> A separate zone for an acquired network, tightened with user and application rules, is a common integration pattern.</li><li><strong>Other vendors:</strong> Fortinet FSSO, Cisco ISE with pxGrid, and Check Point Identity Awareness solve the same mapping problem.</li></ul>
+</section>
+
+<section class="unit" id="s-selfcheck" data-section="selfcheck" data-label="Check yourself" data-part="Wrap up">
+<header><span class="sec-n">07</span><h2>Check yourself</h2></header>
+<details class="qa"><summary>Why did the Source User column stay empty before task 2.4?</summary><div class="qa-a"><p>The firewall only maps users in zones with User Identification enabled.</p></div></details>
+<details class="qa"><summary>Why use the group <code>marketing</code> instead of listing each marketing user?</summary><div class="qa-a"><p>Membership is managed in the directory. New marketing users get access with no firewall change.</p></div></details>
+<details class="qa"><summary>What happens if Deny-All-Others is placed above Allow-Mktg-Apps?</summary><div class="qa-a"><p>It shadows the marketing rule, and marketing users are denied too.</p></div></details>
+<details class="qa"><summary>What does Deny-All-Others catch that interzone-default wouldn't?</summary><div class="qa-a"><p>Intrazone traffic within Acquisition, because its destination zone is any, and it logs by default.</p></div></details>
+<details class="qa"><summary>Why does the user filter need quotes?</summary><div class="qa-a"><p>The username contains a backslash (chicago\sholmes), which must be quoted.</p></div></details>
+</section>
+
+<section class="unit" id="s-evidence" data-section="evidence" data-label="What to submit" data-part="Wrap up">
+<header><span class="sec-n">08</span><h2>Screenshots to capture</h2></header>
+<p>Take each screenshot at its marker. Name the files by lab and number (for example <code>lab11-shot4.png</code>) and submit them in Canvas as your instructor directs.</p>
+<ul class="checklist evidence" data-save="lab11-evidence"><li><input type="checkbox" id="ev11-0"><div><label for="ev11-0">Screenshot 1: The Traffic log showing Acquisition traffic hitting Acquisition-Allow-All, with an empty Source User column.</label><a class="ev-where" href="#shot-1">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev11-1"><div><label for="ev11-1">Screenshot 2: The Acquisition zone with Enable User Identification checked.</label><a class="ev-where" href="#shot-2">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev11-2"><div><label for="ev11-2">Screenshot 3: Allow-Mktg-Apps showing source zone Acquisition and source user marketing.</label><a class="ev-where" href="#shot-3">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev11-3"><div><label for="ev11-3">Screenshot 4: The rulebase with Allow-Corp-Apps, Allow-Mktg-Apps, and Deny-All-Others in that order.</label><a class="ev-where" href="#shot-4">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev11-4"><div><label for="ev11-4">Screenshot 5: The User-ID log or the CLI output showing chicago\ usernames mapped to addresses.</label><a class="ev-where" href="#shot-5">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev11-5"><div><label for="ev11-5">Screenshot 6: The Traffic log filtered to facebook-base showing both Allow-Mktg-Apps and Deny-All-Others entries with their users.</label><a class="ev-where" href="#shot-6">Find it in the walkthrough</a></div></li></ul>
+<p class="box-note">Checkmarks are saved in this browser only. They help you keep track; the screenshots themselves go to Canvas.</p>
+</section>
+
+<section class="unit" id="s-cheat" data-section="cheat" data-label="Cheat sheet" data-part="Wrap up">
+<header><span class="sec-n">09</span><h2>Cheat sheet</h2></header>
+<div class="cheat">
+<h4>Rules for the Acquisition zone (in order)</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Rule</th><th scope="col">Source</th><th scope="col">Destination</th><th scope="col">Application</th><th scope="col">Action</th></tr></thead><tbody><tr><td>Allow-Corp-Apps</td><td>Acquisition, any user</td><td>any</td><td>Allowed-Corp-Apps</td><td>Allow</td></tr><tr><td>Allow-Mktg-Apps</td><td>Acquisition, user <code>marketing</code></td><td>any</td><td>Allowed-Mktg-Apps + dependencies</td><td>Allow</td></tr><tr><td>Deny-All-Others</td><td>Acquisition, any user</td><td>any</td><td>any</td><td>Deny</td></tr></tbody></table></div>
+<h4>Commands and filters</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Purpose</th><th scope="col">Use</th></tr></thead><tbody><tr><td>Generate traffic</td><td><code>./Appgenerator-2.sh</code> in <code>~/pcaps92019/app.pcaps/</code></td></tr><tr><td>See mappings</td><td><code>show user ip-user-mapping all</code></td></tr><tr><td>One user</td><td><code>( user.src eq 'chicago\sholmes' )</code></td></tr></tbody></table></div>
+<h4>Remember</h4>
+<ul><li>Enable User Identification on the zone.</li><li>Deny-All-Others goes last.</li></ul>
+</div>
+<p><button type="button" class="btn" data-print="cheat">Print only this cheat sheet</button></p>
+</section>
+<nav class="pager" id="pager" aria-label="Lab navigation"></nav>
+</article>
+</div>
+</main>
+
+<footer id="site-footer"></footer>
+<script src="../assets/js/course.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/activities.js"></script>
+</body>
+</html>

@@ -1,0 +1,136 @@
+title: Creating and Managing NAT Policy Rules
+lede: Fix the ping that Lab 5 left broken. You write a source NAT rule that sends users and servers to the internet behind the firewall's public address, then a destination NAT rule that publishes the extranet web server at a new address on the users' own network, and you watch both translations in the Traffic log.
+snapshot: edu-210-11.0a-06.xml
+uses: Module 7, sections 7.2 to 7.4
+
+= overview | What this lab is for | What this lab is for | Prepare
+Lab 5 ended with traffic that policy allowed but the internet couldn't answer, because 192.168.1.20 is a private address. **{{source-nat|Source NAT}}** rewrites that source to the firewall's public interface address, 203.0.113.20, and keeps track of the session so replies find their way back.
+
+The second half runs NAT the other way. **{{destination-nat|Destination NAT}}** lets clients reach a server at an address that isn't really the server's: here, users browse to 192.168.1.80 and land on the extranet web server at 192.168.50.80. It's the same mechanism used to publish an internal web server on a public address.
+
+- **You'll leave with:** Inside_Nets_to_Internet (source NAT, DIPP) and Dest_NAT_To_Webserver (destination NAT), both tested.
+- **Builds on:** ->Mod 7<-, especially the pre-NAT address, post-NAT zone rule (7.4). Simulation 7.1 is the best preparation.
+- **Sets up:** every lab that touches the internet. From here on, the client can reach real websites.
+
+= setup | Before you begin | Before you begin | Prepare
+You'll use the web interface, the client's Terminal Emulator, and Firefox.
+
+@network
+
+### What's already in the baseline
+Interfaces, VR-1, and zones from Lab 4, plus the Lab 5 Security rules: the two known-bad block rules, Users_to_Extranet, Users_to_Internet, and Extranet_to_Internet. There are no NAT rules.
+
+### NAT and Security rules are separate rulebases
+A NAT rule decides **how addresses change**. A Security rule decides **whether the session is allowed**. Traffic needs both. You won't add any Security rules in this lab; the Lab 5 rules already allow what you need, and seeing why is part of the lesson.
+
+= walkthrough | Walkthrough | Walkthrough of the detailed steps | Do the lab
+@baseline
+
+## 2.2 Create a source NAT policy
+1. Go to [[Policies > NAT]] and click **Add**.
+2. **General:** name `Inside_Nets_to_Internet`, NAT Type **ipv4**, description `Translates traffic from Users_Net and Extranet to 203.0.113.20 outbound to Internet`.
+3. **Original Packet:** add source zones **Users_Net** and **Extranet**. Destination zone **Internet**. Destination interface **ethernet1/1**. Service **any**; source and destination addresses **Any**.
+4. **Translated Packet**, Source Address Translation: Translation Type **Dynamic IP And Port**, Address Type **Interface Address**, Interface **ethernet1/1**, IP Address **203.0.113.20/24** chosen from the drop-down. Leave Destination Address Translation at **None**. Click OK.
+5. Confirm the rule appears, then commit.
+!stuck Pick the address, don't type it | Choose 203.0.113.20/24 from the IP Address drop-down. Typing it in can produce a value that doesn't match the interface, and the rule won't translate.
+!why One rule, two zones | Both Users_Net and Extranet leave through the same interface with the same public address, so one rule covers both. Two separate rules would work the same way.
+!shot The NAT policy showing Inside_Nets_to_Internet with Dynamic IP And Port on ethernet1/1.
+
+### Test source NAT
+1. Open the Terminal Emulator and ping 8.8.8.8. This time it **replies**. Press Ctrl+C.
+$cl ping 8.8.8.8
+2. In Firefox, open a new tab to `www.paloaltonetworks.com`. It loads. Close the tab.
+3. Go to [[Monitor > Logs > Traffic]], clear any filter, and find allowed sessions matched by **Users_to_Internet**. Wait a minute and refresh if needed.
+!tip See the translation | Add the **NAT Source IP** column (column drop-down > Columns). Allowed internet sessions show source 192.168.1.20 and NAT source 203.0.113.20.
+!shot The terminal showing replies from 8.8.8.8.
+!shot The Traffic log showing allowed sessions on Users_to_Internet, ideally with the NAT Source IP column visible.
+
+## 2.3 Create a destination NAT policy
+1. In [[Policies > NAT]], click **Add**.
+2. **General:** name `Dest_NAT_To_Webserver`, NAT Type **ipv4**, description `Translates traffic to web server at 192.168.50.80`.
+3. **Original Packet:** source zone **Users_Net**. Destination zone **Users_Net**. Destination interface **ethernet1/2**. Service **any**. Source address **Any**. Destination address: click **Add** and type `192.168.1.80`.
+4. **Translated Packet**, Destination Address Translation: Translation Type **Static IP**, Translated Address `192.168.50.80`. Leave Source Address Translation at **None**. Click OK.
+5. Confirm the rule appears, then commit.
+!fix The guide names two different servers | The task introduction says the firewall translates to "the DMZ server at 192.168.50.10." The rule, its description, and the test all use the web server, **192.168.50.80**. Use .80.
+!fix The guide says "source NAT" here | Step 1 says "Add to define a new source NAT policy." This one is a destination NAT rule.
+!why Why the destination zone is Users_Net | 192.168.1.80 is on the users' own subnet, so before translation the firewall's route lookup points it at ethernet1/2, the Users_Net interface. NAT rules always use the **pre-NAT** zones.
+!tip Who answers for 192.168.1.80? | No host has that address. Because it's in ethernet1/2's subnet and appears in a NAT rule, the firewall answers ARP for it on that interface.
+!shot The NAT policy showing Dest_NAT_To_Webserver with original destination 192.168.1.80 and translated address 192.168.50.80.
+
+### Test destination NAT
+1. In Firefox, open a new tab to `http://192.168.1.80`. You see the extranet web server's page. Close the tab.
+2. In the Traffic log, filter for the original address and confirm the session was allowed by **Users_to_Extranet**.
+$f ( addr.dst in 192.168.1.80 )
+3. For a shortcut, go to [[Policies > Security]], open the drop-down next to **Users_to_Extranet**, and choose **Log Viewer**. It opens the Traffic log pre-filtered to that rule.
+!why No new Security rule, and that's the point | Security policy uses the **post-NAT zone** (Extranet, where 192.168.50.80 lives) and the **pre-NAT address**. Users_to_Extranet goes from Users_Net to Extranet with destination address any, so it matches. If that rule had named a destination address, it would need 192.168.1.80, not .50.80.
+!shot The Traffic log entry for 192.168.1.80 showing rule Users_to_Extranet.
+
+= reference | Reference | NAT reference | Understand
+### Source NAT translation types
+| Type | Translates | Typical use |
+| Dynamic IP and Port (DIPP) | Many private addresses to one address, using ports to tell sessions apart | Users to the internet. This lab. |
+| Dynamic IP | Private addresses to a pool, one for one, no port change | When each session needs its own public address |
+| Static IP | One address to one address, either direction | A server that must always appear as the same public address |
+
+### The rule that trips everyone
+| Rulebase | Zones it uses | Addresses it uses |
+| NAT policy | Pre-NAT source and destination zones | Pre-NAT addresses |
+| Security policy | Pre-NAT source zone, **post-NAT destination zone** | **Pre-NAT** addresses |
+
+### CLI checks
+$fw show session all filter destination 8.8.8.8
+$fw show running nat-policy
+`show session` lists live sessions with their translated addresses; `show running nat-policy` shows the NAT rules the firewall is enforcing.
+
+= stuck | Where people get stuck | Where people get stuck | Understand
+| Symptom | Likely cause | Fix |
+| Ping to 8.8.8.8 still fails | Source NAT not committed, or wrong destination zone | Destination zone must be Internet, interface ethernet1/1. Commit. |
+| Rule saved but doesn't translate | IP address typed instead of picked | Edit the rule and choose 203.0.113.20/24 from the drop-down. |
+| http://192.168.1.80 times out | Destination zone set to Extranet | NAT uses the pre-NAT zone: Users_Net, interface ethernet1/2. |
+| Test ignores your change | An old session is still open | Close the tab and try again; NAT applies to new sessions. |
+| Log shows 192.168.50.80, not .1.80 | Different column | The Destination column shows the original address; add NAT Destination IP to see the translated one. |
+| Tempted to add a Security rule | Expecting NAT to need its own permission | Users_to_Extranet already matches. See the Why box above. |
+
+= production | In production | How this looks on a real firewall | Understand
+- **Publishing a server uses public addresses.** The lab publishes a server on an internal address. In production, destination NAT usually maps a public address on the internet interface to a server in a DMZ zone.
+- **Watch DIPP capacity.** One public address has roughly 64,000 source ports to hand out, multiplied by the oversubscription rate; large networks add a pool of addresses (Module 7, Simulation 7.2).
+- **Bidirectional and U-turn NAT.** When internal users must reach a published server by its public address, you need extra NAT logic. Module 7 covers it.
+- **Keep NAT and Security names distinct.** The capstone reuses names across both rulebases. That's legal, but many teams prefix NAT rules (for example `NAT-`) to avoid confusion.
+- **Every vendor has the zone rule.** On Fortinet, Cisco, and Check Point the details differ, but you always have to know which address (original or translated) each rule sees.
+
+= selfcheck | Check yourself | Check yourself | Wrap up
+?? Lab 5's ping to 8.8.8.8 was allowed. What did source NAT change that made it work?
+=> It translated the private source 192.168.1.20 to the public 203.0.113.20, so the reply had a routable address to return to.
+
+?? For Dest_NAT_To_Webserver, why is the destination zone Users_Net and not Extranet?
+=> NAT rules use pre-NAT zones. Before translation, 192.168.1.80 routes out ethernet1/2, which is in Users_Net.
+
+?? Which Security rule allows the destination NAT session, and why didn't you need a new one?
+=> Users_to_Extranet. Security policy uses the post-NAT zone (Extranet) and its destination address is any, so it matches.
+
+?? If Users_to_Extranet had destination address 192.168.50.80 instead of any, would the session match it?
+=> No. Security policy matches on the pre-NAT address, 192.168.1.80.
+
+?? What does the "and Port" in Dynamic IP and Port let the firewall do?
+=> Share one public address among many clients by giving each session its own source port.
+
+= evidence | What to submit | Screenshots to capture | Wrap up
+Take each screenshot at its marker. Name the files by lab and number (for example `lab06-shot2.png`) and submit them in Canvas as your instructor directs.
+
+= cheat | Cheat sheet | Cheat sheet | Wrap up
+<div class="cheat">
+### NAT rules
+| Rule | Original packet | Translated packet |
+| Inside_Nets_to_Internet | Users_Net, Extranet to Internet, interface ethernet1/1 | Source: DIPP, interface address 203.0.113.20/24 |
+| Dest_NAT_To_Webserver | Users_Net to Users_Net, ethernet1/2, destination 192.168.1.80 | Destination: static IP 192.168.50.80 |
+### Tests
+| Test | Expect |
+| `ping 8.8.8.8` | Replies |
+| `www.paloaltonetworks.com` | Page loads |
+| `http://192.168.1.80` | Extranet web server page |
+| `( addr.dst in 192.168.1.80 )` | Allowed by Users_to_Extranet |
+### Remember
+- NAT rules: pre-NAT zones and addresses.
+- Security rules: post-NAT destination zone, pre-NAT addresses.
+</div>
+@cheatprint

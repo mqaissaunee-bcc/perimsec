@@ -1,0 +1,179 @@
+title: Connecting the Firewall to Production Networks with Security Zones
+lede: Turn the firewall into a router with security boundaries. You address three Layer 3 interfaces, attach them to a virtual router with a default route, place each in its own security zone, test reachability from the firewall's CLI, and then use Interface Management Profiles to decide which interfaces answer ping and SSH.
+snapshot: edu-210-11.0a-04.xml
+uses: Module 5, sections 5.2 to 5.5
+
+= overview | What this lab is for | What this lab is for | Prepare
+Until now the firewall has only had a management port. This lab connects its data ports to three networks: the internet (203.0.113.0/24), your users (192.168.1.0/24), and the extranet servers (192.168.50.0/24). Every packet a user sends from here on enters one of these interfaces.
+
+Two ideas carry the rest of the course. First, an interface can't pass traffic until it belongs to a **{{security-zone|security zone}}**, and zones, not interfaces, are what Security policy talks about. Second, the firewall's own data interfaces ignore ping and management traffic until an **{{interface-management-profile|Interface Management Profile}}** says otherwise.
+
+- **You'll leave with:** ethernet1/1 to 1/3 addressed, virtual router VR-1 with a default route, zones Internet, Users_Net, and Extranet, and two management profiles applied.
+- **Builds on:** ->Mod 5<-, sections 5.2 to 5.5. Simulation 5.1 (zone mapper) and 5.2 (route lookup) mirror this lab.
+- **Sets up:** every policy lab. Lab 5 writes the first rules between these zones.
+
+= setup | Before you begin | Before you begin | Prepare
+You'll use the web interface, then **Remmina** (an SSH client on the client desktop) for the firewall CLI, and the **Terminal Emulator** for tests from the client.
+
+@network
+
+### The design you're building
+| Interface | Address | Zone | Faces |
+| ethernet1/1 | `203.0.113.20/24` | Internet | ISP router `203.0.113.1` |
+| ethernet1/2 | `192.168.1.1/24` | Users_Net | Client `192.168.1.20` |
+| ethernet1/3 | `192.168.50.1/24` | Extranet | Servers in `192.168.50.0/24` |
+
+= walkthrough | Walkthrough | Walkthrough of the detailed steps | Do the lab
+@baseline
+
+## 2.2 Create Layer 3 network interfaces
+1. Go to [[Network > Interfaces > Ethernet]] and click **ethernet1/1**.
+2. Set **Comment** to `Internet Connection`, **Interface Type** to **Layer3**, and leave **Virtual Router** at None for now.
+3. On the **IPv4** tab, leave Type **Static**, click **Add**, and enter `203.0.113.20/24`. Click OK.
+4. Repeat for **ethernet1/2**: comment `Users network connection`, Layer3, address `192.168.1.1/24`.
+5. Repeat for **ethernet1/3**: comment `Extranet servers connection`, Layer3, address `192.168.50.1/24`.
+6. Confirm all three interfaces show Layer3 with their addresses.
+!stuck Always type the mask | Enter every address with its `/24`. Without it, PAN-OS treats the entry as a /32 host address, and nothing else on that subnet is reachable through the interface.
+!shot The Ethernet interface table showing ethernet1/1 to 1/3 as Layer3 with their addresses.
+
+## 2.3 Create a virtual router
+1. Go to [[Network > Virtual Routers]] and click **default**.
+2. Rename it `VR-1`. Under **Interfaces**, click **Add** and add ethernet1/1, ethernet1/2, and ethernet1/3 (any order).
+3. Select **Static Routes**, then the **IPv4** tab, and click **Add**.
+4. Name the route `Firewall Default Gateway`, destination `0.0.0.0/0`, interface **ethernet1/1**, next hop **IP Address** `203.0.113.1`. Click OK, then OK again.
+!why What the default route does | The firewall already knows its three connected networks. For every other destination, including 8.8.8.8 and every website, it needs somewhere to send the packet. The default route says "anything else goes to the ISP router at 203.0.113.1."
+!tip Remember this route | The capstone (Lab 14) asks for a default route named `Default-Route` and doesn't give you the next hop. This is where you learn it.
+!shot The VR-1 static route showing 0.0.0.0/0 via ethernet1/1 to 203.0.113.1.
+
+## 2.4 Segment the network with security zones
+1. Go to [[Network > Zones]] and click **Add**.
+2. Name it `Internet`, Type **Layer3**, and add **ethernet1/1** under Interfaces. Click OK.
+3. Add `Users_Net` (Layer3) with **ethernet1/2**.
+4. Add `Extranet` (Layer3) with **ethernet1/3**.
+5. Commit.
+!stuck Zone names are case sensitive | Every later lab, filter, and rule uses `Users_Net` with a capital U, capital N, and an underscore. A zone called `users_net` or `Users-Net` breaks the baselines' expectations and your filters.
+!shot The Zones page showing Internet, Users_Net, and Extranet with their interfaces.
+
+## 2.5 Test connectivity to each zone from the firewall
+1. On the client, open **Remmina** and double-click **Firewall-A**. It logs you in to the CLI automatically.
+2. Ping a host in each zone, using the firewall's address in that zone as the source. Let each run a few seconds, then press Ctrl+C.
+$fw ping source 192.168.1.1 host 192.168.1.20
+$fw ping source 192.168.50.1 host 192.168.50.150
+$fw ping source 203.0.113.20 host 8.8.8.8
+3. All three should succeed. Close the Remmina session and Remmina.
+!why Why "source" matters | Without `source`, the firewall pings from its management address (192.168.1.254), which tests the management network, not your new interfaces. With `source 203.0.113.20`, the ping leaves ethernet1/1 and follows VR-1's default route.
+!why Why these pings work with no Security rules | Traffic the firewall itself originates isn't checked against Security policy. Traffic passing **through** the firewall is, starting in Lab 5.
+!shot The CLI showing all three ping tests succeeding.
+
+## 2.6 Test interface access before management profiles
+1. Open the **Terminal Emulator** on the client.
+2. Ping the firewall's users interface, then try SSH to it. Both should fail; press Ctrl+C to stop each.
+$cl ping 192.168.1.1
+$cl ssh admin@192.168.1.1
+3. Leave the terminal open.
+!tip The failure is the lesson | A data interface silently drops ping and management traffic addressed to it until a management profile allows it. That's a deliberate secure default.
+!fix The guide names the wrong interface | Step 6 says you'll repeat these tests after applying a profile to ethernet1/1. The tests target 192.168.1.1, which is **ethernet1/2**.
+
+## 2.7 Define Interface Management Profiles
+1. In the web interface, go to [[Network > Network Profiles > Interface Management]] and click **Add**.
+2. Name it `Allow-ping`, check **Ping** under Network Services, and click OK.
+3. Add a second profile named `Allow-mgt`. Check **HTTPS** and **SSH** under Administrative Management Services, and **Ping**, **SNMP**, **Response Pages**, and **User-ID** under Network Services. Click OK.
+4. Go to [[Network > Interfaces > Ethernet]], open **ethernet1/1**, select **Advanced**, and set **Management Profile** to `Allow-ping`. Click OK.
+5. Open **ethernet1/2**, set its management profile to `Allow-mgt`, click OK, and click **Yes** at the warning.
+6. Do the same for **ethernet1/3** with `Allow-mgt`.
+7. Confirm each interface shows its profile, then commit.
+!why Why the warning appears | Allow-mgt opens HTTPS and SSH on a data interface. The firewall warns because exposing management on a network users can reach is a real risk. You accept it here because both are internal lab networks.
+!tip Response Pages and User-ID will matter later | Response Pages lets the firewall show block pages from ethernet1/2 (Labs 7 to 9). User-ID lets it receive user-mapping information.
+!shot The Ethernet interface table showing the Management Profile column filled in for all three interfaces.
+
+## 2.8 Test interface access after management profiles
+1. In the client terminal, ping 192.168.1.1 again. Now it answers.
+2. Become root, then SSH to the firewall's users interface. Accept the key fingerprint with `yes` and enter the admin password from the guide.
+$cl ping 192.168.1.1
+$cl sudo su
+$root ssh admin@192.168.1.1
+3. You see the firewall CLI prompt, reached through ethernet1/2 rather than the management port.
+!tip Why sudo? | The guide elevates to root before SSH. It isn't needed for SSH itself; it's a quirk of how the lab client is set up. If SSH works as lab-user, that's fine too.
+!shot The terminal showing a successful ping to 192.168.1.1 and the firewall CLI prompt over SSH.
+
+= reference | Reference | Interfaces, routing, and zones reference | Understand
+### Interface types
+| Type | Has an IP? | Use |
+| Layer 3 | Yes | Routes between subnets. What this lab and the course use. |
+| Layer 2 | No | Switches between ports in the same subnet. |
+| Virtual wire | No | Drops in transparently between two devices. |
+| Tap | No | Receives a copy of traffic from a switch SPAN port; visibility only. |
+
+### Useful CLI checks
+$fw show interface all
+$fw show routing route
+$fw show interface ethernet1/2
+`show interface all` lists each interface's state, address, and zone. `show routing route` shows the routing table, including your default route (flag `A S` for active static).
+
+### What each management profile allows
+| Service | Allow-ping | Allow-mgt |
+| Ping | Yes | Yes |
+| HTTPS (web interface) | No | Yes |
+| SSH (CLI) | No | Yes |
+| SNMP | No | Yes |
+| Response Pages | No | Yes |
+| User-ID | No | Yes |
+
+= stuck | Where people get stuck | Where people get stuck | Understand
+| Symptom | Likely cause | Fix |
+| CLI ping from 203.0.113.20 to 8.8.8.8 fails | No default route, or the wrong next hop | Check VR-1's static route: 0.0.0.0/0, ethernet1/1, next hop 203.0.113.1. |
+| CLI ping to 192.168.1.20 fails | Address entered without /24, or interface not in VR-1 | Re-enter `192.168.1.1/24`; confirm all three interfaces are in VR-1. |
+| Interface shows no zone or router | Commit not done, or zone step skipped | Check Network > Zones, then commit. |
+| Client ping to 192.168.1.1 still fails after the profile | Profile on the wrong interface, or not committed | ethernet1/2 needs Allow-mgt. Commit. |
+| SSH says connection refused | Allow-mgt is missing SSH | Edit the profile, check SSH, commit. |
+| Ping in the CLI never stops | That's normal | Press Ctrl+C. |
+
+= production | In production | How this looks on a real firewall | Understand
+- **Keep management off data interfaces.** Here Allow-mgt opens HTTPS and SSH on user and server networks for convenience. In production, administrative access usually stays on the dedicated management port, or on a tightly limited internal interface with permitted IPs set in the profile.
+- **Be careful pinging the internet edge.** Allow-ping on ethernet1/1 lets anyone on the internet confirm the firewall exists. Many organizations allow it only from their monitoring service's addresses.
+- **Separate the management network.** In this lab the management port (192.168.1.254) and ethernet1/2 (192.168.1.1) sit on the same subnet. Real designs keep them apart (Module 2).
+- **Use more zones, not fewer.** Production networks often split users, servers, guests, voice, and management into separate zones so policy can treat each differently.
+- **Plan for redundancy.** Production edges usually have two ISP links with path monitoring on the static routes (Module 5), or a dynamic routing protocol.
+
+= selfcheck | Check yourself | Check yourself | Wrap up
+?? Can an interface pass user traffic if it has an IP address and is in a virtual router but no zone?
+=> No. Every interface must belong to a security zone before it can process traffic.
+
+?? Why does `ping source 203.0.113.20 host 8.8.8.8` need a default route, but `ping source 192.168.1.1 host 192.168.1.20` doesn't?
+=> 192.168.1.0/24 is directly connected to ethernet1/2. 8.8.8.8 isn't on any connected network, so the firewall needs the default route to reach it.
+
+?? Before Allow-mgt, the client couldn't ping 192.168.1.1. Why not, if there was nothing to block it?
+=> Data interfaces don't answer ping or management services addressed to them unless an Interface Management Profile allows it.
+
+?? You entered `192.168.50.1` without a mask. What breaks?
+=> It becomes a /32, so the firewall has no connected route to the rest of 192.168.50.0/24 through ethernet1/3.
+
+?? Which zone is the client in, and which interface does its traffic enter?
+=> Users_Net, through ethernet1/2.
+
+= evidence | What to submit | Screenshots to capture | Wrap up
+Take each screenshot at its marker. Name the files by lab and number (for example `lab04-shot5.png`) and submit them in Canvas as your instructor directs.
+
+= cheat | Cheat sheet | Cheat sheet | Wrap up
+<div class="cheat">
+### Build values
+| Item | Value |
+| ethernet1/1 | `203.0.113.20/24`, Layer3, zone `Internet`, profile `Allow-ping` |
+| ethernet1/2 | `192.168.1.1/24`, Layer3, zone `Users_Net`, profile `Allow-mgt` |
+| ethernet1/3 | `192.168.50.1/24`, Layer3, zone `Extranet`, profile `Allow-mgt` |
+| Virtual router | `VR-1` (renamed from default) |
+| Default route | `0.0.0.0/0` via ethernet1/1, next hop `203.0.113.1` |
+### Tests
+| From | Command |
+| Firewall CLI | `ping source 192.168.1.1 host 192.168.1.20` |
+| Firewall CLI | `ping source 192.168.50.1 host 192.168.50.150` |
+| Firewall CLI | `ping source 203.0.113.20 host 8.8.8.8` |
+| Client | `ping 192.168.1.1`, then `ssh admin@192.168.1.1` |
+### Where things live
+| Task | Path |
+| Interfaces | [[Network > Interfaces > Ethernet]] |
+| Routing | [[Network > Virtual Routers]] |
+| Zones | [[Network > Zones]] |
+| Management profiles | [[Network > Network Profiles > Interface Management]] |
+</div>
+@cheatprint

@@ -79,6 +79,33 @@
     }).join("");
   }
 
+  /* ---------- lab companions index ---------- */
+  var labBox = document.getElementById("lab-list");
+  if (labBox) {
+    var LPG = window.PS_LAB_PAGES || {};
+    var weekOf = {};
+    (window.PS_WEEKS || []).forEach(function (w) { w.labs.forEach(function (l) { weekOf[l] = w; }); });
+    var sortBtns = document.querySelectorAll("[data-lab-sort]");
+    function renderLabs(mode) {
+      var nums = PS.labNumbersInOrder();
+      if (mode === "number") { nums = nums.slice().sort(function (a, b) { return a - b; }); }
+      labBox.innerHTML = nums.map(function (n) {
+        var info = LPG[n], w = weekOf[n], m = info.module ? mod(info.module) : null;
+        var pc = PS.labPercent(n);
+        var status = pc >= 100 ? "All sections reviewed" : (pc > 0 ? pc + "% reviewed" : "Not started");
+        var brief = m ? '<a href="' + PS.url("modules/" + m.file + "#s-lab") + '">Briefing in Module ' + m.n + ": " + esc(m.title) + "</a>"
+          : '<a href="' + PS.url("capstone.html") + '">Capstone briefing page</a>';
+        return '<li class="lab-card"><a class="lab-card-main" href="' + info.file + '"><span class="n">' + PS.pad(n) + '</span><span><span class="t">' + esc(LABS[n]) +
+          '</span><span class="d">' + (w ? "Week " + w.week + ", due " + esc(w.due) : "") + " · " + esc(info.time) + '</span></span><span class="s">' + status +
+          '</span></a><p class="lab-card-sub">' + brief + "</p>" +
+          '<div class="meter" role="progressbar" aria-label="Lab ' + n + ' sections reviewed" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pc + '"><span style="width:' + pc + '%"></span></div></li>';
+      }).join("");
+      sortBtns.forEach(function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-lab-sort") === mode ? "true" : "false"); });
+    }
+    sortBtns.forEach(function (b) { b.addEventListener("click", function () { renderLabs(b.getAttribute("data-lab-sort")); }); });
+    renderLabs("course");
+  }
+
   /* ---------- my work ---------- */
   if (page === "my-work.html") {
     var stats = PS.courseStats();
@@ -92,6 +119,16 @@
       return "<tr><th scope=\"row\">" + modLink(m) + "</th><td>" + PS.modPercent(m.n) + "%</td><td>" + q + "</td></tr>";
     }).join("");
     document.getElementById("mw-table").innerHTML = rows;
+    var labTable = document.getElementById("mw-labs");
+    if (labTable) {
+      var LP = window.PS_LAB_PAGES || {};
+      labTable.innerHTML = PS.labNumbersInOrder().map(function (n) {
+        var ev = store.get("check-lab" + n + "-evidence", {});
+        var shots = Object.keys(ev).filter(function (k) { return ev[k]; }).length;
+        return "<tr><th scope=\"row\"><a href=\"" + PS.url("labs/" + LP[n].file) + "\">Lab " + n + ": " + esc(LABS[n]) + "</a></th><td>" +
+          PS.labPercent(n) + "%</td><td>" + (shots ? shots + " checked" : "None yet") + "</td></tr>";
+      }).join("");
+    }
 
     var status = document.getElementById("mw-status");
     document.getElementById("mw-export").addEventListener("click", function () {
@@ -116,7 +153,18 @@
         });
         if (block) { out += "## Module " + m.n + ": " + m.title + "\n\n" + block; }
       });
-      if (!found) { status.textContent = "No notes saved yet. Open Notes on any module page to start."; return; }
+      PS.labNumbersInOrder().forEach(function (n) {
+        var block = "";
+        var pre = "ps-notes-lab" + n + "-";
+        store.keys().forEach(function (k) {
+          if (k.indexOf(pre) === 0) {
+            var v = store.get(k.replace("ps-", ""), "");
+            if (v) { block += "### " + k.replace(pre, "") + "\n\n" + v + "\n\n"; found++; }
+          }
+        });
+        if (block) { out += "## Lab " + n + ": " + LABS[n] + "\n\n" + block; }
+      });
+      if (!found) { status.textContent = "No notes saved yet. Open Notes on any module or lab page to start."; return; }
       PS.download("perimeter-security-notes.md", "text/markdown", out);
       status.textContent = "Notes downloaded (" + found + " notes).";
     });

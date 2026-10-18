@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab 3 companion: Managing Firewall Administrator Accounts | Perimeter Security</title>
+<meta name="description" content="Lab 3 companion for Perimeter Security: walkthrough of the detailed steps for Managing Firewall Administrator Accounts, screenshots to capture, troubleshooting, and a cheat sheet.">
+<link rel="stylesheet" href="../assets/css/site.css">
+<script src="../assets/js/prefs.js"></script>
+</head>
+<body data-root=".." data-lab="3" data-page="labs/index.html">
+<a class="skip-link" href="#main">Skip to main content</a>
+<header id="site-header"></header>
+
+<main id="main" class="page">
+<div class="module-hero">
+<p class="kicker">Lab 3 of 14 in NDG Online. Week 2, due Wed 10/14. Goes with Module 4: Firewall Administrator Accounts.</p>
+<h1>Lab 3: Managing Firewall Administrator Accounts</h1>
+<p class="lede">Give three new administrators access, each authenticated a different way: one from the firewall's own user database, one from an LDAP directory, and one from a RADIUS server. You test every login, confirm in the System log which profile accepted it, and finish with an authentication sequence that tries LDAP first and RADIUS second.</p>
+<ul class="facts"><li>About 60 to 75 minutes</li><li>NDG Online, Lab 3</li><li>Uses Module 4, sections 4.2 to 4.4</li><li>Snapshot <code>edu-210-11.0a-03.xml</code></li><li>5 screenshots to capture</li></ul>
+<div class="lab-hero-links"><a class="btn" href="../modules/module-04.html#s-lab">Lab 3 briefing in Module 4</a><a class="btn btn-quiet" href="index.html">All lab companions</a><a class="btn btn-quiet" href="#s-evidence">Screenshot checklist</a></div>
+</div>
+
+<div class="module-layout">
+<nav class="module-rail" aria-label="This lab companion">
+<h2>This lab</h2>
+<div class="progress-wrap"><span class="label" id="rail-meter-label">0 sections reviewed</span>
+<div class="meter" role="progressbar" aria-labelledby="rail-meter-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="rail-meter"></span></div></div>
+<ol id="rail-list"></ol>
+<p><a href="#s-cheat">Jump to the cheat sheet</a></p>
+</nav>
+<article>
+<section class="unit" id="s-overview" data-section="overview" data-label="What this lab is for" data-part="Prepare">
+<header><span class="sec-n">01</span><h2>What this lab is for</h2></header>
+<p>Sharing the built-in <code>admin</code> account is how firewalls get breached and how nobody can tell who made a change. Real teams give every administrator a named account, and most store those accounts somewhere central, such as a directory, rather than on each firewall.</p>
+<p>This lab builds the same chain three times so the pattern sticks: a <strong><dfn data-term="server-profile">server profile</dfn></strong> says where the authentication server is, an <strong><dfn data-term="authentication-profile">authentication profile</dfn></strong> says how to use it and who may try, and the <strong>administrator</strong> entry ties a username to that profile. An <strong><dfn data-term="authentication-sequence">authentication sequence</dfn></strong> then lets one login try several profiles in order.</p>
+<ul><li><strong>You'll leave with:</strong> adminBob (local database), adminSally (LDAP), adminHelga (RADIUS), and an LDAP-then-RADIUS authentication sequence, each tested.</li><li><strong>Builds on:</strong> <a href="../modules/module-04.html">Module 4</a>, sections 4.2 to 4.4. Simulation 4.1 traces exactly how a sequence falls through to the next profile.</li><li><strong>Sets up:</strong> User-ID in Lab 11, which uses the same LDAP server to read groups.</li></ul>
+</section>
+
+<section class="unit" id="s-setup" data-section="setup" data-label="Before you begin" data-part="Prepare">
+<header><span class="sec-n">02</span><h2>Before you begin</h2></header>
+<p>You'll log out and back in several times, so know where <strong>Logout</strong> is (lower left of the web interface).</p>
+<div class="table-wrap"><table>
+<caption class="visually-hidden">Hosts in the lab network</caption>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td></tr>
+</tbody></table></div>
+<p class="box-note">Usernames and passwords are in the Lab Settings table on page 5 of each lab guide. They are not repeated here, because this site is public.</p>
+<h4>The two directory servers</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Server</th><th scope="col">Address</th><th scope="col">Used for</th></tr></thead><tbody><tr><td>LDAP (<code>ldap.panw.lab</code>)</td><td><code>192.168.50.89</code>, port 389</td><td>adminSally. Base DN <code>dc=panw,dc=lab</code></td></tr><tr><td>RADIUS (<code>radius.panw.lab</code>)</td><td><code>192.168.50.150</code>, port 1812</td><td>adminHelga. CHAP</td></tr></tbody></table></div>
+<p>The bind password and RADIUS shared secret are in the lab guide. adminSally and adminHelga already exist on those servers; you're only telling the firewall to trust them.</p>
+</section>
+
+<section class="unit" id="s-walkthrough" data-section="walkthrough" data-label="Walkthrough" data-part="Do the lab">
+<header><span class="sec-n">03</span><h2>Walkthrough of the detailed steps</h2></header>
+<h3 class="task-head"><span class="tn">2.1</span>Load the lab configuration</h3>
+<p class="task-intro">Every lab starts from a known baseline, so your firewall matches the guide no matter what you did last time.</p>
+<ol class="steps-list" start="1"><li>On the client desktop, log in as <code>lab-user</code>, open Firefox, and browse to <code>https://192.168.1.254</code>. Log in as <code>admin</code> with the password from Lab Settings. If the login page does not appear, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li>Go to <span class="path" data-path="Device > Setup > Operations"></span> and click <strong>Load named configuration snapshot</strong>. Choose <code>edu-210-11.0a-03.xml</code> and click OK, then Close.</li><li>Open <strong>Tasks</strong> (lower right) and confirm the Load task shows completed.</li><li>Click <strong>Commit</strong> (upper right), then <strong>Commit</strong> in the dialog, and wait for it to finish.</li></ol>
+<div class="callout stuck"><p class="c-title">Loading is not committing</p><p>A loaded snapshot replaces only the candidate configuration. Until you commit, the firewall is still running whatever was there before, and nothing in the lab will match the guide.</p></div>
+<h3 class="task-head"><span class="tn">2.2</span>Create a local database authentication profile</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Device &gt; Authentication Profile"></span> and click <strong>Add</strong>.</li>
+<li>On the <strong>Authentication</strong> tab, name it <code>Local-Database</code> and set <strong>Type</strong> to <strong>Local Database</strong>.</li>
+<li>On the <strong>Advanced</strong> tab, under <strong>Allow List</strong>, click <strong>Add</strong> and choose <strong>all</strong>. Click OK.</li>
+</ol>
+<div class="callout stuck"><p class="c-title">The allow list is not optional</p><p>An authentication profile with an empty allow list rejects everyone, even with the right password. Every profile in this lab needs <strong>all</strong> on its Advanced tab.</p></div>
+<h3 class="task-head"><span class="tn">2.3</span>Create a local user database account</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Device &gt; Local User Database &gt; Users"></span> (scroll down the left menu if needed) and click <strong>Add</strong>.</li>
+<li>Name the user <code>adminBob</code>, enter the password from the guide twice, and click OK.</li>
+</ol>
+<h3 class="task-head"><span class="tn">2.4</span>Create an administrator account for adminBob</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Device &gt; Administrators"></span> and click <strong>Add</strong>.</li>
+<li>Name it <code>adminBob</code> and choose <strong>Local-Database</strong> as the authentication profile. Click OK.</li>
+<li>Commit.</li>
+<li>Log out, then log back in as <code>adminBob</code>.</li>
+<li>Go to <span class="path" data-path="Monitor &gt; Logs &gt; System"></span> and find the <strong>auth</strong> entry for adminBob. If you can't see it, filter for it.</li>
+<li>Log out and log back in as <code>admin</code>.</li>
+</ol>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( subtype eq auth )</span></pre>
+<div class="callout why"><p class="c-title">No password field?</p><p>When you pick an authentication profile, the administrator entry has no password of its own. The password lives wherever the profile points: here, the local user database.</p></div>
+<div class="callout tip"><p class="c-title">Administrator type</p><p>You didn't choose a role, so adminBob gets the default Dynamic role of <strong>Superuser</strong>. In production you'd usually assign a narrower role or an Admin Role Profile (Module 4).</p></div>
+<p class="shot" id="shot-1"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 1</span> The System log auth entry showing adminBob authenticated with the Local-Database profile.</span></p>
+<h3 class="task-head"><span class="tn">2.5</span>Configure LDAP authentication</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Device &gt; Server Profiles &gt; LDAP"></span> and click <strong>Add</strong>. Name the profile <code>LDAP Server Profile</code>.</li>
+<li>Under <strong>Server List</strong>, click <strong>Add</strong>: name <code>ldap.panw.lab</code>, server <code>192.168.50.89</code>, port <code>389</code>.</li>
+<li>Under <strong>Server Settings</strong>, enter Base DN <code>dc=panw,dc=lab</code>, Bind DN <code>cn=admin,dc=panw,dc=lab</code>, and the bind password from the guide. <strong>Uncheck</strong> Require SSL/TLS secured connection. Click OK.</li>
+<li>Go to <span class="path" data-path="Device &gt; Authentication Profile"></span> and click <strong>Add</strong>. Name it <code>LDAP Auth Profile</code>, Type <strong>LDAP</strong>, Server Profile <strong>LDAP Server Profile</strong>. On <strong>Advanced</strong>, add <strong>all</strong> to the allow list. Click OK.</li>
+<li>Go to <span class="path" data-path="Device &gt; Administrators"></span>, click <strong>Add</strong>, name it <code>adminSally</code>, and choose <strong>LDAP Auth Profile</strong>. Click OK.</li>
+<li>Commit, log out, log in as <code>adminSally</code>, and find her auth entry in the System log. Then log back in as <code>admin</code>.</li>
+</ol>
+<div class="callout fix"><p class="c-title">Names with spaces versus hyphens</p><p>The detailed steps name the profiles <code>LDAP Auth Profile</code> and <code>RADIUS Auth Profile</code> (with spaces). The high-level steps and a note in the guide call them <code>LDAP-Auth-Profile</code> and <code>RADIUS-Auth-Profile</code>. Either works; pick one style and use it everywhere.</p></div>
+<div class="callout stuck"><p class="c-title">adminSally must match exactly</p><p>The name under Administrators must match the account on the LDAP server, including the capital S. A mismatch fails even with the right password.</p></div>
+<p class="shot" id="shot-2"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 2</span> The LDAP Server Profile window showing the server, port, and Base DN.</span></p>
+<p class="shot" id="shot-3"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 3</span> The System log auth entry showing adminSally authenticated through LDAP.</span></p>
+<h3 class="task-head"><span class="tn">2.6</span>Configure RADIUS authentication</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Device &gt; Server Profiles &gt; RADIUS"></span> and click <strong>Add</strong>. Name it <code>RADIUS Server Profile</code> and set <strong>Authentication Protocol</strong> to <strong>CHAP</strong>.</li>
+<li>Under <strong>Servers</strong>, click <strong>Add</strong>: name <code>radius.panw.lab</code>, server <code>192.168.50.150</code>, the shared secret from the guide, port <code>1812</code>. Click OK.</li>
+<li>Go to <span class="path" data-path="Device &gt; Authentication Profile"></span>, add <code>RADIUS Auth Profile</code>, Type <strong>RADIUS</strong>, Server Profile <strong>RADIUS Server Profile</strong>, and <strong>all</strong> in the allow list.</li>
+<li>Go to <span class="path" data-path="Device &gt; Administrators"></span>, add <code>adminHelga</code> with <strong>RADIUS Auth Profile</strong>.</li>
+<li>Commit, log out, log in as <code>adminHelga</code>, and find her auth entry. Log back in as <code>admin</code>.</li>
+</ol>
+<div class="callout why"><p class="c-title">CHAP is for the lab only</p><p>CHAP relies on MD5 and is not considered secure. The guide says so too. In production, use PEAP-MSCHAPv2, EAP-TTLS, or another protocol your RADIUS server supports over a protected channel.</p></div>
+<p class="shot" id="shot-4"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 4</span> The System log auth entry showing adminHelga authenticated through RADIUS.</span></p>
+<h3 class="task-head"><span class="tn">2.7</span>Configure an authentication sequence</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Device &gt; Authentication Sequence"></span> and click <strong>Add</strong>.</li>
+<li>Name it <code>LDAP then RADIUS</code>. Under <strong>Authentication Profiles</strong>, add <strong>LDAP Auth Profile</strong>, then <strong>RADIUS Auth Profile</strong>. Click OK.</li>
+<li>Commit.</li>
+</ol>
+<div class="callout fix"><p class="c-title">The sequence name differs between halves</p><p>The high-level steps call it <code>LDAP-then-RADIUS</code>. The detailed steps type <code>LDAP then RADIUS</code>. Either works; be consistent if your instructor checks names.</p></div>
+<div class="callout tip"><p class="c-title">What "falls through" really means</p><p>The firewall tries LDAP first. If that profile can't authenticate the user (the account isn't there, the password is wrong, or the server doesn't answer), it tries RADIUS next. The order is set with <strong>Move Up</strong> and <strong>Move Down</strong>.</p></div>
+<p class="shot" id="shot-5"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 5</span> The Authentication Sequence window showing LDAP Auth Profile above RADIUS Auth Profile.</span></p>
+</section>
+
+<section class="unit" id="s-reference" data-section="reference" data-label="Reference" data-part="Understand">
+<header><span class="sec-n">04</span><h2>Authentication reference</h2></header>
+<h4>The chain, object by object</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Object</th><th scope="col">Where</th><th scope="col">Holds</th></tr></thead><tbody><tr><td>Server profile</td><td><span class="path" data-path="Device &gt; Server Profiles"></span> (LDAP, RADIUS, TACACS+, SAML, Kerberos)</td><td>Server address, port, protocol, bind account or shared secret</td></tr><tr><td>Local user database</td><td><span class="path" data-path="Device &gt; Local User Database &gt; Users"></span></td><td>Usernames and passwords stored on the firewall</td></tr><tr><td>Authentication profile</td><td><span class="path" data-path="Device &gt; Authentication Profile"></span></td><td>Type, which server profile, allow list, lockout, MFA</td></tr><tr><td>Authentication sequence</td><td><span class="path" data-path="Device &gt; Authentication Sequence"></span></td><td>An ordered list of authentication profiles</td></tr><tr><td>Administrator</td><td><span class="path" data-path="Device &gt; Administrators"></span></td><td>Username, which profile or sequence, and the role (authorization)</td></tr></tbody></table></div>
+<h4>Authentication versus authorization</h4>
+<p>Authentication answers "are you who you say you are?" (the profile and server). Authorization answers "what may you do?" (the administrator's role). Changing a user's role never changes how they log in, and the reverse.</p>
+<h4>Testing from the CLI</h4>
+<p>Once you can SSH in (Lab 4), you can test a profile without logging out:</p>
+<p>The firewall prompts for the password and reports success or the reason for failure.</p>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">test authentication authentication-profile "LDAP Auth Profile" username adminSally password</span></pre>
+</section>
+
+<section class="unit" id="s-stuck" data-section="stuck" data-label="Where people get stuck" data-part="Understand">
+<header><span class="sec-n">05</span><h2>Where people get stuck</h2></header>
+<div class="table-wrap"><table class="stuck-table"><thead><tr><th scope="col">Symptom</th><th scope="col">Likely cause</th><th scope="col">Fix</th></tr></thead><tbody><tr><td>Correct password, login still fails</td><td>Empty allow list on the authentication profile</td><td>Add <strong>all</strong> on the profile's Advanced tab and commit.</td></tr><tr><td>adminSally or adminHelga fails</td><td>Name typed with the wrong capitalization</td><td>Match the directory account exactly.</td></tr><tr><td>LDAP login fails</td><td>Require SSL/TLS left checked, or a wrong Base DN</td><td>Uncheck SSL/TLS for this lab server; Base DN is <code>dc=panw,dc=lab</code>.</td></tr><tr><td>Can't create the next object after a test</td><td>You're still logged in as the test admin</td><td>Log out and back in as <code>admin</code> after every test.</td></tr><tr><td>No auth entry in the System log</td><td>It's on another page, or a filter is hiding it</td><td>Use <code>( subtype eq auth )</code> and check the time.</td></tr><tr><td>New admin can't log in at all</td><td>You didn't commit before testing</td><td>Commit, then test.</td></tr></tbody></table></div>
+</section>
+
+<section class="unit" id="s-production" data-section="production" data-label="In production" data-part="Understand">
+<header><span class="sec-n">06</span><h2>How this looks on a real firewall</h2></header>
+<ul><li><strong>Centralize, but keep a break-glass account.</strong> Directory or RADIUS authentication for daily work, plus one local emergency account, stored securely, for when the directory is down.</li><li><strong>Use encryption to the directory.</strong> Production LDAP uses LDAPS (636) or StartTLS. Leaving SSL/TLS unchecked sends the bind password in clear text.</li><li><strong>Add MFA.</strong> Administrator logins are a prime target. Pair the profile with an MFA server profile or use SAML through your identity provider.</li><li><strong>Least privilege.</strong> Give most admins an Admin Role Profile limited to what they need (read-only for auditors, policy-only for operators).</li><li><strong>Narrow the allow list.</strong> <code>all</code> is convenient in the lab. In production, limit the profile to a directory group of firewall administrators.</li><li><strong>Same pattern everywhere.</strong> Fortinet, Cisco, and Check Point all chain a server definition, an authentication method, and an admin account the same way.</li></ul>
+</section>
+
+<section class="unit" id="s-selfcheck" data-section="selfcheck" data-label="Check yourself" data-part="Wrap up">
+<header><span class="sec-n">07</span><h2>Check yourself</h2></header>
+<details class="qa"><summary>Put these in the order you create them: administrator, server profile, authentication profile.</summary><div class="qa-a"><p>Server profile, then authentication profile, then administrator. Each one refers to the one before it.</p></div></details>
+<details class="qa"><summary>The password is right but the login fails, and the System log says the user isn't allowed. What did you forget?</summary><div class="qa-a"><p>The allow list on the authentication profile's Advanced tab.</p></div></details>
+<details class="qa"><summary>Why doesn't adminSally's administrator entry have a password field?</summary><div class="qa-a"><p>The password is checked by the LDAP server through the LDAP Auth Profile, not stored with the administrator entry.</p></div></details>
+<details class="qa"><summary>In an LDAP-then-RADIUS sequence, the LDAP server is offline. What happens when adminHelga logs in?</summary><div class="qa-a"><p>The LDAP attempt fails, the firewall moves to the RADIUS profile, and RADIUS authenticates her.</p></div></details>
+<details class="qa"><summary>Is choosing a role for adminBob authentication or authorization?</summary><div class="qa-a"><p>Authorization. It decides what he can do after he's authenticated.</p></div></details>
+</section>
+
+<section class="unit" id="s-evidence" data-section="evidence" data-label="What to submit" data-part="Wrap up">
+<header><span class="sec-n">08</span><h2>Screenshots to capture</h2></header>
+<p>Take each screenshot at its marker. Name the files by lab and number (for example <code>lab03-shot2.png</code>) and submit them in Canvas as your instructor directs.</p>
+<ul class="checklist evidence" data-save="lab3-evidence"><li><input type="checkbox" id="ev3-0"><div><label for="ev3-0">Screenshot 1: The System log auth entry showing adminBob authenticated with the Local-Database profile.</label><a class="ev-where" href="#shot-1">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev3-1"><div><label for="ev3-1">Screenshot 2: The LDAP Server Profile window showing the server, port, and Base DN.</label><a class="ev-where" href="#shot-2">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev3-2"><div><label for="ev3-2">Screenshot 3: The System log auth entry showing adminSally authenticated through LDAP.</label><a class="ev-where" href="#shot-3">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev3-3"><div><label for="ev3-3">Screenshot 4: The System log auth entry showing adminHelga authenticated through RADIUS.</label><a class="ev-where" href="#shot-4">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev3-4"><div><label for="ev3-4">Screenshot 5: The Authentication Sequence window showing LDAP Auth Profile above RADIUS Auth Profile.</label><a class="ev-where" href="#shot-5">Find it in the walkthrough</a></div></li></ul>
+<p class="box-note">Checkmarks are saved in this browser only. They help you keep track; the screenshots themselves go to Canvas.</p>
+</section>
+
+<section class="unit" id="s-cheat" data-section="cheat" data-label="Cheat sheet" data-part="Wrap up">
+<header><span class="sec-n">09</span><h2>Cheat sheet</h2></header>
+<div class="cheat">
+<h4>Accounts and objects</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Admin</th><th scope="col">Authentication profile</th><th scope="col">Server profile</th></tr></thead><tbody><tr><td><code>adminBob</code></td><td><code>Local-Database</code> (Local Database)</td><td>none (Local User Database)</td></tr><tr><td><code>adminSally</code></td><td><code>LDAP Auth Profile</code> (LDAP)</td><td><code>LDAP Server Profile</code>: 192.168.50.89:389, <code>dc=panw,dc=lab</code></td></tr><tr><td><code>adminHelga</code></td><td><code>RADIUS Auth Profile</code> (RADIUS)</td><td><code>RADIUS Server Profile</code>: 192.168.50.150:1812, CHAP</td></tr></tbody></table></div>
+<h4>Sequence</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Name</th><th scope="col">Order</th></tr></thead><tbody><tr><td><code>LDAP then RADIUS</code></td><td>LDAP Auth Profile, then RADIUS Auth Profile</td></tr></tbody></table></div>
+<h4>Where things live</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Task</th><th scope="col">Path</th></tr></thead><tbody><tr><td>Profiles</td><td><span class="path" data-path="Device &gt; Authentication Profile"></span></td></tr><tr><td>Servers</td><td><span class="path" data-path="Device &gt; Server Profiles"></span></td></tr><tr><td>Local users</td><td><span class="path" data-path="Device &gt; Local User Database &gt; Users"></span></td></tr><tr><td>Admins</td><td><span class="path" data-path="Device &gt; Administrators"></span></td></tr><tr><td>Sequence</td><td><span class="path" data-path="Device &gt; Authentication Sequence"></span></td></tr><tr><td>Check logins</td><td><span class="path" data-path="Monitor &gt; Logs &gt; System"></span>, <code>( subtype eq auth )</code></td></tr></tbody></table></div>
+<h4>Remember</h4>
+<ul><li>Allow list: <strong>all</strong>, every profile.</li><li>Commit, then test. Log back in as <code>admin</code> after each test.</li></ul>
+</div>
+<p><button type="button" class="btn" data-print="cheat">Print only this cheat sheet</button></p>
+</section>
+<nav class="pager" id="pager" aria-label="Lab navigation"></nav>
+</article>
+</div>
+</main>
+
+<footer id="site-footer"></footer>
+<script src="../assets/js/course.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/activities.js"></script>
+</body>
+</html>

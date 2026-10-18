@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab 7 companion: Controlling Application Usage with App-ID | Perimeter Security</title>
+<meta name="description" content="Lab 7 companion for Perimeter Security: walkthrough of the detailed steps for Controlling Application Usage with App-ID, screenshots to capture, troubleshooting, and a cheat sheet.">
+<link rel="stylesheet" href="../assets/css/site.css">
+<script src="../assets/js/prefs.js"></script>
+</head>
+<body data-root=".." data-lab="7" data-page="labs/index.html">
+<a class="skip-link" href="#main">Skip to main content</a>
+<header id="site-header"></header>
+
+<main id="main" class="page">
+<div class="module-hero">
+<p class="kicker">Lab 7 of 14 in NDG Online. Week 5, due Wed 11/4. Goes with Module 8: Application Identity (App-ID).</p>
+<h1>Lab 7: Controlling Application Usage with App-ID</h1>
+<p class="lede">Move from "allow anything between these zones" to "allow these applications." You build an application group, write a rule for the firewall's own update traffic, discover that an existing rule shadows it, fix the order, research an unfamiliar application, narrow two rules to named applications with their dependencies, and turn on the Application Block Page.</p>
+<ul class="facts"><li>About 75 to 90 minutes</li><li>NDG Online, Lab 7</li><li>Uses Module 8, sections 8.1 to 8.6</li><li>Snapshot <code>edu-210-11.0a-07.xml</code></li><li>8 screenshots to capture</li></ul>
+<div class="lab-hero-links"><a class="btn" href="../modules/module-08.html#s-lab">Lab 7 briefing in Module 8</a><a class="btn btn-quiet" href="index.html">All lab companions</a><a class="btn btn-quiet" href="#s-evidence">Screenshot checklist</a></div>
+</div>
+
+<div class="module-layout">
+<nav class="module-rail" aria-label="This lab companion">
+<h2>This lab</h2>
+<div class="progress-wrap"><span class="label" id="rail-meter-label">0 sections reviewed</span>
+<div class="meter" role="progressbar" aria-labelledby="rail-meter-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="rail-meter"></span></div></div>
+<ol id="rail-list"></ol>
+<p><a href="#s-cheat">Jump to the cheat sheet</a></p>
+</nav>
+<article>
+<section class="unit" id="s-overview" data-section="overview" data-label="What this lab is for" data-part="Prepare">
+<header><span class="sec-n">01</span><h2>What this lab is for</h2></header>
+<p>Ports no longer tell you what traffic is. Almost everything runs over TCP 443. <dfn data-term="app-id">App-ID</dfn> identifies the actual application (dropbox, ms-office365, dailymotion) regardless of port, so policy can say what the business allows instead of which ports are open.</p>
+<p>This lab also shows <dfn data-term="rule-shadowing">rule shadowing</dfn> in action. A broad rule you wrote in Lab 5 catches traffic before a more specific rule below it, and the commit warns you. And it shows why naming applications brings <dfn data-term="application-dependency">dependencies</dfn> with it.</p>
+<ul><li><strong>You'll leave with:</strong> the paloalto-apps group, an Allow-PANW-Apps rule in the right position, Users_to_Extranet and Users_to_Internet limited to named applications, and the Application Block Page enabled.</li><li><strong>Builds on:</strong> <a href="../modules/module-08.html">Module 8</a>. Simulation 8.1 explains the labels App-ID writes in the Traffic log; Simulation 6.2 rehearses shadowing.</li><li><strong>Sets up:</strong> User-ID rules in Lab 11 and profile groups in Lab 8, which attach to these allow rules.</li></ul>
+</section>
+
+<section class="unit" id="s-setup" data-section="setup" data-label="Before you begin" data-part="Prepare">
+<header><span class="sec-n">02</span><h2>Before you begin</h2></header>
+<p>You'll use the web interface, Firefox, and the <strong>App Generator</strong> icon on the client desktop, which plays a mix of application traffic.</p>
+<div class="table-wrap"><table>
+<caption class="visually-hidden">Hosts in the lab network</caption>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td></tr>
+</tbody></table></div>
+<p class="box-note">Usernames and passwords are in the Lab Settings table on page 5 of each lab guide. They are not repeated here, because this site is public.</p>
+<h4>What's already in the baseline</h4>
+<p>Interfaces, zones, NAT, and the Lab 5 rules: the two known-bad block rules at the top, then Users_to_Extranet, Users_to_Internet, and Extranet_to_Internet, all with Application <strong>any</strong>.</p>
+<h4>Why the firewall's own traffic hits a Security rule here</h4>
+<p>In this lab the management interface (192.168.1.254) uses the vRouter as its gateway, and the vRouter sends internet-bound traffic back through ethernet1/2. So the firewall's update traffic enters Users_Net like a user's would and is checked by Security policy. That's a lab shortcut; in production the management network has its own path to the internet (Module 2).</p>
+</section>
+
+<section class="unit" id="s-walkthrough" data-section="walkthrough" data-label="Walkthrough" data-part="Do the lab">
+<header><span class="sec-n">03</span><h2>Walkthrough of the detailed steps</h2></header>
+<h3 class="task-head"><span class="tn">2.1</span>Load the lab configuration</h3>
+<p class="task-intro">Every lab starts from a known baseline, so your firewall matches the guide no matter what you did last time.</p>
+<ol class="steps-list" start="1"><li>On the client desktop, log in as <code>lab-user</code>, open Firefox, and browse to <code>https://192.168.1.254</code>. Log in as <code>admin</code> with the password from Lab Settings. If the login page does not appear, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li>Go to <span class="path" data-path="Device > Setup > Operations"></span> and click <strong>Load named configuration snapshot</strong>. Choose <code>edu-210-11.0a-07.xml</code> and click OK, then Close.</li><li>Open <strong>Tasks</strong> (lower right) and confirm the Load task shows completed.</li><li>Click <strong>Commit</strong> (upper right), then <strong>Commit</strong> in the dialog, and wait for it to finish.</li></ol>
+<div class="callout stuck"><p class="c-title">Loading is not committing</p><p>A loaded snapshot replaces only the candidate configuration. Until you commit, the firewall is still running whatever was there before, and nothing in the lab will match the guide.</p></div>
+<h3 class="task-head"><span class="tn">2.2</span>Configure an application group</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Objects &gt; Application Groups"></span> and click <strong>Add</strong>.</li>
+<li>Name it <code>paloalto-apps</code> and add <code>paloalto-dns-security</code>, <code>paloalto-updates</code>, <code>paloalto-userid-agent</code>, <code>paloalto-wildfire-cloud</code>, and <code>pan-db-cloud</code>. Click OK.</li>
+</ol>
+<div class="callout tip"><p class="c-title">An example, not a full list</p><p>The guide says so too: a production firewall may need more Palo Alto Networks applications than these five.</p></div>
+<h3 class="task-head"><span class="tn">2.3</span>Configure a Security rule for firewall update traffic</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Policies &gt; Security"></span> and click <strong>Add</strong>.</li>
+<li><strong>General:</strong> name <code>Allow-PANW-Apps</code>, description <code>Allows PANW apps for firewall</code>.</li>
+<li><strong>Source:</strong> zone <strong>Users_Net</strong>, address <code>192.168.1.254</code>.</li>
+<li><strong>Destination:</strong> zone <strong>Internet</strong>, address <strong>Any</strong>.</li>
+<li><strong>Application:</strong> add <strong>paloalto-apps</strong> (type the first few letters; groups appear at the end of the list).</li>
+<li><strong>Service/URL Category:</strong> application-default and Any.</li>
+<li><strong>Actions:</strong> Allow, <strong>Log at Session End</strong>. Click OK.</li>
+<li>The rule lands just above intrazone-default, at the bottom. Commit, and notice the commit result has a <strong>Rule Shadow</strong> tab. Close it for now.</li>
+</ol>
+<div class="callout why"><p class="c-title">Positive enforcement</p><p>You're saying exactly what the firewall's own traffic may do, rather than listing what to block. That's the model App-ID is built for.</p></div>
+<h3 class="task-head"><span class="tn">2.4</span>Test the Allow-PANW-Apps rule</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Device &gt; Dynamic Updates"></span> and click <strong>Check Now</strong>.</li>
+<li>In <span class="path" data-path="Monitor &gt; Logs &gt; Traffic"></span>, clear filters and apply the filter below. Leave it in place.</li>
+</ol>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( app eq paloalto-updates )</span></pre>
+<div class="callout guideq"><p class="c-title">Q1: Which rule allowed the traffic?</p><p><strong>a. Users_to_Internet.</strong> It sits above Allow-PANW-Apps and allows any application from Users_Net to Internet, so it matches first.</p></div>
+<div class="callout guideq"><p class="c-title">Q2: Once Users_to_Internet matches, does the firewall keep checking later rules?</p><p><strong>True.</strong> The first matching rule wins and evaluation stops. That's what makes Allow-PANW-Apps shadowed.</p></div>
+<p class="shot" id="shot-1"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 1</span> The Traffic log showing paloalto-updates sessions matched by Users_to_Internet.</span></p>
+<h3 class="task-head"><span class="tn">2.5</span>Identify shadowed rules</h3>
+<ol class="steps-list" start="1">
+<li>Click <strong>Tasks</strong> (lower right) and click the <strong>Commit</strong> link for your last commit.</li>
+<li>Select the <strong>Rule Shadow</strong> tab and click the number under <strong>Count</strong> to see which rule is shadowed and by what.</li>
+</ol>
+<p class="shot" id="shot-2"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 2</span> The Rule Shadow tab showing Allow-PANW-Apps shadowed by Users_to_Internet.</span></p>
+<h3 class="task-head"><span class="tn">2.6</span>Fix the rule order</h3>
+<ol class="steps-list" start="1">
+<li>In <span class="path" data-path="Policies &gt; Security"></span>, select (don't open) Allow-PANW-Apps.</li>
+<li>Drag it, or use <strong>Move</strong>, so it becomes <strong>rule 3</strong>: directly below the two block rules and above Users_to_Extranet and Users_to_Internet.</li>
+<li>Commit.</li>
+</ol>
+<div class="callout why"><p class="c-title">Why not move it to the very top?</p><p>The known-bad block rules should stay first, so nothing, not even the firewall's own traffic, reaches a known-malicious address.</p></div>
+<h3 class="task-head"><span class="tn">2.7</span>Test the modified rule</h3>
+<ol class="steps-list" start="1">
+<li>Click <strong>Check Now</strong> in <span class="path" data-path="Device &gt; Dynamic Updates"></span> again.</li>
+<li>Reapply <code>( app eq paloalto-updates )</code>. New entries now show rule <strong>Allow-PANW-Apps</strong>.</li>
+<li>In a new tab, open <code>www.paloaltonetworks.com</code>, then close the tab.</li>
+<li>Apply the filter below. App-ID shows the browsing as <strong>dns</strong> and <strong>ssl</strong>, allowed by Users_to_Internet.</li>
+</ol>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( addr.src eq 192.168.1.20 ) and ( rule eq Users_to_Internet )</span></pre>
+<p class="shot" id="shot-3"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 3</span> The Traffic log showing paloalto-updates now matched by Allow-PANW-Apps.</span></p>
+<h3 class="task-head"><span class="tn">2.8</span>Generate application traffic</h3>
+<ol class="steps-list" start="1">
+<li>Double-click <strong>App Generator</strong> on the client desktop and press Enter to start it. Press Enter again when it finishes, and give it 30 to 60 seconds.</li>
+<li>Apply the filter below and read the Application column.</li>
+</ol>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( addr.src in 192.168.1.20 ) and ( app neq dns )</span></pre>
+<div class="callout guideq"><p class="c-title">Q3: How should you approach applications from Users_Net to the Extranet?</p><p><strong>b. Allow only specific applications based on a defined policy.</strong> That's the App-ID model, and it's what task 2.10 does.</p></div>
+<div class="callout guideq"><p class="c-title">Q4: Are there denied applications from Users_Net you should allow?</p><p><strong>b. Reevaluate and potentially allow specific denied applications based on security needs.</strong> Decide case by case, from business need.</p></div>
+<p class="shot" id="shot-4"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 4</span> The Traffic log showing the variety of applications App Generator produced.</span></p>
+<h3 class="task-head"><span class="tn">2.9</span>Research an application</h3>
+<ol class="steps-list" start="1">
+<li>Filter the Traffic log for dailymotion.</li>
+</ol>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( addr.src in 192.168.1.20 ) and ( app eq dailymotion )</span></pre>
+<ol class="steps-list" start="2">
+<li>Go to <span class="path" data-path="Objects &gt; Applications"></span>, search for <code>dailymotion</code>, and click its name.</li>
+</ol>
+<div class="callout guideq"><p class="c-title">Q5: What category is dailymotion?</p><p><strong>c. media.</strong></p></div>
+<div class="callout guideq"><p class="c-title">Q6: What risk level?</p><p>Read the <strong>Risk</strong> value on the application's entry. Palo Alto Networks can change risk ratings in content updates, so the entry on your firewall is the authoritative answer.</p></div>
+<div class="callout guideq"><p class="c-title">Q7: Which characteristics might make you block it?</p><p>Read the checked characteristics in the entry's <strong>Characteristics</strong> section (evasive, used by malware, capable of file transfer, prone to misuse, and so on). Answer <strong>e</strong> only if every listed option is checked on your firewall.</p></div>
+<div class="callout guideq"><p class="c-title">Q8: What ports does it use?</p><p><strong>b. TCP/80,443.</strong> It's a web application, so its standard ports are HTTP and HTTPS.</p></div>
+<p class="shot" id="shot-5"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 5</span> The dailymotion entry in Objects &gt; Applications showing category, risk, and characteristics.</span></p>
+<h3 class="task-head"><span class="tn">2.10</span>Narrow the rules to named applications</h3>
+<ol class="steps-list" start="1">
+<li>Open <strong>Users_to_Extranet</strong>. On <strong>Application</strong>, uncheck <strong>Any</strong> and add <code>ssl</code>, <code>ssh</code>, <code>ping</code>, <code>dns</code>, <code>ldap</code>, <code>radius</code>, <code>web-browsing</code>. Click OK.</li>
+<li>Open <strong>Users_to_Internet</strong>. Uncheck <strong>Any</strong> and add <code>ping</code>, <code>dns</code>, <code>ssl</code>, <code>yelp</code>, <code>web-browsing</code>, <code>dropbox</code>, <code>ms-office365</code>.</li>
+<li>In the right pane, check the <strong>Depends On</strong> column header to select every dependency, then click <strong>Add to Current Rule</strong>. Confirm the extras now appear in the list, and click OK.</li>
+<li>Commit.</li>
+</ol>
+<div class="callout stuck"><p class="c-title">Don't skip the dependencies</p><p>Applications like dropbox and ms-office365 ride on other applications. Without them, the commit warns about unresolved dependencies and the applications half-work.</p></div>
+<div class="callout tip"><p class="c-title">Your dependency list will differ</p><p>Palo Alto Networks updates application definitions often, so the Depends On list may not match the screenshot.</p></div>
+<p class="shot" id="shot-6"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 6</span> Users_to_Internet's Application tab showing the named applications plus the added dependencies.</span></p>
+<h3 class="task-head"><span class="tn">2.11</span>Test the narrowed rules</h3>
+<ol class="steps-list" start="1">
+<li>Run <strong>App Generator</strong> again and let it finish. Errors and pauses are expected: the firewall is now blocking much of what it plays.</li>
+<li>Clear filters and apply the filter below to see what's being denied, mostly by <strong>interzone-default</strong>.</li>
+</ol>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( action neq allow )</span></pre>
+<div class="callout fix"><p class="c-title">A typo in the guide's filter</p><p>The guide prints <code>( action ne q allow )</code>. The operator is one word: <code>neq</code>.</p></div>
+<p class="shot" id="shot-7"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 7</span> The Traffic log showing denied applications after the rules were narrowed.</span></p>
+<h3 class="task-head"><span class="tn">2.12</span>Enable the Application Block Page</h3>
+<ol class="steps-list" start="1">
+<li>In a new Firefox tab, try <code>http://www.shutterfly.com</code>. It just fails to load. Close the tab.</li>
+<li>Go to <span class="path" data-path="Device &gt; Response Pages"></span> and click <strong>Disabled</strong> next to <strong>Application Block Page</strong>.</li>
+<li>Check <strong>Enable Application Block Page</strong> and click OK. Commit.</li>
+</ol>
+<h3 class="task-head"><span class="tn">2.13</span>Test the Application Block Page</h3>
+<ol class="steps-list" start="1">
+<li>In a new tab, try <code>http://www.shutterfly.com</code> again, using <strong>http</strong> in Firefox. Now the firewall shows a page saying the application was blocked.</li>
+</ol>
+<div class="callout stuck"><p class="c-title">It only works on unencrypted pages</p><p>The firewall can't insert a page into an HTTPS session it isn't decrypting. Type <code>http://</code> explicitly; Lab 12's decryption is what extends block pages to HTTPS.</p></div>
+<div class="callout tip"><p class="c-title">Response Pages on the interface</p><p>The page is served from ethernet1/2, which works because Lab 4's Allow-mgt profile includes <strong>Response Pages</strong>.</p></div>
+<p class="shot" id="shot-8"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 8</span> The Application Blocked page for shutterfly.com.</span></p>
+</section>
+
+<section class="unit" id="s-reference" data-section="reference" data-label="Reference" data-part="Understand">
+<header><span class="sec-n">04</span><h2>App-ID reference</h2></header>
+<h4>Ways to name applications in a rule</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Object</th><th scope="col">Where</th><th scope="col">Use</th></tr></thead><tbody><tr><td>Application</td><td><span class="path" data-path="Objects &gt; Applications"></span></td><td>One specific App-ID</td></tr><tr><td>Application group</td><td><span class="path" data-path="Objects &gt; Application Groups"></span></td><td>A fixed list you maintain, such as paloalto-apps</td></tr><tr><td>Application filter</td><td><span class="path" data-path="Objects &gt; Application Filters"></span></td><td>A dynamic set by category, risk, or characteristic; new matching apps join automatically</td></tr></tbody></table></div>
+<h4>App-ID labels you'll see in the Traffic log</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Label</th><th scope="col">Means</th></tr></thead><tbody><tr><td><code>incomplete</code></td><td>The handshake never finished; no data to identify</td></tr><tr><td><code>insufficient-data</code></td><td>Too little payload to identify</td></tr><tr><td><code>not-applicable</code></td><td>Denied by port before App-ID ran</td></tr><tr><td><code>unknown-tcp</code> / <code>unknown-udp</code></td><td>Payload seen but matched no App-ID</td></tr></tbody></table></div>
+<h4>CLI checks</h4>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">show running security-policy</span>
+<span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">test security-policy-match from Users_Net to Internet source 192.168.1.20 destination 8.8.8.8 protocol 6 destination-port 443 application dropbox-base</span></pre>
+</section>
+
+<section class="unit" id="s-stuck" data-section="stuck" data-label="Where people get stuck" data-part="Understand">
+<header><span class="sec-n">05</span><h2>Where people get stuck</h2></header>
+<div class="table-wrap"><table class="stuck-table"><thead><tr><th scope="col">Symptom</th><th scope="col">Likely cause</th><th scope="col">Fix</th></tr></thead><tbody><tr><td>paloalto-updates still hits Users_to_Internet</td><td>Rule not moved, or not committed</td><td>Make Allow-PANW-Apps rule 3, commit, and Check Now again.</td></tr><tr><td>Rule Shadow tab missing</td><td>You looked at a later commit with no shadow</td><td>Open the commit from task 2.3 in Tasks.</td></tr><tr><td>Commit warns about dependencies</td><td>Depends On items not added</td><td>Reopen the rule, select Depends On, Add to Current Rule.</td></tr><tr><td>dropbox or Office half-works</td><td>Same as above</td><td>Add dependencies.</td></tr><tr><td>No block page</td><td>Used HTTPS, or block page not committed</td><td>Use <code>http://</code> in Firefox; commit the response page.</td></tr><tr><td>Filter error</td><td><code>ne q</code> typo from the guide</td><td>Use <code>neq</code>.</td></tr></tbody></table></div>
+</section>
+
+<section class="unit" id="s-production" data-section="production" data-label="In production" data-part="Understand">
+<header><span class="sec-n">06</span><h2>How this looks on a real firewall</h2></header>
+<ul><li><strong>Migrate gradually.</strong> Real rulebases move from port-based to App-ID rules with Policy Optimizer (Module 8), which shows the applications each broad rule actually saw.</li><li><strong>Use application filters for categories.</strong> Blocking "all file-sharing" or "risk 5" with a filter catches new applications as Palo Alto Networks adds them.</li><li><strong>Give the firewall its own path.</strong> Production management traffic usually leaves through the management port or a service route (Module 2), not through user zones.</li><li><strong>Plan for unknown-tcp.</strong> Unknown traffic gets its own investigation: a custom App-ID, an application override, or a block.</li><li><strong>Other vendors call it something else.</strong> Fortinet has Application Control, Cisco has AVC and Snort-based app detection, Check Point has Application Control. The policy idea is the same.</li></ul>
+</section>
+
+<section class="unit" id="s-selfcheck" data-section="selfcheck" data-label="Check yourself" data-part="Wrap up">
+<header><span class="sec-n">07</span><h2>Check yourself</h2></header>
+<details class="qa"><summary>Why did paloalto-updates match Users_to_Internet at first?</summary><div class="qa-a"><p>Users_to_Internet allowed any application and sat above Allow-PANW-Apps. First match wins.</p></div></details>
+<details class="qa"><summary>What's wrong with moving Allow-PANW-Apps to the very top?</summary><div class="qa-a"><p>It would sit above the known-bad block rules, which should catch everything first.</p></div></details>
+<details class="qa"><summary>You add ms-office365 to a rule but skip Depends On. What happens?</summary><div class="qa-a"><p>The commit reports unresolved dependencies and the application may fail, because it relies on other App-IDs that aren't allowed.</p></div></details>
+<details class="qa"><summary>Why didn't the shutterfly block page appear over HTTPS?</summary><div class="qa-a"><p>The firewall can't insert a response into encrypted traffic it isn't decrypting.</p></div></details>
+<details class="qa"><summary>An application group or an application filter: which picks up new applications automatically?</summary><div class="qa-a"><p>An application filter.</p></div></details>
+</section>
+
+<section class="unit" id="s-evidence" data-section="evidence" data-label="What to submit" data-part="Wrap up">
+<header><span class="sec-n">08</span><h2>Screenshots to capture</h2></header>
+<p>Take each screenshot at its marker. Name the files by lab and number (for example <code>lab07-shot6.png</code>) and submit them in Canvas as your instructor directs.</p>
+<ul class="checklist evidence" data-save="lab7-evidence"><li><input type="checkbox" id="ev7-0"><div><label for="ev7-0">Screenshot 1: The Traffic log showing paloalto-updates sessions matched by Users_to_Internet.</label><a class="ev-where" href="#shot-1">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev7-1"><div><label for="ev7-1">Screenshot 2: The Rule Shadow tab showing Allow-PANW-Apps shadowed by Users_to_Internet.</label><a class="ev-where" href="#shot-2">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev7-2"><div><label for="ev7-2">Screenshot 3: The Traffic log showing paloalto-updates now matched by Allow-PANW-Apps.</label><a class="ev-where" href="#shot-3">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev7-3"><div><label for="ev7-3">Screenshot 4: The Traffic log showing the variety of applications App Generator produced.</label><a class="ev-where" href="#shot-4">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev7-4"><div><label for="ev7-4">Screenshot 5: The dailymotion entry in Objects &gt; Applications showing category, risk, and characteristics.</label><a class="ev-where" href="#shot-5">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev7-5"><div><label for="ev7-5">Screenshot 6: Users_to_Internet's Application tab showing the named applications plus the added dependencies.</label><a class="ev-where" href="#shot-6">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev7-6"><div><label for="ev7-6">Screenshot 7: The Traffic log showing denied applications after the rules were narrowed.</label><a class="ev-where" href="#shot-7">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev7-7"><div><label for="ev7-7">Screenshot 8: The Application Blocked page for shutterfly.com.</label><a class="ev-where" href="#shot-8">Find it in the walkthrough</a></div></li></ul>
+<p class="box-note">Checkmarks are saved in this browser only. They help you keep track; the screenshots themselves go to Canvas.</p>
+</section>
+
+<section class="unit" id="s-cheat" data-section="cheat" data-label="Cheat sheet" data-part="Wrap up">
+<header><span class="sec-n">09</span><h2>Cheat sheet</h2></header>
+<div class="cheat">
+<h4>Objects and rules</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Item</th><th scope="col">Value</th></tr></thead><tbody><tr><td>Group <code>paloalto-apps</code></td><td>paloalto-dns-security, paloalto-updates, paloalto-userid-agent, paloalto-wildfire-cloud, pan-db-cloud</td></tr><tr><td><code>Allow-PANW-Apps</code></td><td>Users_Net 192.168.1.254 to Internet, paloalto-apps, log at session end, <strong>rule 3</strong></td></tr><tr><td><code>Users_to_Extranet</code> apps</td><td>ssl, ssh, ping, dns, ldap, radius, web-browsing</td></tr><tr><td><code>Users_to_Internet</code> apps</td><td>ping, dns, ssl, yelp, web-browsing, dropbox, ms-office365, plus dependencies</td></tr></tbody></table></div>
+<h4>Filters</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Purpose</th><th scope="col">Filter</th></tr></thead><tbody><tr><td>Update traffic</td><td><code>( app eq paloalto-updates )</code></td></tr><tr><td>Client apps</td><td><code>( addr.src in 192.168.1.20 ) and ( app neq dns )</code></td></tr><tr><td>What's blocked</td><td><code>( action neq allow )</code></td></tr></tbody></table></div>
+<h4>Where things live</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Task</th><th scope="col">Path</th></tr></thead><tbody><tr><td>Groups</td><td><span class="path" data-path="Objects &gt; Application Groups"></span></td></tr><tr><td>Research an app</td><td><span class="path" data-path="Objects &gt; Applications"></span></td></tr><tr><td>Check for updates</td><td><span class="path" data-path="Device &gt; Dynamic Updates"></span></td></tr><tr><td>Block page</td><td><span class="path" data-path="Device &gt; Response Pages"></span></td></tr></tbody></table></div>
+</div>
+<p><button type="button" class="btn" data-print="cheat">Print only this cheat sheet</button></p>
+</section>
+<nav class="pager" id="pager" aria-label="Lab navigation"></nav>
+</article>
+</div>
+</main>
+
+<footer id="site-footer"></footer>
+<script src="../assets/js/course.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/activities.js"></script>
+</body>
+</html>

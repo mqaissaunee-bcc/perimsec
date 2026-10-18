@@ -1,0 +1,171 @@
+title: Creating and Managing Security Policy Rules
+lede: Write the firewall's first Security policy rules. You allow users to reach the extranet, read hit counts and the Traffic log, make denied traffic visible by overriding the interzone-default rule, block known-bad addresses, and allow users and servers out to the internet, then find out why the last ping still fails.
+snapshot: edu-210-11.0a-05.xml
+uses: Module 6, sections 6.2 to 6.6
+
+= overview | What this lab is for | What this lab is for | Prepare
+After Lab 4 the firewall routes between three zones but allows nothing between them, because the predefined **interzone-default** rule denies everything that no other rule allows. This lab writes the rules that open specific paths, and teaches the two habits that make troubleshooting possible: watching **hit counts** and reading the **{{traffic-log|Traffic log}}**.
+
+It also delivers the most useful failure in the course. At the end, your ping to 8.8.8.8 is allowed by policy and still gets no reply. Allowing traffic and traffic working are two different things; Lab 6 supplies the missing piece.
+
+- **You'll leave with:** Users_to_Extranet, Users_to_Internet, Extranet_to_Internet, two known-bad-address block rules, and logging on interzone-default.
+- **Builds on:** ->Mod 6<-, especially rule types and default rules (6.2), rule order (6.3), and external dynamic lists (6.5). Do all four Try this prompts in Simulation 6.2 first.
+- **Sets up:** NAT in Lab 6, App-ID in Lab 7, and every lab after that edits these rules.
+
+= setup | Before you begin | Before you begin | Prepare
+You'll use the web interface, the client's **Terminal Emulator** for ping, and Firefox's **Extranet** bookmark.
+
+@network
+
+### What's already in the baseline
+Lab 4's interfaces, VR-1, and zones (Internet, Users_Net, Extranet). The Security policy holds only the two predefined rules: **intrazone-default** (allow) and **interzone-default** (deny).
+
+= walkthrough | Walkthrough | Walkthrough of the detailed steps | Do the lab
+@baseline
+
+## 2.2 Create a Security policy rule
+1. Go to [[Policies > Security]] and click **Add**.
+2. **General:** name `Users_to_Extranet`, description `Allows hosts in Users_Net zone to access servers in Extranet zone`.
+3. **Source:** add source zone **Users_Net**.
+4. **Destination:** add destination zone **Extranet**.
+5. **Application:** leave **Any**.
+6. **Service/URL Category:** leave Service **application-default** and URL Category **Any**.
+7. **Actions:** leave Action **Allow**. Click OK.
+8. Confirm the rule sits above intrazone-default and interzone-default, then commit.
+!why application-default | It allows each application only on its standard ports: web-browsing on TCP 80, ssl on TCP 443. An application on an unusual port won't match. That's tighter than Service **any**.
+!stuck New rules default to Allow | Every new rule starts as Allow. When you build a block rule, change the action on the Actions tab before you click OK.
+!shot The Security policy showing Users_to_Extranet above the two default rules.
+
+## 2.3 Modify Security policy table columns
+1. Hover over the **Name** column header, open its drop-down, and choose **Columns**.
+2. Uncheck **Type**, **Source Device**, **Destination Device**, and **Options**.
+3. Open the drop-down again and choose **Adjust Columns**.
+!tip Optional, but worth it | Hiding columns you never use makes Hit Count and the rule details easier to see. The same menu works in every table on the firewall.
+
+## 2.4 Test the new rule
+1. Minimize Firefox and open the **Terminal Emulator** on the client.
+2. Ping the extranet web server for a few seconds, then press Ctrl+C. You should get replies.
+$cl ping 192.168.50.80
+3. Open a new Firefox window and choose the bookmark **Extranet > Extranet**. You should see **Hello World !**
+!shot The terminal showing replies from 192.168.50.80 and the Hello World page.
+
+## 2.5 Examine and reset the rule hit count
+1. Back in [[Policies > Security]], scroll right to **Hit Count** and note the number on Users_to_Extranet.
+2. Ping 192.168.50.80 again, then click **Refresh** (upper right). The count rises.
+3. Select (don't open) Users_to_Extranet, then click **Reset Rule Hit Counter > Selected rules**. It drops to 0.
+!why Why reset before a test | Starting from zero proves that **your** test, and nothing else, is hitting the rule. It's the quickest way to answer "is my rule being used?"
+
+## 2.6 Examine the Traffic log and make denies visible
+1. Go to [[Monitor > Logs > Traffic]]. From the Receive Time column drop-down, open **Columns** and hide Type, Source Dynamic Address Group, Destination Dynamic Address Group, and Dynamic User Group.
+2. In the terminal, ping 8.8.8.8 for a few seconds. It fails. Press Ctrl+C.
+3. Apply this filter in the Traffic log. Nothing appears.
+$f ( addr.dst eq 8.8.8.8 ) and ( zone.src eq Users_Net )
+4. Go to [[Policies > Security]], select (don't open) **interzone-default**, and click **Override**.
+5. On the **Actions** tab, check **Log at Session End**. Click OK and commit.
+6. Ping 8.8.8.8 again, then reapply the filter. Now the denied sessions appear, matched to interzone-default.
+!q Q1: Have any entries been recorded? | **No.** The ping matched interzone-default, which denies it and, until you override it, doesn't log. The Why box below explains both reasons.
+!why Why the first search was empty | Two reasons. No rule allows Users_Net to Internet, so the ping matches interzone-default. And interzone-default doesn't log by default. Denied traffic you can't see is the hardest kind to troubleshoot.
+!stuck Filters are exact | Field names and zone names are case sensitive, and the spaces inside the parentheses matter. Copy the filter with the button rather than retyping it.
+!shot The Traffic log showing denied 8.8.8.8 sessions matched by interzone-default.
+
+## Added from the high-level steps: block known-bad addresses
+> The detailed steps skip these two rules, but the high-level steps (Task 1.12) include them, the in-module briefing lists them, and the baselines for later labs already contain them. Build them here so your rulebase matches.
+1. Add a rule named `Block-to-Known-Bad-Addresses`, description `Blocks traffic from Users and Extranet to known bad IP addresses`. Source zones **Users_Net** and **Extranet**. Destination zone **Internet**. Destination addresses: **Palo Alto Networks - Bulletproof IP addresses**, **Palo Alto Networks - High risk IP addresses**, and **Palo Alto Networks - Known malicious IP addresses**. Application **any**, Service **any**. Action **Deny**.
+2. Add `Block-from-Known-Bad-Addresses`, description `Blocks traffic from known bad IP addresses to Users and Extranet`. Source zone **Internet** with the same three lists as source addresses. Destination zones **Users_Net** and **Extranet**. Application **any**, Service **any**. Action **Deny**.
+3. Move both rules to the top of the rulebase: Block-to first, then Block-from.
+!fix The detailed steps leave these out | Task 2 jumps from the Traffic log straight to the internet rules. Follow only Task 2 and your finished rulebase won't match the high-level steps or what you'll see at the top of the Lab 7 baseline.
+!why Service any, not application-default | A block rule should catch the bad address on any port. application-default would let an application on an unusual port slip past the block.
+!tip Where the lists come from | These predefined external dynamic lists are maintained by Palo Alto Networks and refresh with content updates. You'll find them in the address picker under External Dynamic Lists.
+!shot The rulebase with both block rules at the top, above Users_to_Extranet.
+
+## 2.7 Create Security rules for internet access
+1. Add `Users_to_Internet`, description `Allows hosts in Users_Net zone to access Internet zone`. Source zone **Users_Net**, destination zone **Internet**, Application **Any**, Service **application-default**, Action **Allow**.
+2. Add `Extranet_to_Internet`, description `Allows hosts in Extranet zone to access Internet zone`. Source zone **Extranet**, destination zone **Internet**, same settings.
+3. Confirm both block rules are still above these allow rules, then commit.
+!stuck Block rules belong on top | If Users_to_Internet sits above Block-to-Known-Bad-Addresses, the block rule is shadowed and never matches. The commit's Rule Shadow tab will warn you.
+
+## 2.8 Ping an internet host from the client
+1. In the terminal, ping 8.8.8.8 again. It **still** fails. Press Ctrl+C.
+2. In the Traffic log, apply the filter below. Wait a minute and refresh if needed. The sessions are now **allowed** by Users_to_Internet.
+$f ( addr.dst eq 8.8.8.8 ) and ( app eq ping )
+!why Allowed, but no reply | The client's address, 192.168.1.20, is private. The packet leaves the firewall with that source, and nothing on the internet can route a reply back to it. Lab 6 adds the source NAT that fixes this.
+!shot The Traffic log showing the 8.8.8.8 ping allowed by Users_to_Internet.
+
+= reference | Reference | Security policy reference | Understand
+### A rule's tabs
+| Tab | Decides |
+| General | Name, description, tags, rule type (universal, intrazone, interzone) |
+| Source | Source zones, addresses, users, devices |
+| Destination | Destination zones, addresses, devices |
+| Application | Which App-ID applications match |
+| Service/URL Category | Ports (application-default, any, or specific services) and URL categories |
+| Actions | Allow, deny, drop, reset; logging; Security Profiles |
+
+### Traffic log filter fields
+| Field | Meaning | Example |
+| `addr.src` / `addr.dst` | Source or destination address | `( addr.dst eq 8.8.8.8 )` |
+| `zone.src` / `zone.dst` | Source or destination zone | `( zone.src eq Users_Net )` |
+| `app` | Application | `( app eq ping )` |
+| `rule` | Rule that matched | `( rule eq Users_to_Internet )` |
+| `action` | allow, deny, drop, reset | `( action eq deny )` |
+
+### Ask the firewall instead of guessing
+$fw test security-policy-match from Users_Net to Internet source 192.168.1.20 destination 8.8.8.8 protocol 1 application ping
+It reports which rule a session would match. The same tool is in the web interface as **Test Policy Match**.
+
+= stuck | Where people get stuck | Where people get stuck | Understand
+| Symptom | Likely cause | Fix |
+| Ping to 192.168.50.80 fails | Not committed, or zones reversed | Users_Net is the source, Extranet the destination. Commit. |
+| The filter finds nothing, even after logging | Typo or case in the filter, or logs not written yet | Copy the filter exactly; wait a minute and refresh. |
+| Denied traffic still isn't logged | interzone-default overridden but not committed | Commit after the override. |
+| Block rule hit count stays at 0 | It's below an allow rule | Move block rules to the top. |
+| Final ping to 8.8.8.8 fails | Expected: no NAT yet | Nothing to fix. Lab 6 adds source NAT. |
+| Your rulebase doesn't match the briefing | You followed only Task 2, which skips the block rules | Add the two block rules from the high-level steps. |
+
+= production | In production | How this looks on a real firewall | Understand
+- **Never leave Application any.** Users_to_Internet with any application is a starting point. Lab 7 narrows it with App-ID; production rules list the applications the business needs.
+- **Log what you deny.** Overriding interzone-default to log at session end is common practice, often with log forwarding to a SIEM.
+- **Use the known-bad lists everywhere.** Blocking Palo Alto Networks' bulletproof, high-risk, and known malicious lists in both directions is a widely recommended baseline.
+- **Describe and tag every rule.** Descriptions and tags (owner, ticket, purpose) are what let the next admin clean up the rulebase safely.
+- **Review hit counts.** Rules with zero hits for months are candidates for removal. Policy Optimizer (Module 8) helps.
+- **Same logic, other vendors.** Top-down, first-match rulebases with an implicit deny at the bottom are standard on Fortinet, Cisco, and Check Point.
+
+= selfcheck | Check yourself | Check yourself | Wrap up
+?? Before you overrode interzone-default, why did the Traffic log show nothing for the failed 8.8.8.8 ping?
+=> The ping matched interzone-default, and that rule doesn't log until you override it and turn on Log at Session End.
+
+?? Does Users_to_Extranet need a second rule so the web server's replies reach the client?
+=> No. Replies belong to the same session, and the rule allows the session.
+
+?? Why must the known-bad block rules sit above Users_to_Internet?
+=> Rules are evaluated top-down and the first match wins. Below the allow rule, the block rules would be shadowed.
+
+?? At the end of the lab, the ping to 8.8.8.8 is allowed. Why doesn't it get a reply?
+=> The source address 192.168.1.20 is private and can't be routed on the internet. Source NAT (Lab 6) fixes it.
+
+?? What does application-default do for web-browsing?
+=> It allows web-browsing only on its standard port, TCP 80.
+
+= evidence | What to submit | Screenshots to capture | Wrap up
+Take each screenshot at its marker. Name the files by lab and number (for example `lab05-shot3.png`) and submit them in Canvas as your instructor directs.
+
+= cheat | Cheat sheet | Cheat sheet | Wrap up
+<div class="cheat">
+### The rulebase you finish with (top to bottom)
+| Rule | From | To | App / Service | Action |
+| Block-to-Known-Bad-Addresses | Users_Net, Extranet | Internet (3 PANW lists) | any / any | Deny |
+| Block-from-Known-Bad-Addresses | Internet (3 PANW lists) | Users_Net, Extranet | any / any | Deny |
+| Users_to_Extranet | Users_Net | Extranet | any / application-default | Allow |
+| Users_to_Internet | Users_Net | Internet | any / application-default | Allow |
+| Extranet_to_Internet | Extranet | Internet | any / application-default | Allow |
+| intrazone-default | (same zone) | | | Allow |
+| interzone-default | (any other) | | | Deny, **log at session end** |
+### Filters
+| Purpose | Filter |
+| Denied ping | `( addr.dst eq 8.8.8.8 ) and ( zone.src eq Users_Net )` |
+| Allowed ping | `( addr.dst eq 8.8.8.8 ) and ( app eq ping )` |
+### Remember
+- New rules start as Allow. Block rules on top.
+- Policy allowed is not the same as working: no NAT yet.
+</div>
+@cheatprint

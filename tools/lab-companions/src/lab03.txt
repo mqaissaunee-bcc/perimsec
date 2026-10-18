@@ -1,0 +1,156 @@
+title: Managing Firewall Administrator Accounts
+lede: Give three new administrators access, each authenticated a different way: one from the firewall's own user database, one from an LDAP directory, and one from a RADIUS server. You test every login, confirm in the System log which profile accepted it, and finish with an authentication sequence that tries LDAP first and RADIUS second.
+snapshot: edu-210-11.0a-03.xml
+uses: Module 4, sections 4.2 to 4.4
+
+= overview | What this lab is for | What this lab is for | Prepare
+Sharing the built-in `admin` account is how firewalls get breached and how nobody can tell who made a change. Real teams give every administrator a named account, and most store those accounts somewhere central, such as a directory, rather than on each firewall.
+
+This lab builds the same chain three times so the pattern sticks: a **{{server-profile|server profile}}** says where the authentication server is, an **{{authentication-profile|authentication profile}}** says how to use it and who may try, and the **administrator** entry ties a username to that profile. An **{{authentication-sequence|authentication sequence}}** then lets one login try several profiles in order.
+
+- **You'll leave with:** adminBob (local database), adminSally (LDAP), adminHelga (RADIUS), and an LDAP-then-RADIUS authentication sequence, each tested.
+- **Builds on:** ->Mod 4<-, sections 4.2 to 4.4. Simulation 4.1 traces exactly how a sequence falls through to the next profile.
+- **Sets up:** User-ID in Lab 11, which uses the same LDAP server to read groups.
+
+= setup | Before you begin | Before you begin | Prepare
+You'll log out and back in several times, so know where **Logout** is (lower left of the web interface).
+
+@network
+
+### The two directory servers
+| Server | Address | Used for |
+| LDAP (`ldap.panw.lab`) | `192.168.50.89`, port 389 | adminSally. Base DN `dc=panw,dc=lab` |
+| RADIUS (`radius.panw.lab`) | `192.168.50.150`, port 1812 | adminHelga. CHAP |
+
+The bind password and RADIUS shared secret are in the lab guide. adminSally and adminHelga already exist on those servers; you're only telling the firewall to trust them.
+
+= walkthrough | Walkthrough | Walkthrough of the detailed steps | Do the lab
+@baseline
+
+## 2.2 Create a local database authentication profile
+1. Go to [[Device > Authentication Profile]] and click **Add**.
+2. On the **Authentication** tab, name it `Local-Database` and set **Type** to **Local Database**.
+3. On the **Advanced** tab, under **Allow List**, click **Add** and choose **all**. Click OK.
+!stuck The allow list is not optional | An authentication profile with an empty allow list rejects everyone, even with the right password. Every profile in this lab needs **all** on its Advanced tab.
+
+## 2.3 Create a local user database account
+1. Go to [[Device > Local User Database > Users]] (scroll down the left menu if needed) and click **Add**.
+2. Name the user `adminBob`, enter the password from the guide twice, and click OK.
+
+## 2.4 Create an administrator account for adminBob
+1. Go to [[Device > Administrators]] and click **Add**.
+2. Name it `adminBob` and choose **Local-Database** as the authentication profile. Click OK.
+3. Commit.
+4. Log out, then log back in as `adminBob`.
+5. Go to [[Monitor > Logs > System]] and find the **auth** entry for adminBob. If you can't see it, filter for it.
+6. Log out and log back in as `admin`.
+$f ( subtype eq auth )
+!why No password field? | When you pick an authentication profile, the administrator entry has no password of its own. The password lives wherever the profile points: here, the local user database.
+!tip Administrator type | You didn't choose a role, so adminBob gets the default Dynamic role of **Superuser**. In production you'd usually assign a narrower role or an Admin Role Profile (Module 4).
+!shot The System log auth entry showing adminBob authenticated with the Local-Database profile.
+
+## 2.5 Configure LDAP authentication
+1. Go to [[Device > Server Profiles > LDAP]] and click **Add**. Name the profile `LDAP Server Profile`.
+2. Under **Server List**, click **Add**: name `ldap.panw.lab`, server `192.168.50.89`, port `389`.
+3. Under **Server Settings**, enter Base DN `dc=panw,dc=lab`, Bind DN `cn=admin,dc=panw,dc=lab`, and the bind password from the guide. **Uncheck** Require SSL/TLS secured connection. Click OK.
+4. Go to [[Device > Authentication Profile]] and click **Add**. Name it `LDAP Auth Profile`, Type **LDAP**, Server Profile **LDAP Server Profile**. On **Advanced**, add **all** to the allow list. Click OK.
+5. Go to [[Device > Administrators]], click **Add**, name it `adminSally`, and choose **LDAP Auth Profile**. Click OK.
+6. Commit, log out, log in as `adminSally`, and find her auth entry in the System log. Then log back in as `admin`.
+!fix Names with spaces versus hyphens | The detailed steps name the profiles `LDAP Auth Profile` and `RADIUS Auth Profile` (with spaces). The high-level steps and a note in the guide call them `LDAP-Auth-Profile` and `RADIUS-Auth-Profile`. Either works; pick one style and use it everywhere.
+!stuck adminSally must match exactly | The name under Administrators must match the account on the LDAP server, including the capital S. A mismatch fails even with the right password.
+!shot The LDAP Server Profile window showing the server, port, and Base DN.
+!shot The System log auth entry showing adminSally authenticated through LDAP.
+
+## 2.6 Configure RADIUS authentication
+1. Go to [[Device > Server Profiles > RADIUS]] and click **Add**. Name it `RADIUS Server Profile` and set **Authentication Protocol** to **CHAP**.
+2. Under **Servers**, click **Add**: name `radius.panw.lab`, server `192.168.50.150`, the shared secret from the guide, port `1812`. Click OK.
+3. Go to [[Device > Authentication Profile]], add `RADIUS Auth Profile`, Type **RADIUS**, Server Profile **RADIUS Server Profile**, and **all** in the allow list.
+4. Go to [[Device > Administrators]], add `adminHelga` with **RADIUS Auth Profile**.
+5. Commit, log out, log in as `adminHelga`, and find her auth entry. Log back in as `admin`.
+!why CHAP is for the lab only | CHAP relies on MD5 and is not considered secure. The guide says so too. In production, use PEAP-MSCHAPv2, EAP-TTLS, or another protocol your RADIUS server supports over a protected channel.
+!shot The System log auth entry showing adminHelga authenticated through RADIUS.
+
+## 2.7 Configure an authentication sequence
+1. Go to [[Device > Authentication Sequence]] and click **Add**.
+2. Name it `LDAP then RADIUS`. Under **Authentication Profiles**, add **LDAP Auth Profile**, then **RADIUS Auth Profile**. Click OK.
+3. Commit.
+!fix The sequence name differs between halves | The high-level steps call it `LDAP-then-RADIUS`. The detailed steps type `LDAP then RADIUS`. Either works; be consistent if your instructor checks names.
+!tip What "falls through" really means | The firewall tries LDAP first. If that profile can't authenticate the user (the account isn't there, the password is wrong, or the server doesn't answer), it tries RADIUS next. The order is set with **Move Up** and **Move Down**.
+!shot The Authentication Sequence window showing LDAP Auth Profile above RADIUS Auth Profile.
+
+= reference | Reference | Authentication reference | Understand
+### The chain, object by object
+| Object | Where | Holds |
+| Server profile | [[Device > Server Profiles]] (LDAP, RADIUS, TACACS+, SAML, Kerberos) | Server address, port, protocol, bind account or shared secret |
+| Local user database | [[Device > Local User Database > Users]] | Usernames and passwords stored on the firewall |
+| Authentication profile | [[Device > Authentication Profile]] | Type, which server profile, allow list, lockout, MFA |
+| Authentication sequence | [[Device > Authentication Sequence]] | An ordered list of authentication profiles |
+| Administrator | [[Device > Administrators]] | Username, which profile or sequence, and the role (authorization) |
+
+### Authentication versus authorization
+Authentication answers "are you who you say you are?" (the profile and server). Authorization answers "what may you do?" (the administrator's role). Changing a user's role never changes how they log in, and the reverse.
+
+### Testing from the CLI
+Once you can SSH in (Lab 4), you can test a profile without logging out:
+$fw test authentication authentication-profile "LDAP Auth Profile" username adminSally password
+The firewall prompts for the password and reports success or the reason for failure.
+
+= stuck | Where people get stuck | Where people get stuck | Understand
+| Symptom | Likely cause | Fix |
+| Correct password, login still fails | Empty allow list on the authentication profile | Add **all** on the profile's Advanced tab and commit. |
+| adminSally or adminHelga fails | Name typed with the wrong capitalization | Match the directory account exactly. |
+| LDAP login fails | Require SSL/TLS left checked, or a wrong Base DN | Uncheck SSL/TLS for this lab server; Base DN is `dc=panw,dc=lab`. |
+| Can't create the next object after a test | You're still logged in as the test admin | Log out and back in as `admin` after every test. |
+| No auth entry in the System log | It's on another page, or a filter is hiding it | Use `( subtype eq auth )` and check the time. |
+| New admin can't log in at all | You didn't commit before testing | Commit, then test. |
+
+= production | In production | How this looks on a real firewall | Understand
+- **Centralize, but keep a break-glass account.** Directory or RADIUS authentication for daily work, plus one local emergency account, stored securely, for when the directory is down.
+- **Use encryption to the directory.** Production LDAP uses LDAPS (636) or StartTLS. Leaving SSL/TLS unchecked sends the bind password in clear text.
+- **Add MFA.** Administrator logins are a prime target. Pair the profile with an MFA server profile or use SAML through your identity provider.
+- **Least privilege.** Give most admins an Admin Role Profile limited to what they need (read-only for auditors, policy-only for operators).
+- **Narrow the allow list.** `all` is convenient in the lab. In production, limit the profile to a directory group of firewall administrators.
+- **Same pattern everywhere.** Fortinet, Cisco, and Check Point all chain a server definition, an authentication method, and an admin account the same way.
+
+= selfcheck | Check yourself | Check yourself | Wrap up
+?? Put these in the order you create them: administrator, server profile, authentication profile.
+=> Server profile, then authentication profile, then administrator. Each one refers to the one before it.
+
+?? The password is right but the login fails, and the System log says the user isn't allowed. What did you forget?
+=> The allow list on the authentication profile's Advanced tab.
+
+?? Why doesn't adminSally's administrator entry have a password field?
+=> The password is checked by the LDAP server through the LDAP Auth Profile, not stored with the administrator entry.
+
+?? In an LDAP-then-RADIUS sequence, the LDAP server is offline. What happens when adminHelga logs in?
+=> The LDAP attempt fails, the firewall moves to the RADIUS profile, and RADIUS authenticates her.
+
+?? Is choosing a role for adminBob authentication or authorization?
+=> Authorization. It decides what he can do after he's authenticated.
+
+= evidence | What to submit | Screenshots to capture | Wrap up
+Take each screenshot at its marker. Name the files by lab and number (for example `lab03-shot2.png`) and submit them in Canvas as your instructor directs.
+
+= cheat | Cheat sheet | Cheat sheet | Wrap up
+<div class="cheat">
+### Accounts and objects
+| Admin | Authentication profile | Server profile |
+| `adminBob` | `Local-Database` (Local Database) | none (Local User Database) |
+| `adminSally` | `LDAP Auth Profile` (LDAP) | `LDAP Server Profile`: 192.168.50.89:389, `dc=panw,dc=lab` |
+| `adminHelga` | `RADIUS Auth Profile` (RADIUS) | `RADIUS Server Profile`: 192.168.50.150:1812, CHAP |
+### Sequence
+| Name | Order |
+| `LDAP then RADIUS` | LDAP Auth Profile, then RADIUS Auth Profile |
+### Where things live
+| Task | Path |
+| Profiles | [[Device > Authentication Profile]] |
+| Servers | [[Device > Server Profiles]] |
+| Local users | [[Device > Local User Database > Users]] |
+| Admins | [[Device > Administrators]] |
+| Sequence | [[Device > Authentication Sequence]] |
+| Check logins | [[Monitor > Logs > System]], `( subtype eq auth )` |
+### Remember
+- Allow list: **all**, every profile.
+- Commit, then test. Log back in as `admin` after each test.
+</div>
+@cheatprint

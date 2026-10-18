@@ -1,0 +1,148 @@
+title: Configuring Initial Firewall Settings
+lede: Your first session on the firewall: log in to the management interface, load the lab's starting configuration, and give the firewall the basics it needs to function on a network: name resolution, accurate time, a login banner, a map location, and a limit on who can reach its management port.
+snapshot: edu-210-11.0a-01.xml
+uses: Module 2, sections 2.1 to 2.5
+
+= overview | What this lab is for | What this lab is for | Prepare
+A new firewall out of the box can't do much. It doesn't know which DNS servers to ask, so it can't resolve `updates.paloaltonetworks.com` or download anything. Its clock may be wrong, which makes every log timestamp and every certificate check suspect. And its management interface will accept a login from anyone who can reach it. This lab fixes those three problems before the firewall carries a single packet of user traffic.
+
+You will also meet the habit that runs through every lab in the course: changes go into the {{candidate-config|candidate configuration}} when you click OK, and only become real when you **commit**.
+
+- **You'll leave with:** DNS and NTP configured, the domain and banner set, latitude and longitude entered, the management interface limited to the client network, and a software check run (without upgrading).
+- **Builds on:** ->Mod 2<-, sections 2.1 to 2.5. Run Simulation 2.1 first; it shows exactly how a permitted-IP mistake locks you out.
+- **Sets up:** every later lab. Lab 2 starts from a baseline that already includes these settings.
+
+= setup | Before you begin | Before you begin | Prepare
+This lab happens entirely in the firewall's web interface from the client's Firefox browser. You will not need the Terminal or Remmina yet.
+
+@network
+
+### What's already in the baseline
+The snapshot `edu-210-11.0a-01.xml` gives you a firewall with its management interface addressed (192.168.1.254/24) and a hostname of firewall-a. There are no data interfaces, zones, or policy yet. Those arrive in Labs 4 and 5.
+
+### Which half of the guide to use
+The guide repeats the lab twice: High-Level Lab Steps (Task 1) and Detailed Lab Steps (Task 2). This companion follows **Task 2, the detailed steps**, and uses its section numbers (2.1, 2.2, and so on) so you can keep both open side by side.
+
+= walkthrough | Walkthrough | Walkthrough of the detailed steps | Do the lab
+@baseline
+!shot The Task Manager showing the Load task as Completed, and the commit succeeding.
+
+## 2.2 Configure the DNS and NTP servers
+> DNS lets the firewall turn names into addresses for updates, FQDN address objects, and logging. NTP keeps its clock honest.
+1. Go to [[Device > Setup > Services]] and click the gear icon on the **Services** panel.
+2. On the **Services** tab, confirm the Update Server is `updates.paloaltonetworks.com`. Set **Primary DNS Server** to `8.8.8.8` and **Secondary DNS Server** to `192.168.50.53`.
+3. Select the **NTP** tab. Set the primary NTP server to `0.pool.ntp.org` and the secondary to `1.pool.ntp.org`. Click OK.
+4. Check that the Services panel now shows your four values.
+!why Why two DNS servers from different places | 8.8.8.8 is a public resolver on the internet; 192.168.50.53 is a lab DNS server in the extranet. If one path is down, the other still answers. In production you would normally point the firewall at your own internal resolvers first.
+!shot The Services panel showing both DNS servers and both NTP servers.
+
+## 2.3 Configure general settings
+1. Go to [[Device > Setup > Management]] and click the gear icon on the **General Settings** panel.
+2. Confirm the hostname is `firewall-a`. Set **Domain** to `lab.local` and **Login Banner** to `Authorized Access Only`.
+3. Pick a **Time Zone**. The guide uses `Etc/UTC`; use the same so your timestamps match the screenshots in later labs.
+4. Enter **Latitude** `37.00` and **Longitude** `122.00`, then click OK.
+!fix The detailed steps say "Services gear icon" | In step 1 of this task the guide says to click the Services gear icon. On the Management tab the panel you want is **General Settings**.
+!fix Longitude has the wrong sign | Longitudes west of Greenwich are negative. Santa Clara, California is about 37.35, -121.96. A positive 122.00 puts the firewall in eastern Asia on the ACC threat map. Enter the guide's values (37.00 and 122.00) so your work matches what is graded, but know the real answer.
+!shot The General Settings panel showing the domain, banner, time zone, latitude, and longitude.
+
+## 2.4 Modify the management interface
+1. Go to [[Device > Setup > Interfaces]] and click **Management**.
+2. Verify, but don't change, the IP address `192.168.1.254`, netmask `255.255.255.0`, and default gateway `192.168.1.10`.
+3. At the bottom of **Permitted IP Addresses**, click **Add**. Enter `192.168.1.20/24` with the description `MGT access from this host only`. Click OK.
+!fix Two different gateways | The high-level steps (Task 1.4) say the management gateway is 192.168.1.1. The detailed steps and the Lab Settings table say 192.168.1.10, the vRouter. Expect 192.168.1.10. This step is verify-only.
+!fix "This host only" is not what a /24 does | `192.168.1.20/24` permits the whole 192.168.1.0/24 network, not just your client. To permit one host you would enter `192.168.1.20` or `192.168.1.20/32`. Use the guide's entry so you aren't locked out, and notice the mismatch between the value and its description.
+!stuck Don't remove the last permitted entry you're connecting from | Once the Permitted IP list has any entry, everything not on the list is refused. If you mistype the network and commit, your own browser session is cut off. If that happens, end the reservation and start the lab again.
+!shot The Management Interface Settings window showing the address, gateway, and your permitted IP entry.
+
+## 2.5 Check for new PAN-OS software and commit
+1. Go to [[Device > Software]] and click **Check Now** (lower left).
+2. Wait for the list to refresh. The versions you see will differ from the guide's screenshot, and there may be nothing newer.
+3. **Do not download or install anything.** An upgrade in the lab can break the labs that follow.
+4. Click **Commit**, review the commit scope, click **Commit**, and wait for it to finish.
+!why Why the check works at all | Check Now contacts Palo Alto Networks over the internet by name. It succeeds because you just gave the firewall DNS servers. If it fails, recheck 2.2 before anything else.
+!shot The Software page after Check Now, showing the list of available versions.
+!shot The commit completing successfully after your changes.
+
+= reference | Settings reference | Settings reference | Understand
+What each setting in this lab does, and where it lives.
+
+| Setting | Where | What it does |
+| Primary and secondary DNS | [[Device > Setup > Services]] | Resolvers the firewall itself uses for updates, licensing, FQDN objects, and URL lookups. Not used by clients. |
+| Update server | [[Device > Setup > Services]] | Where content and software updates come from. Leave the default. |
+| NTP servers | [[Device > Setup > Services]] (NTP tab) | Time sources. Accurate time matters for logs, reports, certificates, and scheduled updates. |
+| Hostname and domain | [[Device > Setup > Management]] (General Settings) | How the firewall names itself; appears in the CLI prompt and in logs sent elsewhere. |
+| Login banner | [[Device > Setup > Management]] (General Settings) | Text shown before login. A legal notice that access is monitored and limited to authorized users. |
+| Latitude and longitude | [[Device > Setup > Management]] (General Settings) | Places the firewall on the ACC and App Scope threat maps. Decimal degrees; west and south are negative. |
+| MGT IP, mask, gateway | [[Device > Setup > Interfaces]] (Management) | How you reach the web interface and SSH. The gateway lets management traffic reach other networks. |
+| Permitted IP addresses | [[Device > Setup > Interfaces]] (Management) | Allow list for management access. Empty means anyone who can route to it. |
+| Check Now | [[Device > Software]] | Lists PAN-OS versions available to download. It does not download or install. |
+
+### Checking the same things from the CLI
+You don't need the CLI in this lab, but these read-only commands confirm your work and are worth knowing for Lab 4, when you first open an SSH session.
+$fw show system info
+$fw show ntp
+$fw show deviceconfig system
+`show system info` lists the hostname, management address, gateway, and PAN-OS version. `show ntp` shows whether each NTP server is synchronized.
+
+= stuck | Where people get stuck | Where people get stuck | Understand
+| Symptom | Likely cause | Fix |
+| The login page never appears | The firewall is still booting | Wait 1 to 3 minutes and refresh. The VM takes a while after the reservation starts. |
+| Your settings "didn't take" | You clicked OK but never committed | Look for the Commit button highlighted at the upper right, then commit. |
+| The lab doesn't match the guide from the start | The snapshot was loaded but not committed | Reload `edu-210-11.0a-01.xml` and commit before anything else. |
+| Check Now returns an error | DNS isn't set, or wasn't committed | Recheck 2.2 and commit. The firewall must resolve names to reach the update server. |
+| You're locked out after committing | A mistyped Permitted IP entry | You can't fix this from the browser. End the reservation and restart the lab. |
+| The gateway you see isn't 192.168.1.1 | The high-level steps have the wrong value | 192.168.1.10 is correct. Don't change it. |
+
+= production | In production | How this looks on a real firewall | Understand
+- **Keep management off user networks.** In this lab the management port and your workstation share 192.168.1.0/24. In production, management sits on its own network or VLAN, reachable only from administrators' jump hosts.
+- **Permit hosts or a small admin subnet, not a whole user network.** The /24 in this lab would let any user try to log in. A real allow list names a few addresses.
+- **Use internal DNS and NTP.** Most organizations point the firewall at their own resolvers and time servers, which in turn reach the internet.
+- **Write a real banner.** Legal teams usually supply wording that states access is restricted and monitored.
+- **Plan upgrades; don't click through them.** Production upgrades follow a change window, a configuration backup (Lab 2), and the upgrade path Palo Alto Networks publishes for your version.
+- **Other vendors work the same way.** Fortinet, Cisco, and Check Point all have equivalent management-access lists, DNS and NTP settings, and banners. Only the menus differ.
+
+= selfcheck | Check yourself | Check yourself | Wrap up
+Answer in your head first, then open each one.
+
+?? You clicked OK on the DNS settings an hour ago. Is the firewall using them?
+=> Not unless you committed. OK writes to the candidate configuration; Commit makes it the running configuration.
+
+?? Why does Check Now fail on a brand-new firewall with no DNS configured?
+=> The update server is reached by name. With no resolver, the firewall can't turn `updates.paloaltonetworks.com` into an address.
+
+?? The guide's permitted IP entry is 192.168.1.20/24. Which clients can reach the management interface?
+=> Any host in 192.168.1.0/24, because the /24 makes it a network entry. Only 192.168.1.20/32 (or the bare address) would limit it to one host.
+
+?? Where would latitude 37.00, longitude 122.00 put the firewall on the threat map, and why?
+=> In eastern Asia. Positive longitude is east of Greenwich. Santa Clara is about -121.96.
+
+?? What is the difference between Check Now on the Software page and installing an upgrade?
+=> Check Now only lists available versions. Downloading and installing are separate, deliberate steps.
+
+= evidence | What to submit | Screenshots to capture | Wrap up
+Take each screenshot when you reach its marker in the walkthrough, so the values are on screen. Name the files by lab and number (for example `lab01-shot3.png`) and submit them in Canvas as your instructor directs. Check each one off below as you go.
+
+= cheat | Cheat sheet | Cheat sheet | Wrap up
+<div class="cheat">
+### Values used in this lab
+| Item | Value |
+| Snapshot | `edu-210-11.0a-01.xml` |
+| DNS | `8.8.8.8` primary, `192.168.50.53` secondary |
+| NTP | `0.pool.ntp.org`, `1.pool.ntp.org` |
+| Domain | `lab.local` |
+| Banner | `Authorized Access Only` |
+| Location | 37.00, 122.00 (guide); real Santa Clara is 37.35, -121.96 |
+| MGT | `192.168.1.254/24`, gateway `192.168.1.10` |
+| Permitted IP | `192.168.1.20/24` |
+### Where things live
+| Task | Path |
+| Load a snapshot | [[Device > Setup > Operations]] |
+| DNS, NTP, update server | [[Device > Setup > Services]] |
+| Domain, banner, time zone, location | [[Device > Setup > Management]] |
+| Management interface | [[Device > Setup > Interfaces]] |
+| Check for software | [[Device > Software]] |
+### Remember
+- OK saves to the candidate. Commit makes it real.
+- Check Now only. Never upgrade in the lab.
+</div>
+@cheatprint

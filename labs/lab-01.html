@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab 1 companion: Configuring Initial Firewall Settings | Perimeter Security</title>
+<meta name="description" content="Lab 1 companion for Perimeter Security: walkthrough of the detailed steps for Configuring Initial Firewall Settings, screenshots to capture, troubleshooting, and a cheat sheet.">
+<link rel="stylesheet" href="../assets/css/site.css">
+<script src="../assets/js/prefs.js"></script>
+</head>
+<body data-root=".." data-lab="1" data-page="labs/index.html">
+<a class="skip-link" href="#main">Skip to main content</a>
+<header id="site-header"></header>
+
+<main id="main" class="page">
+<div class="module-hero">
+<p class="kicker">Lab 1 of 14 in NDG Online. Week 1, due Wed 10/7. Goes with Module 2: Initial Firewall Configuration.</p>
+<h1>Lab 1: Configuring Initial Firewall Settings</h1>
+<p class="lede">Your first session on the firewall: log in to the management interface, load the lab's starting configuration, and give the firewall the basics it needs to function on a network: name resolution, accurate time, a login banner, a map location, and a limit on who can reach its management port.</p>
+<ul class="facts"><li>About 45 to 60 minutes</li><li>NDG Online, Lab 1</li><li>Uses Module 2, sections 2.1 to 2.5</li><li>Snapshot <code>edu-210-11.0a-01.xml</code></li><li>6 screenshots to capture</li></ul>
+<div class="lab-hero-links"><a class="btn" href="../modules/module-02.html#s-lab">Lab 1 briefing in Module 2</a><a class="btn btn-quiet" href="index.html">All lab companions</a><a class="btn btn-quiet" href="#s-evidence">Screenshot checklist</a></div>
+</div>
+
+<div class="module-layout">
+<nav class="module-rail" aria-label="This lab companion">
+<h2>This lab</h2>
+<div class="progress-wrap"><span class="label" id="rail-meter-label">0 sections reviewed</span>
+<div class="meter" role="progressbar" aria-labelledby="rail-meter-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="rail-meter"></span></div></div>
+<ol id="rail-list"></ol>
+<p><a href="#s-cheat">Jump to the cheat sheet</a></p>
+</nav>
+<article>
+<section class="unit" id="s-overview" data-section="overview" data-label="What this lab is for" data-part="Prepare">
+<header><span class="sec-n">01</span><h2>What this lab is for</h2></header>
+<p>A new firewall out of the box can't do much. It doesn't know which DNS servers to ask, so it can't resolve <code>updates.paloaltonetworks.com</code> or download anything. Its clock may be wrong, which makes every log timestamp and every certificate check suspect. And its management interface will accept a login from anyone who can reach it. This lab fixes those three problems before the firewall carries a single packet of user traffic.</p>
+<p>You will also meet the habit that runs through every lab in the course: changes go into the <dfn data-term="candidate-config">candidate configuration</dfn> when you click OK, and only become real when you <strong>commit</strong>.</p>
+<ul><li><strong>You'll leave with:</strong> DNS and NTP configured, the domain and banner set, latitude and longitude entered, the management interface limited to the client network, and a software check run (without upgrading).</li><li><strong>Builds on:</strong> <a href="../modules/module-02.html">Module 2</a>, sections 2.1 to 2.5. Run Simulation 2.1 first; it shows exactly how a permitted-IP mistake locks you out.</li><li><strong>Sets up:</strong> every later lab. Lab 2 starts from a baseline that already includes these settings.</li></ul>
+</section>
+
+<section class="unit" id="s-setup" data-section="setup" data-label="Before you begin" data-part="Prepare">
+<header><span class="sec-n">02</span><h2>Before you begin</h2></header>
+<p>This lab happens entirely in the firewall's web interface from the client's Firefox browser. You will not need the Terminal or Remmina yet.</p>
+<div class="table-wrap"><table>
+<caption class="visually-hidden">Hosts in the lab network</caption>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td></tr>
+</tbody></table></div>
+<p class="box-note">Usernames and passwords are in the Lab Settings table on page 5 of each lab guide. They are not repeated here, because this site is public.</p>
+<h4>What's already in the baseline</h4>
+<p>The snapshot <code>edu-210-11.0a-01.xml</code> gives you a firewall with its management interface addressed (192.168.1.254/24) and a hostname of firewall-a. There are no data interfaces, zones, or policy yet. Those arrive in Labs 4 and 5.</p>
+<h4>Which half of the guide to use</h4>
+<p>The guide repeats the lab twice: High-Level Lab Steps (Task 1) and Detailed Lab Steps (Task 2). This companion follows <strong>Task 2, the detailed steps</strong>, and uses its section numbers (2.1, 2.2, and so on) so you can keep both open side by side.</p>
+</section>
+
+<section class="unit" id="s-walkthrough" data-section="walkthrough" data-label="Walkthrough" data-part="Do the lab">
+<header><span class="sec-n">03</span><h2>Walkthrough of the detailed steps</h2></header>
+<h3 class="task-head"><span class="tn">2.1</span>Load the lab configuration</h3>
+<p class="task-intro">Every lab starts from a known baseline, so your firewall matches the guide no matter what you did last time.</p>
+<ol class="steps-list" start="1"><li>On the client desktop, log in as <code>lab-user</code>, open Firefox, and browse to <code>https://192.168.1.254</code>. Log in as <code>admin</code> with the password from Lab Settings. If the login page does not appear, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li>Go to <span class="path" data-path="Device > Setup > Operations"></span> and click <strong>Load named configuration snapshot</strong>. Choose <code>edu-210-11.0a-01.xml</code> and click OK, then Close.</li><li>Open <strong>Tasks</strong> (lower right) and confirm the Load task shows completed.</li><li>Click <strong>Commit</strong> (upper right), then <strong>Commit</strong> in the dialog, and wait for it to finish.</li></ol>
+<div class="callout stuck"><p class="c-title">Loading is not committing</p><p>A loaded snapshot replaces only the candidate configuration. Until you commit, the firewall is still running whatever was there before, and nothing in the lab will match the guide.</p></div>
+<p class="shot" id="shot-1"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 1</span> The Task Manager showing the Load task as Completed, and the commit succeeding.</span></p>
+<h3 class="task-head"><span class="tn">2.2</span>Configure the DNS and NTP servers</h3>
+<p class="task-intro">DNS lets the firewall turn names into addresses for updates, FQDN address objects, and logging. NTP keeps its clock honest.</p>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Device &gt; Setup &gt; Services"></span> and click the gear icon on the <strong>Services</strong> panel.</li>
+<li>On the <strong>Services</strong> tab, confirm the Update Server is <code>updates.paloaltonetworks.com</code>. Set <strong>Primary DNS Server</strong> to <code>8.8.8.8</code> and <strong>Secondary DNS Server</strong> to <code>192.168.50.53</code>.</li>
+<li>Select the <strong>NTP</strong> tab. Set the primary NTP server to <code>0.pool.ntp.org</code> and the secondary to <code>1.pool.ntp.org</code>. Click OK.</li>
+<li>Check that the Services panel now shows your four values.</li>
+</ol>
+<div class="callout why"><p class="c-title">Why two DNS servers from different places</p><p>8.8.8.8 is a public resolver on the internet; 192.168.50.53 is a lab DNS server in the extranet. If one path is down, the other still answers. In production you would normally point the firewall at your own internal resolvers first.</p></div>
+<p class="shot" id="shot-2"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 2</span> The Services panel showing both DNS servers and both NTP servers.</span></p>
+<h3 class="task-head"><span class="tn">2.3</span>Configure general settings</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Device &gt; Setup &gt; Management"></span> and click the gear icon on the <strong>General Settings</strong> panel.</li>
+<li>Confirm the hostname is <code>firewall-a</code>. Set <strong>Domain</strong> to <code>lab.local</code> and <strong>Login Banner</strong> to <code>Authorized Access Only</code>.</li>
+<li>Pick a <strong>Time Zone</strong>. The guide uses <code>Etc/UTC</code>; use the same so your timestamps match the screenshots in later labs.</li>
+<li>Enter <strong>Latitude</strong> <code>37.00</code> and <strong>Longitude</strong> <code>122.00</code>, then click OK.</li>
+</ol>
+<div class="callout fix"><p class="c-title">The detailed steps say "Services gear icon"</p><p>In step 1 of this task the guide says to click the Services gear icon. On the Management tab the panel you want is <strong>General Settings</strong>.</p></div>
+<div class="callout fix"><p class="c-title">Longitude has the wrong sign</p><p>Longitudes west of Greenwich are negative. Santa Clara, California is about 37.35, -121.96. A positive 122.00 puts the firewall in eastern Asia on the ACC threat map. Enter the guide's values (37.00 and 122.00) so your work matches what is graded, but know the real answer.</p></div>
+<p class="shot" id="shot-3"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 3</span> The General Settings panel showing the domain, banner, time zone, latitude, and longitude.</span></p>
+<h3 class="task-head"><span class="tn">2.4</span>Modify the management interface</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Device &gt; Setup &gt; Interfaces"></span> and click <strong>Management</strong>.</li>
+<li>Verify, but don't change, the IP address <code>192.168.1.254</code>, netmask <code>255.255.255.0</code>, and default gateway <code>192.168.1.10</code>.</li>
+<li>At the bottom of <strong>Permitted IP Addresses</strong>, click <strong>Add</strong>. Enter <code>192.168.1.20/24</code> with the description <code>MGT access from this host only</code>. Click OK.</li>
+</ol>
+<div class="callout fix"><p class="c-title">Two different gateways</p><p>The high-level steps (Task 1.4) say the management gateway is 192.168.1.1. The detailed steps and the Lab Settings table say 192.168.1.10, the vRouter. Expect 192.168.1.10. This step is verify-only.</p></div>
+<div class="callout fix"><p class="c-title">"This host only" is not what a /24 does</p><p><code>192.168.1.20/24</code> permits the whole 192.168.1.0/24 network, not just your client. To permit one host you would enter <code>192.168.1.20</code> or <code>192.168.1.20/32</code>. Use the guide's entry so you aren't locked out, and notice the mismatch between the value and its description.</p></div>
+<div class="callout stuck"><p class="c-title">Don't remove the last permitted entry you're connecting from</p><p>Once the Permitted IP list has any entry, everything not on the list is refused. If you mistype the network and commit, your own browser session is cut off. If that happens, end the reservation and start the lab again.</p></div>
+<p class="shot" id="shot-4"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 4</span> The Management Interface Settings window showing the address, gateway, and your permitted IP entry.</span></p>
+<h3 class="task-head"><span class="tn">2.5</span>Check for new PAN-OS software and commit</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Device &gt; Software"></span> and click <strong>Check Now</strong> (lower left).</li>
+<li>Wait for the list to refresh. The versions you see will differ from the guide's screenshot, and there may be nothing newer.</li>
+<li><strong>Do not download or install anything.</strong> An upgrade in the lab can break the labs that follow.</li>
+<li>Click <strong>Commit</strong>, review the commit scope, click <strong>Commit</strong>, and wait for it to finish.</li>
+</ol>
+<div class="callout why"><p class="c-title">Why the check works at all</p><p>Check Now contacts Palo Alto Networks over the internet by name. It succeeds because you just gave the firewall DNS servers. If it fails, recheck 2.2 before anything else.</p></div>
+<p class="shot" id="shot-5"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 5</span> The Software page after Check Now, showing the list of available versions.</span></p>
+<p class="shot" id="shot-6"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 6</span> The commit completing successfully after your changes.</span></p>
+</section>
+
+<section class="unit" id="s-reference" data-section="reference" data-label="Settings reference" data-part="Understand">
+<header><span class="sec-n">04</span><h2>Settings reference</h2></header>
+<p>What each setting in this lab does, and where it lives.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">Setting</th><th scope="col">Where</th><th scope="col">What it does</th></tr></thead><tbody><tr><td>Primary and secondary DNS</td><td><span class="path" data-path="Device &gt; Setup &gt; Services"></span></td><td>Resolvers the firewall itself uses for updates, licensing, FQDN objects, and URL lookups. Not used by clients.</td></tr><tr><td>Update server</td><td><span class="path" data-path="Device &gt; Setup &gt; Services"></span></td><td>Where content and software updates come from. Leave the default.</td></tr><tr><td>NTP servers</td><td><span class="path" data-path="Device &gt; Setup &gt; Services"></span> (NTP tab)</td><td>Time sources. Accurate time matters for logs, reports, certificates, and scheduled updates.</td></tr><tr><td>Hostname and domain</td><td><span class="path" data-path="Device &gt; Setup &gt; Management"></span> (General Settings)</td><td>How the firewall names itself; appears in the CLI prompt and in logs sent elsewhere.</td></tr><tr><td>Login banner</td><td><span class="path" data-path="Device &gt; Setup &gt; Management"></span> (General Settings)</td><td>Text shown before login. A legal notice that access is monitored and limited to authorized users.</td></tr><tr><td>Latitude and longitude</td><td><span class="path" data-path="Device &gt; Setup &gt; Management"></span> (General Settings)</td><td>Places the firewall on the ACC and App Scope threat maps. Decimal degrees; west and south are negative.</td></tr><tr><td>MGT IP, mask, gateway</td><td><span class="path" data-path="Device &gt; Setup &gt; Interfaces"></span> (Management)</td><td>How you reach the web interface and SSH. The gateway lets management traffic reach other networks.</td></tr><tr><td>Permitted IP addresses</td><td><span class="path" data-path="Device &gt; Setup &gt; Interfaces"></span> (Management)</td><td>Allow list for management access. Empty means anyone who can route to it.</td></tr><tr><td>Check Now</td><td><span class="path" data-path="Device &gt; Software"></span></td><td>Lists PAN-OS versions available to download. It does not download or install.</td></tr></tbody></table></div>
+<h4>Checking the same things from the CLI</h4>
+<p>You don't need the CLI in this lab, but these read-only commands confirm your work and are worth knowing for Lab 4, when you first open an SSH session.</p>
+<p><code>show system info</code> lists the hostname, management address, gateway, and PAN-OS version. <code>show ntp</code> shows whether each NTP server is synchronized.</p>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">show system info</span>
+<span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">show ntp</span>
+<span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">show deviceconfig system</span></pre>
+</section>
+
+<section class="unit" id="s-stuck" data-section="stuck" data-label="Where people get stuck" data-part="Understand">
+<header><span class="sec-n">05</span><h2>Where people get stuck</h2></header>
+<div class="table-wrap"><table class="stuck-table"><thead><tr><th scope="col">Symptom</th><th scope="col">Likely cause</th><th scope="col">Fix</th></tr></thead><tbody><tr><td>The login page never appears</td><td>The firewall is still booting</td><td>Wait 1 to 3 minutes and refresh. The VM takes a while after the reservation starts.</td></tr><tr><td>Your settings "didn't take"</td><td>You clicked OK but never committed</td><td>Look for the Commit button highlighted at the upper right, then commit.</td></tr><tr><td>The lab doesn't match the guide from the start</td><td>The snapshot was loaded but not committed</td><td>Reload <code>edu-210-11.0a-01.xml</code> and commit before anything else.</td></tr><tr><td>Check Now returns an error</td><td>DNS isn't set, or wasn't committed</td><td>Recheck 2.2 and commit. The firewall must resolve names to reach the update server.</td></tr><tr><td>You're locked out after committing</td><td>A mistyped Permitted IP entry</td><td>You can't fix this from the browser. End the reservation and restart the lab.</td></tr><tr><td>The gateway you see isn't 192.168.1.1</td><td>The high-level steps have the wrong value</td><td>192.168.1.10 is correct. Don't change it.</td></tr></tbody></table></div>
+</section>
+
+<section class="unit" id="s-production" data-section="production" data-label="In production" data-part="Understand">
+<header><span class="sec-n">06</span><h2>How this looks on a real firewall</h2></header>
+<ul><li><strong>Keep management off user networks.</strong> In this lab the management port and your workstation share 192.168.1.0/24. In production, management sits on its own network or VLAN, reachable only from administrators' jump hosts.</li><li><strong>Permit hosts or a small admin subnet, not a whole user network.</strong> The /24 in this lab would let any user try to log in. A real allow list names a few addresses.</li><li><strong>Use internal DNS and NTP.</strong> Most organizations point the firewall at their own resolvers and time servers, which in turn reach the internet.</li><li><strong>Write a real banner.</strong> Legal teams usually supply wording that states access is restricted and monitored.</li><li><strong>Plan upgrades; don't click through them.</strong> Production upgrades follow a change window, a configuration backup (Lab 2), and the upgrade path Palo Alto Networks publishes for your version.</li><li><strong>Other vendors work the same way.</strong> Fortinet, Cisco, and Check Point all have equivalent management-access lists, DNS and NTP settings, and banners. Only the menus differ.</li></ul>
+</section>
+
+<section class="unit" id="s-selfcheck" data-section="selfcheck" data-label="Check yourself" data-part="Wrap up">
+<header><span class="sec-n">07</span><h2>Check yourself</h2></header>
+<p>Answer in your head first, then open each one.</p>
+<details class="qa"><summary>You clicked OK on the DNS settings an hour ago. Is the firewall using them?</summary><div class="qa-a"><p>Not unless you committed. OK writes to the candidate configuration; Commit makes it the running configuration.</p></div></details>
+<details class="qa"><summary>Why does Check Now fail on a brand-new firewall with no DNS configured?</summary><div class="qa-a"><p>The update server is reached by name. With no resolver, the firewall can't turn <code>updates.paloaltonetworks.com</code> into an address.</p></div></details>
+<details class="qa"><summary>The guide's permitted IP entry is 192.168.1.20/24. Which clients can reach the management interface?</summary><div class="qa-a"><p>Any host in 192.168.1.0/24, because the /24 makes it a network entry. Only 192.168.1.20/32 (or the bare address) would limit it to one host.</p></div></details>
+<details class="qa"><summary>Where would latitude 37.00, longitude 122.00 put the firewall on the threat map, and why?</summary><div class="qa-a"><p>In eastern Asia. Positive longitude is east of Greenwich. Santa Clara is about -121.96.</p></div></details>
+<details class="qa"><summary>What is the difference between Check Now on the Software page and installing an upgrade?</summary><div class="qa-a"><p>Check Now only lists available versions. Downloading and installing are separate, deliberate steps.</p></div></details>
+</section>
+
+<section class="unit" id="s-evidence" data-section="evidence" data-label="What to submit" data-part="Wrap up">
+<header><span class="sec-n">08</span><h2>Screenshots to capture</h2></header>
+<p>Take each screenshot when you reach its marker in the walkthrough, so the values are on screen. Name the files by lab and number (for example <code>lab01-shot3.png</code>) and submit them in Canvas as your instructor directs. Check each one off below as you go.</p>
+<ul class="checklist evidence" data-save="lab1-evidence"><li><input type="checkbox" id="ev1-0"><div><label for="ev1-0">Screenshot 1: The Task Manager showing the Load task as Completed, and the commit succeeding.</label><a class="ev-where" href="#shot-1">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev1-1"><div><label for="ev1-1">Screenshot 2: The Services panel showing both DNS servers and both NTP servers.</label><a class="ev-where" href="#shot-2">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev1-2"><div><label for="ev1-2">Screenshot 3: The General Settings panel showing the domain, banner, time zone, latitude, and longitude.</label><a class="ev-where" href="#shot-3">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev1-3"><div><label for="ev1-3">Screenshot 4: The Management Interface Settings window showing the address, gateway, and your permitted IP entry.</label><a class="ev-where" href="#shot-4">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev1-4"><div><label for="ev1-4">Screenshot 5: The Software page after Check Now, showing the list of available versions.</label><a class="ev-where" href="#shot-5">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev1-5"><div><label for="ev1-5">Screenshot 6: The commit completing successfully after your changes.</label><a class="ev-where" href="#shot-6">Find it in the walkthrough</a></div></li></ul>
+<p class="box-note">Checkmarks are saved in this browser only. They help you keep track; the screenshots themselves go to Canvas.</p>
+</section>
+
+<section class="unit" id="s-cheat" data-section="cheat" data-label="Cheat sheet" data-part="Wrap up">
+<header><span class="sec-n">09</span><h2>Cheat sheet</h2></header>
+<div class="cheat">
+<h4>Values used in this lab</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Item</th><th scope="col">Value</th></tr></thead><tbody><tr><td>Snapshot</td><td><code>edu-210-11.0a-01.xml</code></td></tr><tr><td>DNS</td><td><code>8.8.8.8</code> primary, <code>192.168.50.53</code> secondary</td></tr><tr><td>NTP</td><td><code>0.pool.ntp.org</code>, <code>1.pool.ntp.org</code></td></tr><tr><td>Domain</td><td><code>lab.local</code></td></tr><tr><td>Banner</td><td><code>Authorized Access Only</code></td></tr><tr><td>Location</td><td>37.00, 122.00 (guide); real Santa Clara is 37.35, -121.96</td></tr><tr><td>MGT</td><td><code>192.168.1.254/24</code>, gateway <code>192.168.1.10</code></td></tr><tr><td>Permitted IP</td><td><code>192.168.1.20/24</code></td></tr></tbody></table></div>
+<h4>Where things live</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Task</th><th scope="col">Path</th></tr></thead><tbody><tr><td>Load a snapshot</td><td><span class="path" data-path="Device &gt; Setup &gt; Operations"></span></td></tr><tr><td>DNS, NTP, update server</td><td><span class="path" data-path="Device &gt; Setup &gt; Services"></span></td></tr><tr><td>Domain, banner, time zone, location</td><td><span class="path" data-path="Device &gt; Setup &gt; Management"></span></td></tr><tr><td>Management interface</td><td><span class="path" data-path="Device &gt; Setup &gt; Interfaces"></span></td></tr><tr><td>Check for software</td><td><span class="path" data-path="Device &gt; Software"></span></td></tr></tbody></table></div>
+<h4>Remember</h4>
+<ul><li>OK saves to the candidate. Commit makes it real.</li><li>Check Now only. Never upgrade in the lab.</li></ul>
+</div>
+<p><button type="button" class="btn" data-print="cheat">Print only this cheat sheet</button></p>
+</section>
+<nav class="pager" id="pager" aria-label="Lab navigation"></nav>
+</article>
+</div>
+</main>
+
+<footer id="site-footer"></footer>
+<script src="../assets/js/course.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/activities.js"></script>
+</body>
+</html>

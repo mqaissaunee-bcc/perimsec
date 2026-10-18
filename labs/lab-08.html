@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab 8 companion: Blocking Known Threats Using Security Profiles | Perimeter Security</title>
+<meta name="description" content="Lab 8 companion for Perimeter Security: walkthrough of the detailed steps for Blocking Known Threats Using Security Profiles, screenshots to capture, troubleshooting, and a cheat sheet.">
+<link rel="stylesheet" href="../assets/css/site.css">
+<script src="../assets/js/prefs.js"></script>
+</head>
+<body data-root=".." data-lab="8" data-page="labs/index.html">
+<a class="skip-link" href="#main">Skip to main content</a>
+<header id="site-header"></header>
+
+<main id="main" class="page">
+<div class="module-hero">
+<p class="kicker">Lab 8 of 14 in NDG Online. Week 6, due Wed 11/11. Goes with Module 10: Security Profiles.</p>
+<h1>Lab 8: Blocking Known Threats Using Security Profiles</h1>
+<p class="lede">Allowed traffic still needs inspecting. You run attacks and risky downloads through the firewall unprotected, then build antivirus, vulnerability, file blocking, data filtering, and anti-spyware profiles, add a DNS sinkhole fed by an external dynamic list, bundle them in a profile group, attach it to every allow rule, and run the same tests again.</p>
+<ul class="facts"><li>About 75 to 90 minutes</li><li>NDG Online, Lab 8</li><li>Uses Module 10, sections 10.1 to 10.6</li><li>Snapshot <code>edu-210-11.0a-08.xml</code></li><li>8 screenshots to capture</li></ul>
+<div class="lab-hero-links"><a class="btn" href="../modules/module-10.html#s-lab">Lab 8 briefing in Module 10</a><a class="btn btn-quiet" href="index.html">All lab companions</a><a class="btn btn-quiet" href="#s-evidence">Screenshot checklist</a></div>
+</div>
+
+<div class="module-layout">
+<nav class="module-rail" aria-label="This lab companion">
+<h2>This lab</h2>
+<div class="progress-wrap"><span class="label" id="rail-meter-label">0 sections reviewed</span>
+<div class="meter" role="progressbar" aria-labelledby="rail-meter-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="rail-meter"></span></div></div>
+<ol id="rail-list"></ol>
+<p><a href="#s-cheat">Jump to the cheat sheet</a></p>
+</nav>
+<article>
+<section class="unit" id="s-overview" data-section="overview" data-label="What this lab is for" data-part="Prepare">
+<header><span class="sec-n">01</span><h2>What this lab is for</h2></header>
+<p>A Security rule decides <strong>whether</strong> a session is allowed. A <dfn data-term="security-profile">Security Profile</dfn> decides what happens to the content <strong>inside</strong> an allowed session. An allow rule with no profiles is an open door with no one watching it, which is exactly the state the firewall is in at the start of this lab.</p>
+<p>The before-and-after design is the point. You'll see attacks, a forbidden file type, a file full of Social Security numbers, and a lookup for a banned domain all pass. Then the same tests produce block pages, a <dfn data-term="dns-sinkhole">sinkholed</dfn> DNS answer, and a full Threat log.</p>
+<ul><li><strong>You'll leave with:</strong> Corp-AV, Corp-Vuln, Corp-FileBlock, Corp-DataFilter, and Corp-AS (with an EDL sinkhole), grouped in Corp-Profiles-Group on all six allow rules.</li><li><strong>Builds on:</strong> <a href="../modules/module-10.html">Module 10</a>. Simulation 10.1 (which profile catches it?) and 10.2 (follow a sinkholed lookup) are the best preparation.</li><li><strong>Sets up:</strong> Labs 9 and 10 add URL Filtering and WildFire profiles to this same group; the capstone rebuilds it from scratch.</li></ul>
+</section>
+
+<section class="unit" id="s-setup" data-section="setup" data-label="Before you begin" data-part="Prepare">
+<header><span class="sec-n">02</span><h2>Before you begin</h2></header>
+<p>You'll use the web interface, <strong>Remmina</strong> (Server-Extranet runs a 6-minute attack script), Firefox, and the client terminal for <code>dig</code>.</p>
+<div class="table-wrap"><table>
+<caption class="visually-hidden">Hosts in the lab network</caption>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td></tr>
+</tbody></table></div>
+<p class="box-note">Usernames and passwords are in the Lab Settings table on page 5 of each lab guide. They are not repeated here, because this site is public.</p>
+<h4>What's already in the baseline</h4>
+<p>All earlier work, including Lab 11's Acquisition rules, plus an <strong>Extranet_to_User_Net</strong> rule. Six rules allow traffic; none has a Security Profile yet.</p>
+<h4>The test files are safe</h4>
+<p><code>badtarfile.tar</code> is an ordinary archive, and <code>companyssns.txt</code> holds fictitious names and numbers. The attack script replays packet captures; nothing on your client is actually exploited.</p>
+</section>
+
+<section class="unit" id="s-walkthrough" data-section="walkthrough" data-label="Walkthrough" data-part="Do the lab">
+<header><span class="sec-n">03</span><h2>Walkthrough of the detailed steps</h2></header>
+<h3 class="task-head"><span class="tn">2.1</span>Load the lab configuration</h3>
+<p class="task-intro">Every lab starts from a known baseline, so your firewall matches the guide no matter what you did last time.</p>
+<ol class="steps-list" start="1"><li>On the client desktop, log in as <code>lab-user</code>, open Firefox, and browse to <code>https://192.168.1.254</code>. Log in as <code>admin</code> with the password from Lab Settings. If the login page does not appear, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li>Go to <span class="path" data-path="Device > Setup > Operations"></span> and click <strong>Load named configuration snapshot</strong>. Choose <code>edu-210-11.0a-08.xml</code> and click OK, then Close.</li><li>Open <strong>Tasks</strong> (lower right) and confirm the Load task shows completed.</li><li>Click <strong>Commit</strong> (upper right), then <strong>Commit</strong> in the dialog, and wait for it to finish.</li></ol>
+<div class="callout stuck"><p class="c-title">Loading is not committing</p><p>A loaded snapshot replaces only the candidate configuration. Until you commit, the firewall is still running whatever was there before, and nothing in the lab will match the guide.</p></div>
+<h3 class="task-head"><span class="tn">2.2</span>Generate traffic without Security Profiles</h3>
+<ol class="steps-list" start="1">
+<li>Open <strong>Remmina</strong>, double-click <strong>Server-Extranet</strong>, and start the attack script. Let it run uninterrupted (about 6 minutes) and minimize the window.</li>
+</ol>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">paloalto42@extranet1:~$</span> <span class="cmd">cd pcaps92019/attack.pcaps/</span>
+<span class="prompt">paloalto42@extranet1:~$</span> <span class="cmd">./malwareattacks.sh</span></pre>
+<ol class="steps-list" start="2">
+<li>In a new Firefox window, open <code>http://192.168.50.80/badtarfile.tar</code> and <strong>Save</strong> it. The download succeeds.</li>
+<li>In a new tab, open <code>http://192.168.50.80/companyssns.txt</code>. The file displays. Close Firefox.</li>
+<li>In the client terminal, look up a domain you'll later sinkhole. You get a normal public address.</li>
+</ol>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">lab-user@client-a:~/Desktop/Lab-Files$</span> <span class="cmd">dig @8.8.8.8 www.quora.com</span></pre>
+<p class="shot" id="shot-1"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 1</span> The client terminal showing dig returning a real IP address for www.quora.com.</span></p>
+<div class="callout tip"><p class="c-title">Leave the terminal open</p><p>You'll repeat the same dig at the end.</p></div>
+<h3 class="task-head"><span class="tn">2.3</span>Create an antivirus profile</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Objects &gt; Security Profiles &gt; Antivirus"></span>, check <strong>default</strong>, and click <strong>Clone</strong>, then OK.</li>
+<li>Open <strong>default-1</strong>, rename it <code>Corp-AV</code>, description <code>Standard antivirus profile for all security policy rules</code>. Click OK.</li>
+</ol>
+<div class="callout why"><p class="c-title">Why clone?</p><p>Predefined profiles can't be edited. Cloning gives you a copy you can tune later without starting from scratch.</p></div>
+<h3 class="task-head"><span class="tn">2.4</span>Create a vulnerability protection profile</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Objects &gt; Security Profiles &gt; Vulnerability Protection"></span>, check <strong>strict</strong>, Clone, OK.</li>
+<li>Open <strong>strict-1</strong>, rename it <code>Corp-Vuln</code>, description <code>Standard vulnerability profile for all security policy rules</code>.</li>
+</ol>
+<h3 class="task-head"><span class="tn">2.5</span>Create a file blocking profile</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Objects &gt; Security Profiles &gt; File Blocking"></span>, check <strong>strict file blocking</strong>, Clone, OK.</li>
+<li>Open <strong>strict file blocking-1</strong>, rename it <code>Corp-FileBlock</code>, description <code>Standard file blocking profile for all security policy rules</code>.</li>
+</ol>
+<h3 class="task-head"><span class="tn">2.6</span>Create a data filtering profile</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Objects &gt; Custom Objects &gt; Data Patterns"></span> and click <strong>Add</strong>. Name <code>US-SSNs</code>, description <code>US Social Security Numbers</code>, Pattern Type <strong>Predefined Pattern</strong>. Add <strong>Social Security Numbers</strong> and <strong>Social Security Numbers (without dash separator)</strong>. Click OK.</li>
+<li>Go to <span class="path" data-path="Objects &gt; Security Profiles &gt; Data Filtering"></span> and click <strong>Add</strong>. Name <code>Corp-DataFilter</code>, description <code>Standard data filtering profile for all security rules</code>.</li>
+<li>Add the <strong>US-SSNs</strong> pattern. Set <strong>Alert Threshold</strong> to <code>1</code>, <strong>Block Threshold</strong> to <code>3</code>, and <strong>Log Severity</strong> to <strong>critical</strong>. Click OK.</li>
+</ol>
+<div class="callout fix"><p class="c-title">"More than three" means three or more</p><p>The guide says the profile blocks files with more than three SSNs, but a block threshold of 3 blocks at three matches. One or two matches only alert.</p></div>
+<h3 class="task-head"><span class="tn">2.7</span>Create an anti-spyware profile</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Objects &gt; Security Profiles &gt; Anti-Spyware"></span>, check <strong>strict</strong>, Clone, OK.</li>
+<li>Open <strong>strict-1</strong>, rename it <code>Corp-AS</code>, description <code>Standard anti-spyware profile for all security policy rules</code>.</li>
+</ol>
+<h3 class="task-head"><span class="tn">2.8</span>Create an external dynamic list of malicious domains</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Objects &gt; External Dynamic Lists"></span> and click <strong>Add</strong>. Read the notice about domain tokens and click <strong>Cancel</strong>.</li>
+<li>Name <code>malicious-domains-edl</code>, Type <strong>Domain List</strong>, description <code>Custom list of bad domains maintained on Extranet server</code>, Source <code>http://192.168.50.80/malicious-domains.txt</code>. Check <strong>Automatically expand to include subdomains</strong>. Check for updates <strong>Every Five Minutes</strong>. Click OK.</li>
+<li>Open the list again, cancel the notice, and click <strong>Test Source URL</strong>. It should report the URL is accessible.</li>
+</ol>
+<div class="callout tip"><p class="c-title">What's on the list</p><p>quora.com and producthunt.com, chosen for the lab. They aren't actually malicious.</p></div>
+<p class="shot" id="shot-2"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 2</span> The Test Source URL result showing the EDL source is accessible.</span></p>
+<h3 class="task-head"><span class="tn">2.9</span>Sinkhole the EDL in the anti-spyware profile</h3>
+<ol class="steps-list" start="1">
+<li>Open <strong>Corp-AS</strong> and select the <strong>DNS Policies</strong> tab.</li>
+<li>Under External Dynamic Lists, set the <strong>Policy Action</strong> for <strong>malicious-domains-edl</strong> to <strong>sinkhole</strong>. Click OK.</li>
+</ol>
+<div class="callout fix"><p class="c-title">Name drift</p><p>The guide calls the profile "Corporate-AS" once. It's the Corp-AS you just created.</p></div>
+<h3 class="task-head"><span class="tn">2.10</span>Create a Security Profile Group</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Objects &gt; Security Profile Groups"></span> and click <strong>Add</strong>. Name it <code>Corp-Profiles-Group</code>.</li>
+<li>Choose Corp-AV, Corp-AS, Corp-Vuln, Corp-FileBlock, and Corp-DataFilter in their drop-downs. Leave URL Filtering and WildFire Analysis at <strong>None</strong>. Click OK.</li>
+</ol>
+<p class="shot" id="shot-3"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 3</span> The Corp-Profiles-Group window with all five Corp- profiles selected.</span></p>
+<h3 class="task-head"><span class="tn">2.11</span>Apply the group to every allow rule</h3>
+<ol class="steps-list" start="1">
+<li>In <span class="path" data-path="Policies &gt; Security"></span>, open each allow rule in turn. On <strong>Actions</strong>, set <strong>Profile Type</strong> to <strong>Group</strong> and choose <strong>Corp-Profiles-Group</strong>. Click OK.</li>
+<li>Do all six: Allow-PANW-Apps, Users_to_Extranet, Users_to_Internet, Extranet_to_Internet, Extranet_to_User_Net, and the Acquisition allow rule.</li>
+<li>Hover over each rule's profile icon to confirm, then commit.</li>
+</ol>
+<div class="callout fix"><p class="c-title">The Acquisition rule's name</p><p>The guide lists <strong>Acquisition-Allow-All</strong>. If your baseline carries Lab 11's rename, it's <strong>Allow-Corp-Apps</strong> (and Allow-Mktg-Apps also allows traffic). Apply the group to every rule whose action is Allow, whatever it's called.</p></div>
+<div class="callout stuck"><p class="c-title">A skipped rule is uninspected traffic</p><p>Profiles only act on traffic matched by a rule that carries them. Block and deny rules don't need them.</p></div>
+<p class="shot" id="shot-4"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 4</span> The Security policy with the profile icon showing on all six allow rules.</span></p>
+<h3 class="task-head"><span class="tn">2.12</span>Test again with Security Profiles</h3>
+<ol class="steps-list" start="1">
+<li>In the Server-Extranet window, run <code>./malwareattacks.sh</code> again (same folder) and let it finish.</li>
+<li>Open a <strong>private</strong> Firefox window (right-click Firefox in the taskbar) and request <code>http://192.168.50.80/badtarfile.tar</code>. You get <strong>File Transfer Blocked</strong>.</li>
+<li>In a new tab, request <code>http://192.168.50.80/companyssns.txt</code>. You get <strong>Data Transfer Blocked</strong>. Close Firefox.</li>
+<li>In the terminal, run the dig again. It now returns <code>sinkhole.paloaltonetworks.com</code>.</li>
+</ol>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">lab-user@client-a:~/Desktop/Lab-Files$</span> <span class="cmd">dig @8.8.8.8 www.quora.com</span></pre>
+<ol class="steps-list" start="5">
+<li>Go to <span class="path" data-path="Monitor &gt; Logs &gt; Threat"></span>, clear filters, and page through entries for spyware, vulnerabilities, file blocking, data filtering, and the DNS sinkhole.</li>
+</ol>
+<div class="callout why"><p class="c-title">Why a private window</p><p>It avoids Firefox's cache, which could serve the earlier, unblocked copies of the files.</p></div>
+<div class="callout tip"><p class="c-title">The sinkhole answer is success</p><p>It means the firewall intercepted the lookup and replaced the answer. A real infected host would then try to connect to the sinkhole address, and that attempt identifies it in the Traffic log.</p></div>
+<div class="callout stuck"><p class="c-title">The high-level steps stop early</p><p>Task 1 ends at the tar file. Do the SSN file, the dig, and the Threat log review whichever version you follow; they prove the data filtering and sinkhole work.</p></div>
+<p class="shot" id="shot-5"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 5</span> The File Transfer Blocked page for badtarfile.tar.</span></p>
+<p class="shot" id="shot-6"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 6</span> The Data Transfer Blocked page for companyssns.txt.</span></p>
+<p class="shot" id="shot-7"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 7</span> The terminal showing dig returning sinkhole.paloaltonetworks.com.</span></p>
+<p class="shot" id="shot-8"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 8</span> The Threat log showing spyware and vulnerability entries from the attack script.</span></p>
+</section>
+
+<section class="unit" id="s-reference" data-section="reference" data-label="Reference" data-part="Understand">
+<header><span class="sec-n">04</span><h2>Security Profiles reference</h2></header>
+<h4>What each profile stops</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Profile</th><th scope="col">Stops</th><th scope="col">Built from</th></tr></thead><tbody><tr><td>Antivirus (Corp-AV)</td><td>Known malware in files and traffic</td><td>default</td></tr><tr><td>Anti-Spyware (Corp-AS)</td><td>Command-and-control and spyware; DNS sinkhole</td><td>strict</td></tr><tr><td>Vulnerability Protection (Corp-Vuln)</td><td>Exploits against client and server flaws</td><td>strict</td></tr><tr><td>File Blocking (Corp-FileBlock)</td><td>Risky file types by type, not content</td><td>strict file blocking</td></tr><tr><td>Data Filtering (Corp-DataFilter)</td><td>Sensitive data patterns leaving</td><td>new, with US-SSNs</td></tr><tr><td>URL Filtering</td><td>Web categories</td><td>added in Lab 9</td></tr><tr><td>WildFire Analysis</td><td>Unknown files, sent for analysis</td><td>added in Lab 10</td></tr></tbody></table></div>
+<h4>Logs to check</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Event</th><th scope="col">Log</th></tr></thead><tbody><tr><td>Virus, spyware, vulnerability, sinkhole</td><td><span class="path" data-path="Monitor &gt; Logs &gt; Threat"></span></td></tr><tr><td>File blocked</td><td>Threat log (type file)</td></tr><tr><td>Data pattern match</td><td><span class="path" data-path="Monitor &gt; Logs &gt; Data Filtering"></span></td></tr></tbody></table></div>
+<h4>Threat log filters</h4>
+<p>To isolate the sinkhole entries, click the threat name on one of them; the firewall builds the exact filter for you.</p>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( subtype eq spyware )</span>
+<span class="cmd">( subtype eq vulnerability )</span>
+<span class="cmd">( subtype eq file )</span></pre>
+</section>
+
+<section class="unit" id="s-stuck" data-section="stuck" data-label="Where people get stuck" data-part="Understand">
+<header><span class="sec-n">05</span><h2>Where people get stuck</h2></header>
+<div class="table-wrap"><table class="stuck-table"><thead><tr><th scope="col">Symptom</th><th scope="col">Likely cause</th><th scope="col">Fix</th></tr></thead><tbody><tr><td>The tar file still downloads</td><td>Group not on Users_to_Extranet, cached copy, or not committed</td><td>Check the rule, use a private window, commit.</td></tr><tr><td>SSN file still displays</td><td>Data Filtering profile not in the group</td><td>Edit Corp-Profiles-Group.</td></tr><tr><td>dig still returns a real address</td><td>Sinkhole action not set, or EDL not reachable</td><td>Corp-AS DNS Policies: sinkhole; Test Source URL on the EDL.</td></tr><tr><td>Threat log nearly empty</td><td>Script still running, or stopped early</td><td>Let it finish (about 6 minutes) and refresh.</td></tr><tr><td>Test Source URL fails</td><td>Typo in the URL</td><td><code>http://192.168.50.80/malicious-domains.txt</code></td></tr><tr><td>Threat entry's source isn't the client</td><td>Expected for DNS through a resolver</td><td>Here it is the client, because it queried 8.8.8.8 directly. Behind an internal DNS server, it would be the server.</td></tr></tbody></table></div>
+</section>
+
+<section class="unit" id="s-production" data-section="production" data-label="In production" data-part="Understand">
+<header><span class="sec-n">06</span><h2>How this looks on a real firewall</h2></header>
+<ul><li><strong>Profiles on every allow rule.</strong> Best practice is a profile group on every allow rule. Many teams name their group <code>default</code> so new rules get it automatically.</li><li><strong>Start strict, tune exceptions.</strong> Use strict or best-practice profiles and handle false positives with specific exceptions, not by weakening the whole profile.</li><li><strong>Sinkhole with internal DNS in mind.</strong> With an internal resolver, the Threat log shows the resolver as the source; you find the infected host by who connects to the sinkhole address afterward.</li><li><strong>Data filtering is not full DLP.</strong> It's a useful backstop; dedicated DLP (Module 16) handles sensitive data more completely.</li><li><strong>Other vendors:</strong> Fortinet security profiles, Cisco Snort IPS and malware policies, and Check Point Threat Prevention play the same roles.</li></ul>
+</section>
+
+<section class="unit" id="s-selfcheck" data-section="selfcheck" data-label="Check yourself" data-part="Wrap up">
+<header><span class="sec-n">07</span><h2>Check yourself</h2></header>
+<details class="qa"><summary>An allow rule has no profiles. What does the firewall do with malware inside that session?</summary><div class="qa-a"><p>Nothing. Profiles are what inspect allowed traffic.</p></div></details>
+<details class="qa"><summary>Which profile blocked badtarfile.tar, and does it look at what's inside the file?</summary><div class="qa-a"><p>File Blocking. It acts on file type, not content.</p></div></details>
+<details class="qa"><summary>With alert threshold 1 and block threshold 3, what happens to a file with two SSNs?</summary><div class="qa-a"><p>It's allowed with an alert logged. Three or more are blocked.</p></div></details>
+<details class="qa"><summary>Why is dig returning sinkhole.paloaltonetworks.com a success?</summary><div class="qa-a"><p>The anti-spyware profile intercepted a lookup for a listed domain and replaced the answer.</p></div></details>
+<details class="qa"><summary>Why clone the predefined profiles instead of editing them?</summary><div class="qa-a"><p>Predefined profiles are read-only.</p></div></details>
+</section>
+
+<section class="unit" id="s-evidence" data-section="evidence" data-label="What to submit" data-part="Wrap up">
+<header><span class="sec-n">08</span><h2>Screenshots to capture</h2></header>
+<p>Take each screenshot at its marker. Name the files by lab and number (for example <code>lab08-shot7.png</code>) and submit them in Canvas as your instructor directs.</p>
+<ul class="checklist evidence" data-save="lab8-evidence"><li><input type="checkbox" id="ev8-0"><div><label for="ev8-0">Screenshot 1: The client terminal showing dig returning a real IP address for www.quora.com.</label><a class="ev-where" href="#shot-1">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev8-1"><div><label for="ev8-1">Screenshot 2: The Test Source URL result showing the EDL source is accessible.</label><a class="ev-where" href="#shot-2">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev8-2"><div><label for="ev8-2">Screenshot 3: The Corp-Profiles-Group window with all five Corp- profiles selected.</label><a class="ev-where" href="#shot-3">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev8-3"><div><label for="ev8-3">Screenshot 4: The Security policy with the profile icon showing on all six allow rules.</label><a class="ev-where" href="#shot-4">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev8-4"><div><label for="ev8-4">Screenshot 5: The File Transfer Blocked page for badtarfile.tar.</label><a class="ev-where" href="#shot-5">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev8-5"><div><label for="ev8-5">Screenshot 6: The Data Transfer Blocked page for companyssns.txt.</label><a class="ev-where" href="#shot-6">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev8-6"><div><label for="ev8-6">Screenshot 7: The terminal showing dig returning sinkhole.paloaltonetworks.com.</label><a class="ev-where" href="#shot-7">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev8-7"><div><label for="ev8-7">Screenshot 8: The Threat log showing spyware and vulnerability entries from the attack script.</label><a class="ev-where" href="#shot-8">Find it in the walkthrough</a></div></li></ul>
+<p class="box-note">Checkmarks are saved in this browser only. They help you keep track; the screenshots themselves go to Canvas.</p>
+</section>
+
+<section class="unit" id="s-cheat" data-section="cheat" data-label="Cheat sheet" data-part="Wrap up">
+<header><span class="sec-n">09</span><h2>Cheat sheet</h2></header>
+<div class="cheat">
+<h4>Profiles</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Cloned from</th></tr></thead><tbody><tr><td>Corp-AV</td><td>Antivirus</td><td>default</td></tr><tr><td>Corp-Vuln</td><td>Vulnerability Protection</td><td>strict</td></tr><tr><td>Corp-FileBlock</td><td>File Blocking</td><td>strict file blocking</td></tr><tr><td>Corp-DataFilter</td><td>Data Filtering, US-SSNs, alert 1, block 3, critical</td><td>new</td></tr><tr><td>Corp-AS</td><td>Anti-Spyware, sinkhole malicious-domains-edl</td><td>strict</td></tr><tr><td>Corp-Profiles-Group</td><td>All five above; URL and WildFire none</td><td>new</td></tr></tbody></table></div>
+<h4>Tests</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Test</th><th scope="col">Before</th><th scope="col">After</th></tr></thead><tbody><tr><td><code>badtarfile.tar</code></td><td>Downloads</td><td>File Transfer Blocked</td></tr><tr><td><code>companyssns.txt</code></td><td>Displays</td><td>Data Transfer Blocked</td></tr><tr><td><code>dig @8.8.8.8 www.quora.com</code></td><td>Real IP</td><td>sinkhole.paloaltonetworks.com</td></tr></tbody></table></div>
+<h4>Remember</h4>
+<ul><li>Group on all six allow rules.</li><li>Private window for the retest. Let the script finish.</li></ul>
+</div>
+<p><button type="button" class="btn" data-print="cheat">Print only this cheat sheet</button></p>
+</section>
+<nav class="pager" id="pager" aria-label="Lab navigation"></nav>
+</article>
+</div>
+</main>
+
+<footer id="site-footer"></footer>
+<script src="../assets/js/course.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/activities.js"></script>
+</body>
+</html>

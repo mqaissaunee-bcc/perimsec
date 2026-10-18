@@ -1,0 +1,165 @@
+title: Controlling Access to Network Resources with User-ID
+lede: Write policy about people instead of addresses. You inspect an over-broad rule for a newly acquired company's zone, turn on User-ID for that zone, replace "allow everything" with an approved-apps rule, give only the marketing group its own applications, add an explicit deny, and confirm who was allowed what in the User-ID and Traffic logs.
+snapshot: edu-210-11.0a-11.xml
+uses: Module 9, sections 9.1 to 9.5
+
+= overview | What this lab is for | What this lab is for | Prepare
+IP addresses change; people and their roles don't. {{user-id|User-ID}} maps addresses to usernames and usernames to directory groups, so a rule can say "marketing may use these applications" and keep saying it as laptops move between networks.
+
+The story: your company has acquired another, whose users sit in a new **Acquisition** zone. Another admin left a rule allowing them any application to anywhere. You'll tighten it in three layers: approved apps for everyone, extra apps for the marketing group, and an explicit deny for the rest.
+
+- **You'll leave with:** User-ID enabled on Acquisition, Allow-Corp-Apps (renamed from Acquisition-Allow-All), Allow-Mktg-Apps for the marketing group, and Deny-All-Others at the bottom.
+- **Builds on:** ->Mod 9<-. Simulation 9.2 (who gets what) mirrors this lab's results. You'll do this lab in **week 5**, before Labs 8 to 10, to match the module order.
+- **Sets up:** the Acquisition-zone rules that Labs 8, 13, and 14 assume.
+
+= setup | Before you begin | Before you begin | Prepare
+You'll use the web interface, **Remmina** (Server-Extranet to run the traffic script, Firewall-A for the CLI), and Firefox.
+
+@network
+
+### What's already in the baseline
+Everything through Lab 7, plus an **Acquisition** zone, a rule named **Acquisition-Allow-All**, two application groups (**Allowed-Corp-Apps** and **Allowed-Mktg-Apps**), and a User-ID configuration that reads groups from the lab's LDAP directory. The `Appgenerator-2.sh` script on the extranet server simulates Acquisition users signing in and using applications.
+
+= walkthrough | Walkthrough | Walkthrough of the detailed steps | Do the lab
+@baseline
+
+## 2.2 Examine the firewall configuration
+1. Go to [[Policies > Security]] and open **Acquisition-Allow-All**. Note: source zone Acquisition, destination zone **any**, application **any**, action Allow. Click OK.
+2. Click **Reset Rule Hit Counter > All rules** and confirm.
+3. Go to [[Objects > Application Groups]] and look at **Allowed-Corp-Apps** and **Allowed-Mktg-Apps**.
+!why Why "any to any" is the problem | That rule lets every acquired user reach every zone with every application, including your users' network. It's common after a merger, and it's exactly what User-ID and App-ID together are meant to replace.
+
+## 2.3 Generate traffic from the Acquisition zone
+1. Open **Remmina** and double-click **Server-Extranet**.
+2. Change to the scripts folder and run the generator. Let it finish.
+$srv cd /home/paloalto42/pcaps92019/app.pcaps/
+$srv ./Appgenerator-2.sh
+3. In [[Monitor > Logs > Traffic]], clear filters. Almost everything hits **Acquisition-Allow-All**. Allow 3 to 6 minutes for logs to appear.
+4. Add the **Source User** column and drag it between Receive Time and Source.
+!fix The guide describes a different task | The introduction to 2.3 talks about a data-plane packet capture for a custom application signature. Nothing like that happens: you just run the traffic script.
+!tip Source User is empty for now | That's expected. The zone doesn't have User-ID turned on yet.
+!shot The Traffic log showing Acquisition traffic hitting Acquisition-Allow-All, with an empty Source User column.
+
+## 2.4 Enable User-ID on the Acquisition zone
+1. Go to [[Network > Zones]] and open **Acquisition**.
+2. Check **Enable User Identification** and click OK.
+!stuck The high-level steps skip this | It appears only here in the detailed steps. Without it, the firewall never maps users in this zone, the Source User column stays empty, and the marketing rule can never match.
+!shot The Acquisition zone with Enable User Identification checked.
+
+## 2.5 Turn Acquisition-Allow-All into an approved-apps rule
+1. Open **Acquisition-Allow-All** in [[Policies > Security]].
+2. **General:** rename it `Allow-Corp-Apps`, description `Allows only approved apps for Acquisition users`.
+3. **Application:** uncheck Any and add the **Allowed-Corp-Apps** group. Click OK.
+
+## 2.6 Create the marketing apps rule
+1. Click **Add**. **General:** name `Allow-Mktg-Apps`, description `Allows only users of marketing group to access Mktg apps`.
+2. **Source:** zone **Acquisition**. Under **Source User**, click **Add** and enter `marketing`.
+3. **Destination:** set the zone drop-down to **any**.
+4. **Application:** uncheck Any, add **Allowed-Mktg-Apps**, then check **Depends On** and click **Add to Current Rule**.
+5. **Actions:** confirm Allow. Click OK.
+!why A group, not a list of people | Source user `marketing` is a directory group. When someone joins marketing in the directory, they get access with no firewall change.
+!shot Allow-Mktg-Apps showing source zone Acquisition and source user marketing.
+
+## 2.7 Create the deny rule
+1. Click **Add**. Name `Deny-All-Others`, description `Denies non-approved applications for users in Acquisition zone`.
+2. **Source:** zone **Acquisition**, source user **any**. **Destination:** zone **any**. **Application:** Any.
+3. **Actions:** change Action to **Deny**. Click OK.
+4. Make sure it sits at the bottom, just above intrazone-default. Commit.
+!why Why deny explicitly if interzone-default already does? | Deny-All-Others states the intent, logs by default, and, because its destination zone is any, also catches Acquisition-to-Acquisition traffic that intrazone-default would otherwise allow.
+!stuck Order matters | Above Allow-Mktg-Apps, the deny would shadow it. Last is the only correct place.
+!shot The rulebase with Allow-Corp-Apps, Allow-Mktg-Apps, and Deny-All-Others in that order.
+
+## 2.8 Generate traffic again
+1. Back in the Server-Extranet Remmina window, run the script again from the same folder and let it finish. Then close the window.
+$srv ./Appgenerator-2.sh
+
+## 2.9 Examine User-ID mappings
+1. Go to [[Monitor > Logs > User-ID]]. You should see username-to-IP mappings. If not, run the script again.
+2. In Remmina, open **Firewall-A** and show the mappings from the CLI. Then close it.
+$fw show user ip-user-mapping all
+!shot The User-ID log or the CLI output showing chicago\ usernames mapped to addresses.
+
+## 2.10 Examine the Traffic log
+Apply each filter and read the **Rule** and **Source User** columns.
+$f ( app eq youtube-base )
+$f ( app eq dns )
+$f ( app eq facebook-base )
+$f ( app eq facebook-base ) and ( action eq allow )
+$f ( app eq instagram-base ) and ( user.src eq 'chicago\sholmes' )
+$f ( app eq instagram-base ) and ( user.src eq 'chicago\bbart' )
+!fix Curly quotes break the filter | The guide prints the user filters with curly quotes (‘chicago\sholmes’). The filter parser needs straight single quotes, as above. Use the Copy button.
+!q Q1: Which rule handles youtube-base? | Read the Rule column. The answer depends on which group youtube-base is in. If it's in Allowed-Corp-Apps, you'll see Allow-Corp-Apps; if only in Allowed-Mktg-Apps, you'll see Allow-Mktg-Apps for marketing users and **Deny-All-Others** for everyone else. Open the two groups in Objects > Application Groups to confirm.
+!q Q2: Which rule handles dns? | You'll likely see two: **Allow-Corp-Apps** for Acquisition users and **Users_to_Internet** for the client's own lookups. Check the Source Zone column to tell them apart.
+!q Q3: Which rules handle facebook-base? | **c and d: Allow-Mktg-Apps and Deny-All-Others.** Marketing users are allowed; everyone else in Acquisition is denied.
+!q Q4 to Q6: Which users get facebook-base and instagram-base? | The answers are whoever is in the marketing group in the lab directory. The allowed filter (Q4) lists them in Source User. For sholmes and bbart, an allowed entry means **Yes**; only denied entries (Deny-All-Others) means **No**.
+!shot The Traffic log filtered to facebook-base showing both Allow-Mktg-Apps and Deny-All-Others entries with their users.
+
+= reference | Reference | User-ID reference | Understand
+### The two halves of User-ID
+| Half | Answers | Comes from |
+| User mapping | Which user is at this IP? | Server monitoring, agents, GlobalProtect, Authentication Portal, syslog, XML API |
+| Group mapping | Which groups is this user in? | LDAP queries to the directory (a group mapping configuration) |
+
+### Useful CLI
+$fw show user ip-user-mapping all
+$fw show user group list
+`show user group list` shows the groups the firewall has read from the directory. Follow it with `show user group name` and a group exactly as listed to see that group's members.
+
+### Filter fields
+| Field | Example |
+| `user.src` | `( user.src eq 'chicago\sholmes' )` (quotes required: the backslash) |
+| `zone.src` | `( zone.src eq Acquisition )` |
+| `rule` | `( rule eq Deny-All-Others )` |
+
+= stuck | Where people get stuck | Where people get stuck | Understand
+| Symptom | Likely cause | Fix |
+| Source User column stays empty | User-ID not enabled on Acquisition | Do task 2.4 and commit. |
+| User-ID log is empty | Script not run since the commit | Run Appgenerator-2.sh again and wait a few minutes. |
+| Marketing users are denied | Deny-All-Others above Allow-Mktg-Apps | Move the deny to the bottom. |
+| facebook-base never allowed | Group typed wrong, or no dependencies | Re-enter `marketing`; add Depends On. |
+| User filter returns an error | Curly quotes or no quotes | Use straight quotes: `'chicago\sholmes'`. |
+| Logs still show Acquisition-Allow-All | Old entries from before the rename | Look at entries after your last commit time. |
+
+= production | In production | How this looks on a real firewall | Understand
+- **Mapping is the hard part.** In production, the firewall learns users from domain controller logs (server monitoring), GlobalProtect, or an identity provider. Every unmapped user falls into "any," so coverage matters.
+- **Enable User-ID only on internal zones.** Never on the internet-facing zone; it would try to identify untrusted sources.
+- **Watch group mapping scope.** Limit group mapping to the groups policy actually uses, so the firewall isn't reading the whole directory.
+- **Mergers are a real use case.** A separate zone for an acquired network, tightened with user and application rules, is a common integration pattern.
+- **Other vendors:** Fortinet FSSO, Cisco ISE with pxGrid, and Check Point Identity Awareness solve the same mapping problem.
+
+= selfcheck | Check yourself | Check yourself | Wrap up
+?? Why did the Source User column stay empty before task 2.4?
+=> The firewall only maps users in zones with User Identification enabled.
+
+?? Why use the group `marketing` instead of listing each marketing user?
+=> Membership is managed in the directory. New marketing users get access with no firewall change.
+
+?? What happens if Deny-All-Others is placed above Allow-Mktg-Apps?
+=> It shadows the marketing rule, and marketing users are denied too.
+
+?? What does Deny-All-Others catch that interzone-default wouldn't?
+=> Intrazone traffic within Acquisition, because its destination zone is any, and it logs by default.
+
+?? Why does the user filter need quotes?
+=> The username contains a backslash (chicago\sholmes), which must be quoted.
+
+= evidence | What to submit | Screenshots to capture | Wrap up
+Take each screenshot at its marker. Name the files by lab and number (for example `lab11-shot4.png`) and submit them in Canvas as your instructor directs.
+
+= cheat | Cheat sheet | Cheat sheet | Wrap up
+<div class="cheat">
+### Rules for the Acquisition zone (in order)
+| Rule | Source | Destination | Application | Action |
+| Allow-Corp-Apps | Acquisition, any user | any | Allowed-Corp-Apps | Allow |
+| Allow-Mktg-Apps | Acquisition, user `marketing` | any | Allowed-Mktg-Apps + dependencies | Allow |
+| Deny-All-Others | Acquisition, any user | any | any | Deny |
+### Commands and filters
+| Purpose | Use |
+| Generate traffic | `./Appgenerator-2.sh` in `~/pcaps92019/app.pcaps/` |
+| See mappings | `show user ip-user-mapping all` |
+| One user | `( user.src eq 'chicago\sholmes' )` |
+### Remember
+- Enable User Identification on the zone.
+- Deny-All-Others goes last.
+</div>
+@cheatprint

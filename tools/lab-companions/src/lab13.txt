@@ -1,0 +1,199 @@
+title: Locating Valuable Information Using Logs and Reports
+lede: Answer questions with the firewall's own data. After a script fills the logs, you use Dashboard widgets, the ACC with global filters, filtered Threat and Traffic logs, App Scope's Threat Monitor, predefined reports, and a custom report, each time choosing the tool that answers the question fastest.
+snapshot: edu-210-11.0a-13.xml
+uses: Module 14, sections 14.1 to 14.5
+
+= overview | What this lab is for | What this lab is for | Prepare
+A firewall that blocks threats but can't tell you what happened is only half useful. Analysts, auditors, and managers all ask questions: what's attacking us, who's using that application, did the block actually work? This lab tours every place PAN-OS keeps answers and practices the habit that makes them useful: **start broad, then filter**.
+
+The tools go from summary to detail. The **Dashboard** shows the last hour at a glance. The **{{acc|ACC}}** lets you pivot on any value with global filters. **Logs** show every event. **{{app-scope|App Scope}}** shows trends. **Reports** package it for other people.
+
+- **You'll leave with:** practice with each tool, all predefined reports enabled, and a custom report named Apps Used by Internal Zones.
+- **Builds on:** ->Mod 14<-. Simulation 14.1 (where would you look?) and 14.2 (log filter builder) are direct rehearsals.
+- **Sets up:** the troubleshooting you'll do in the capstone, and any job that involves a SIEM.
+
+= setup | Before you begin | Before you begin | Prepare
+You'll use the web interface throughout, after running one script on the extranet server.
+
+@network
+
+### What's already in the baseline
+A complete configuration from the earlier labs, including the Acquisition zone and its users, Security Profiles, and URL Filtering. The `UsingLogs-V1.sh` script replays attacks, browsing, and application traffic so every log has data.
+
+### This lab is mostly reading
+There's little configuration. Most steps ask you to look and answer the guide's questions. The answers below come with an explanation; your counts and names will differ from the screenshots.
+
+= walkthrough | Walkthrough | Walkthrough of the detailed steps | Do the lab
+@baseline
+
+## 2.2 Generate traffic
+1. Open **Remmina** and double-click **Server-Extranet**.
+2. Run the script and press Enter to start it. Let it run 5 to 7 minutes, uninterrupted.
+$srv ./UsingLogs-V1.sh
+3. When it finishes, close the session and Remmina.
+!stuck Don't start early | Widgets, the ACC, and App Scope summarize what's in the logs. Before the script finishes, they're thin or empty.
+
+## 2.3 Recent threats on the Dashboard
+1. On the **Dashboard**, click **Widgets > Logs > Threat Logs**. (Greyed out means it's already shown.)
+2. Add **Widgets > Logs > URL Filtering Logs** and **Logs > Data Filtering Logs**.
+!q Q1: Any threats in the Threat Logs widget? | **a. Yes**, once the script has run. It shows the 10 most recent threats from the last hour.
+!q Q2: Any URLs in the URL Filtering Logs widget? | **a. Yes.** The script's browsing generates URL entries.
+!q Q3: Any files in the Data Filtering Logs widget? | It **may be b. No.** The guide says so too: the widget only shows the last hour, and the script may not produce data filtering events in that window.
+!shot The Dashboard showing the Threat Logs and URL Filtering Logs widgets with entries.
+
+## 2.4 Recent applications on the Dashboard
+1. Add **Widgets > Application > Top Applications**, then **Application > Top High Risk Applications**.
+2. Risk 4 applications show in orange, risk 5 in red. Allow 3 to 5 minutes if they're empty.
+
+## 2.5 Threats in the ACC
+1. Click the **ACC** tab. Under **Global Filters**, click **Clear all** if anything's there. Set **Time** to **Last Hour** and choose the **Threat Activity** tab.
+2. In the Threat Activity table, hover over a **high** severity item and click the small arrow to promote it to a global filter.
+3. Find it under Global Filters, note how every widget changes, then click **Clear all**.
+!q Q4: Do you see threats in the Threat Activity widget? | **b. Yes, multiple threats are listed**: some mix of flood, scan, spyware, packet, vulnerability, and virus.
+!q Q5: Did the table change to show only high severity? | **a. Yes.** Promoting a value makes it a global filter for every widget.
+!q Q6: Is high severity listed in the Global Filters box? | **b. Yes, the high severity is listed.**
+!q Q7: Which widgets show hosts that visited or resolved malicious domains? | **a and d: Hosts Visiting Malicious URLs and Hosts Resolving Malicious Domains.**
+!fix "Last seven days" versus Last Hour | The guide's notes mention counts "in the last seven days," but step 1 sets the time to Last Hour. Whatever range you pick is the range the widgets show.
+!shot The ACC with high severity applied as a global filter.
+
+## 2.6 Applications in the ACC
+1. In the ACC, open **Network Activity**. Collapse the sidebar with its small arrow for more room.
+2. In **Application Usage**, choose the **sessions** radio button and hover over **web-browsing** in the chart.
+3. In the table below, hover over web-browsing and click the left arrow to make it a global filter. Reopen the sidebar to see it.
+4. Scroll to **Rule Usage**, choose **bytes**, and set the time to Last Hour.
+5. Click **Jump to Logs** in that widget and choose the **Traffic log**.
+6. Clear the log filter, return to the ACC, and click **Clear all** under Global Filters.
+!q Q8: Which rules allowed web-browsing? | Read the Rule Usage widget. In this baseline, expect **Users_to_Internet** and **Users_to_Extranet** (b and d). Allow-Corp-Apps also appears if web-browsing is one of Acquisition's approved apps.
+!q Q9: Which log opens? | **a. Traffic.**
+!q Q10: Which filters were applied automatically? | **a and b: a time range filter and the application filter** you promoted. Check the filter text in the log to confirm.
+!shot The Traffic log opened from Jump to Logs, showing the filter it applied.
+
+## 2.7 Threats in the Threat log
+1. Go to [[Monitor > Logs > Threat]] and clear any filter.
+2. Click **+** (Add Log Filter): **and**, **Severity**, **greater than or equal**, **high**. Add, Apply, then click the arrow to run it.
+$f ( severity geq high )
+3. Clear it, then build: **and**, **Source User**, **equal**, `chicago\escrooge`. Add, Apply, run it.
+$f ( user.src eq 'chicago\escrooge' )
+4. Clear the filter.
+!q Q11: Is the log showing only high severity or greater? | **a. True.**
+!stuck Typing the user filter yourself | The Filter Builder adds the quotes for you. If you type it, the backslash means you need straight single quotes, as above.
+!shot The Threat log filtered to severity high or greater.
+
+## 2.8 Applications in the Traffic log
+1. Go to [[Monitor > Logs > Traffic]] and clear any filter.
+2. Add a filter: **and**, **Source Zone**, **equal**, **Acquisition**. Apply and run it.
+$f ( zone.src eq Acquisition )
+3. Open Add Log Filter again. Edit the existing clause to `Users_Net`, then add **and**, **Application**, **equal**, **web-browsing**. Apply and run.
+$f ( zone.src eq Users_Net ) and ( app eq web-browsing )
+!q Q12: Is the log showing only Acquisition traffic? | **a. True.**
+!q Q13: Is it showing only web-browsing from Users_Net? | **a. True.**
+!fix The guide says "Threat log" here | Steps 5 and 11 say to apply the filter to the Threat log, and step 6 says it shows "threats." You're in the **Traffic** log, filtering sessions. One note also mentions a "dmz zone"; it means Acquisition.
+!shot The Traffic log filtered to web-browsing from Users_Net.
+
+## 2.9 App Scope Threat Monitor
+1. Go to [[Monitor > App Scope > Threat Monitor]].
+2. Click **Last 7 days**, then change **Top 10** to **Top 25**.
+3. Change **Threat** to **Source User**, choose **Show all threat types**, and hover over a bar to see the user and count.
+!shot The Threat Monitor showing the top 25 by source user over the last 7 days.
+
+## 2.10 Enable predefined reports
+1. Go to [[Device > Setup > Management]] and click the gear on **Logging and Reporting Settings**.
+2. On the **Pre-Defined Reports** tab, click **Select All** and click OK. Commit.
+
+## 2.11 Read predefined reports
+1. Go to [[Monitor > Reports]].
+2. In the report list on the right, expand **Application Reports** and click **top-applications**. It shows the previous day's top applications.
+3. Open **Traffic Reports > top-sources** as well.
+!fix Predefined, not Custom | The guide says to expand **Custom Reports** to find top-applications. top-applications and top-sources are **predefined** reports, listed by category in the right-hand panel.
+!stuck Grey dates | Reports are generated daily, so a lab environment may only have data for some days. Click through the calendar dates until one shows data.
+!shot The top-applications predefined report with data.
+
+## 2.12 Build a custom report
+1. Go to [[Monitor > Manage Custom Reports]] and click **Add**.
+2. Name `Apps Used by Internal Zones`, Database **Summary Databases > Traffic**, **Scheduled** checked, Time Frame **Last 7 Days**, Sort By **Sessions** and **Top 100**, Group By **Source Zone** and **5 Groups**. Selected Columns: **Source Zone, Action, Application, Bytes**.
+3. Click **Filter Builder**: **and**, **Source Zone**, **not equal**, **Internet**. Add, Apply, OK.
+4. Open the report and click **Run Now**. Read the results by zone.
+$f ( zone.src neq Internet )
+!tip Ask why each zone appears | The filter excludes traffic from the internet, which leaves the internal zones. Notice which ones show up (the guide mentions Extranet and Acquisition) and think about why Users_Net might be small or missing in this data.
+!shot The Apps Used by Internal Zones report results grouped by source zone.
+
+= reference | Reference | Monitoring reference | Understand
+### Which tool for which question
+| Question | Fastest tool |
+| What happened in the last hour? | Dashboard widgets |
+| What's the big picture, and what's related to this value? | ACC with global filters |
+| Exactly which sessions or events? | Logs with filters |
+| How has this changed over days? | App Scope |
+| What do I hand to someone else? | Predefined, custom, or PDF summary reports |
+| Is this a pattern of compromise? | Correlated events (Module 14) |
+
+### Filters from this lab
+| Purpose | Filter |
+| High or worse | `( severity geq high )` |
+| One user | `( user.src eq 'chicago\escrooge' )` |
+| One zone | `( zone.src eq Acquisition )` |
+| Zone and app | `( zone.src eq Users_Net ) and ( app eq web-browsing )` |
+| Exclude internet | `( zone.src neq Internet )` |
+
+### The CLI view of the same logs
+`direction equal backward` lists the newest entries first. The web interface is far easier for filtering; the CLI matters when you only have SSH.
+$fw show log threat direction equal backward
+$fw show log traffic direction equal backward
+
+= stuck | Where people get stuck | Where people get stuck | Understand
+| Symptom | Likely cause | Fix |
+| Widgets or ACC empty | Script not finished, or wrong time range | Wait, refresh, check the Time setting. |
+| ACC numbers oddly small | A global filter is still applied | Clear all under Global Filters. |
+| A log shows nothing | Leftover filter from an earlier task | Clear the filter first, every time. |
+| User filter error | Missing quotes around chicago\escrooge | Use straight single quotes, or the Filter Builder. |
+| Report has no data | Selected date has none | Pick another date; reports are daily. |
+| Can't find top-applications under Custom Reports | It's a predefined report | Look under Application Reports. |
+
+= production | In production | How this looks on a real firewall | Understand
+- **Forward logs off the firewall.** Firewalls keep limited history. Production deployments forward logs to Panorama, Strata Logging Service, or a SIEM through log forwarding profiles (Module 14).
+- **Schedule the reports people need.** Weekly top threats and high-risk applications, emailed as a PDF summary, is a common deliverable for managers and auditors.
+- **Build saved filters.** Analysts keep a library of filters for recurring questions: a user, a server, denied traffic to a sensitive zone.
+- **Correlate.** Single events rarely tell the story. Correlation objects and SIEM rules connect a spyware hit, a sinkholed lookup, and odd traffic from the same host.
+- **Other vendors:** FortiView and FortiAnalyzer, Cisco FMC dashboards, and Check Point SmartView play the ACC and reporting roles.
+
+= selfcheck | Check yourself | Check yourself | Wrap up
+?? You want every widget in the ACC to show only one source user. What do you do?
+=> Promote that user to a global filter.
+
+?? The ACC shows a spike in a threat. Where do you go for the individual events?
+=> The Threat log, using Jump to Logs or a filter on that threat.
+
+?? Write a Threat log filter for critical threats from the Acquisition zone.
+=> `( severity eq critical ) and ( zone.src eq Acquisition )`
+
+?? Why might a predefined report show no data for today?
+=> Predefined reports are generated daily from the previous day's data.
+
+?? What does the custom report's filter `( zone.src neq Internet )` leave out, and why?
+=> Traffic that starts on the internet, so the report focuses on what internal zones are using.
+
+= evidence | What to submit | Screenshots to capture | Wrap up
+Take each screenshot at its marker. Name the files by lab and number (for example `lab13-shot8.png`) and submit them in Canvas as your instructor directs.
+
+= cheat | Cheat sheet | Cheat sheet | Wrap up
+<div class="cheat">
+### Where things live
+| Tool | Path |
+| Widgets | Dashboard > Widgets |
+| ACC | ACC tab (Threat Activity, Network Activity; Global Filters on the left) |
+| Logs | [[Monitor > Logs]] |
+| Trends | [[Monitor > App Scope > Threat Monitor]] |
+| Enable reports | [[Device > Setup > Management]], Logging and Reporting Settings |
+| Read reports | [[Monitor > Reports]] |
+| Custom reports | [[Monitor > Manage Custom Reports]] |
+### Custom report
+| Setting | Value |
+| Name | Apps Used by Internal Zones |
+| Database | Summary: Traffic |
+| Time, sort, group | Last 7 Days; Sessions, Top 100; Source Zone, 5 groups |
+| Columns | Source Zone, Action, Application, Bytes |
+| Filter | `( zone.src neq Internet )` |
+### Remember
+- Let the script finish. Clear filters before every task.
+</div>
+@cheatprint

@@ -1,0 +1,192 @@
+title: Blocking Inappropriate Web Traffic with Advanced URL Filtering
+lede: Control the web two ways and compare them. You block risky URL categories with a Security rule, then with a URL Filtering profile that also logs everything allowed; add a custom category for specific sites and enforce it both ways; and finish by blocking a URL fed from an external dynamic list.
+snapshot: edu-210-11.0a-09.xml
+uses: Module 11, sections 11.1 to 11.5
+
+= overview | What this lab is for | What this lab is for | Prepare
+PAN-OS gives you two tools for web control, and this lab makes you use both on the same sites so the difference sticks:
+
+- A **Security rule with URL categories** as match criteria. It allows or denies whole sessions, and you see it in the Traffic log under the rule's name.
+- A **{{url-filtering|URL Filtering profile}}** attached to allow rules. It acts per category (block, alert, allow, continue, override), and with alert it records every site users visit, not just blocked ones.
+
+You'll also use a {{custom-url-category|custom URL category}} for a short list of sites and an {{edl|external dynamic list}} you can update without a commit.
+
+- **You'll leave with:** Block-Bad-URLs (category deny rule), Corp-URL-Profile in Corp-Profiles-Group, the Block-Per-Company-Policy custom category, and malicious-urls-edl.
+- **Builds on:** ->Mod 11<-. Simulation 11.1 (what happens to this URL?) covers precedence between custom categories, EDLs, and PAN-DB.
+- **Sets up:** the capstone's Block_Bad_URLs rule and Corp-URL profile.
+
+= setup | Before you begin | Before you begin | Prepare
+You'll use the web interface and Firefox private windows. The desktop also has a **Clear Logs Firewall-A** icon.
+
+@network
+
+### What's already in the baseline
+Everything through Lab 8, including Corp-Profiles-Group on the allow rules (with URL Filtering still set to None).
+
+### Keep track of Block-Bad-URLs
+You'll enable, disable, and re-enable this rule several times so that each test exercises only one tool. Before every test, check whether it's supposed to be on. Disabled rules appear in italics.
+
+| Task | Block-Bad-URLs should be |
+| 2.4 | Enabled |
+| 2.6 | Disabled |
+| 2.8 | Enabled (with the custom category added) |
+| 2.10 | Disabled |
+| 2.13 | Enabled (with the EDL added) |
+
+= walkthrough | Walkthrough | Walkthrough of the detailed steps | Do the lab
+@baseline
+
+## 2.2 Clear logs and test two sites
+1. Double-click **Clear Logs Firewall-A** on the desktop, confirm the logs cleared, and press Enter.
+2. In Firefox, open `http://www.hacker9.com` (category hacking). It loads.
+3. Open `http://www.hidester.com/proxy` (category proxy-avoidance-and-anonymizers). It loads, redirecting to vpncentral.com. Close Firefox.
+!fix Wrong task title | The guide calls this "Generate Traffic Without Security Profiles." It actually clears the logs and confirms two sites aren't blocked yet.
+
+## 2.3 Create a Security rule that blocks categories
+1. In [[Policies > Security]], show the **URL Category** column if it's hidden (any column drop-down > Columns).
+2. Click **Add**. Name `Block-Bad-URLs`, description `Blocks bad URLs based on categories`.
+3. Source zone **Users_Net**; destination zone **Internet**; Application **Any**.
+4. **Service/URL Category:** Service **application-default**. Add these categories: adult, command-and-control, extremism, hacking, high-risk, malware, nudity, parked, peer-to-peer, phishing, proxy-avoidance-and-anonymizers, questionable.
+5. **Actions:** **Deny**, Log at Session End checked. Click OK.
+6. Select the rule and choose **Move > Move Top**. Commit.
+!fix Name drift | Step 9 calls the rule "block-known-bad-urls." It's Block-Bad-URLs.
+!stuck Move Top puts it above the known-bad address rules | That's fine for this lab. What matters is that it's above Users_to_Internet; below it, the deny would be shadowed.
+!shot The rulebase with Block-Bad-URLs at the top and its URL categories visible.
+
+## 2.4 Test the category deny rule
+1. Open a **private** Firefox window. Browse to `http://www.hacker9.com`. You get a block page saying web-browsing was blocked.
+2. Browse to `http://www.hidester.com/proxy`. Same kind of page. Close Firefox.
+3. Go to [[Monitor > Logs > URL Filtering]] and find the blocked entries.
+!why "Application web-browsing blocked"? | The page is the generic application block page, because a Security rule denied the session. The category is why the rule matched. A URL Filtering profile shows a different page that names the category, as you'll see in 2.10.
+!shot The block page for hacker9.com produced by the Block-Bad-URLs rule.
+!shot The URL Filtering log showing the blocked hacker9 and hidester entries.
+
+## 2.5 Create a URL Filtering profile
+1. Go to [[Objects > Security Profiles > URL Filtering]] and click **Add**. Name `Corp-URL-Profile`, description `Company URL Filtering profile`.
+2. Click the small triangle on the **Site Access** column header and choose **Set All Actions > alert**.
+3. Set **block** for: adult, command-and-control, copyright-infringement, extremism, hacking, high-risk, malware, nudity, parked, peer-to-peer, phishing, proxy-avoidance-and-anonymizers, questionable, unknown. Click OK.
+!why alert versus allow | Both let the user through. **alert** writes a URL Filtering log entry; **allow** doesn't. Setting everything to alert first is what makes the profile a record of all web activity.
+!tip Two more categories than the rule | The profile adds copyright-infringement and unknown. The guide's screenshot only shows four categories set; set all fourteen.
+
+## 2.6 Add the profile to the group and disable the rule
+1. Go to [[Objects > Security Profile Groups]], open **Corp-Profiles-Group**, set **URL Filtering Profile** to **Corp-URL-Profile**, and click OK.
+2. In [[Policies > Security]], select Block-Bad-URLs and click **Disable**. It turns italic.
+3. Commit.
+!fix Name drift | The guide's heading calls the profile "Corp-URL-Filtering." Select the Corp-URL-Profile you created.
+!shot Corp-Profiles-Group showing Corp-URL-Profile in the URL Filtering slot.
+
+## 2.7 Create a custom URL category
+1. In a private window, open `http://www.nbcnews.com`. It loads. Close Firefox.
+2. Go to [[Objects > Custom Objects > URL Category]] and click **Add**. Cancel the trailing-slash notice.
+3. Name `Block-Per-Company-Policy`, description `URLs that are blocked by company policy.`, Type **URL List**. Add `*.nbcnews.com` and `*.theguardian.com`. Click OK.
+4. Open **Block-Bad-URLs**, and on **Service/URL Category** add **Block-Per-Company-Policy**. Click OK.
+5. Select Block-Bad-URLs and click **Enable**. Commit.
+!tip Wildcard syntax | `*.nbcnews.com` matches www.nbcnews.com and other subdomains. Enter the entries exactly as shown.
+
+## 2.8 Test the custom category in the Security rule
+1. In a private window, browse to `www.nbcnews.com` and `www.theguardian.com`. Both show the application block page. Close Firefox.
+2. In [[Monitor > Logs > URL Filtering]], apply the filter below.
+$f ( action eq block-url )
+!shot The URL Filtering log showing nbcnews and theguardian blocked.
+
+## 2.9 Add the custom category to the profile
+1. Open **Corp-URL-Profile**. Under **Custom URL Categories**, set Block-Per-Company-Policy's Site Access to **block**. Click OK.
+2. Select Block-Bad-URLs and click **Disable**. Commit.
+
+## 2.10 Test the custom category in the profile
+1. In a private window, browse to `www.nbcnews.com` and `www.theguardian.com`. This time you get **Web Page Blocked**, the URL Filtering block page, which names the category.
+2. Close Firefox.
+!shot The Web Page Blocked page from the URL Filtering profile, showing the category.
+
+## 2.11 Create an EDL of malicious URLs
+1. Go to [[Objects > External Dynamic Lists]] and click **Add**. Cancel the notice.
+2. Name `malicious-urls-edl`, Type **URL List**, description `List of malicious URLs maintained on Extranet server`, Source `http://192.168.50.80/malicious-urls.txt`, Check for updates **Every Five Minutes**. Click OK.
+3. Reopen it, cancel the notice, and click **Test Source URL**. Close, then OK.
+!tip What's on the list | One test URL: www.popurls.com.
+
+## 2.12 Block the EDL with the Security rule
+1. Open **Block-Bad-URLs**. On **Service/URL Category**, add **malicious-urls-edl**. Click OK.
+2. Select the rule and click **Enable**. Commit.
+
+## 2.13 Test the EDL
+1. In a private window, browse to `www.popurls.com`. You get the application block page. Close Firefox.
+2. In the URL Filtering log, clear filters and apply `( action eq block-url )`. You see the popurls entries.
+!why Why an EDL beats editing the rule | The firewall rereads the list every five minutes. Add a URL to the file on the server and it's blocked soon after, with no commit.
+!shot The URL Filtering log showing www.popurls.com blocked.
+
+= reference | Reference | URL Filtering reference | Understand
+### Rule match versus profile
+| | Security rule with URL categories | URL Filtering profile |
+| Acts on | Whole session: allow or deny | Each URL, per category action |
+| Logs | Traffic log under the rule name, plus URL log for blocks | URL Filtering log for alert, block, continue, override |
+| User sees | Application block page | Web Page Blocked page with the category |
+| Best for | Hard blocks of a few categories | Visibility and nuanced actions on everything |
+
+### Profile actions
+| Action | User | Logged |
+| allow | Allowed | No |
+| alert | Allowed | Yes |
+| block | Blocked | Yes |
+| continue | Warning page, may proceed | Yes |
+| override | Needs a password to proceed | Yes |
+
+### Precedence when a URL matches several things
+Custom categories and EDLs are checked before PAN-DB categories. If a URL is in more than one category with different actions, the most restrictive action wins (Module 11).
+
+### CLI check
+$fw test url www.hacker9.com
+Shows the category PAN-DB assigns to a URL.
+
+= stuck | Where people get stuck | Where people get stuck | Understand
+| Symptom | Likely cause | Fix |
+| Profile test shows the application block page | Block-Bad-URLs is still enabled | Disable it for 2.10; check the state table above. |
+| Site loads when it should be blocked | Cached page, or not committed | Use a private window; commit. |
+| Nothing in the URL Filtering log for allowed sites | Categories left at allow, not alert | Set All Actions > alert, then the blocks. |
+| Custom category doesn't match | Missing wildcard, or extra http:// in the entry | Use `*.nbcnews.com`. |
+| Deny rule never hits | It's below Users_to_Internet | Move Top. |
+| EDL test fails | URL typo | `http://192.168.50.80/malicious-urls.txt` |
+
+= production | In production | How this looks on a real firewall | Understand
+- **Profiles do most of the work.** Most organizations attach a URL Filtering profile to every internet allow rule and use category deny rules sparingly.
+- **Alert on everything.** Logging all categories is what lets you answer "who visited this site?" during an incident.
+- **Block unknown and newly-registered domains.** Many attacks use brand-new domains; blocking or warning on those categories is a common recommendation.
+- **HTTPS needs decryption for full detail.** Without decryption, the firewall still sees the hostname (SNI) and can categorize it, but it can't see full URL paths or show block pages cleanly. Lab 12 adds decryption.
+- **Other vendors:** Fortinet FortiGuard web filtering, Cisco Talos URL categories, and Check Point URL Filtering follow the same profile model.
+
+= selfcheck | Check yourself | Check yourself | Wrap up
+?? Both a deny rule and a profile can block hacker9.com. What does the profile give you that the rule doesn't?
+=> Per-category actions and a log of every allowed site (with alert), plus a block page that names the category.
+
+?? Why disable Block-Bad-URLs before testing the profile?
+=> Otherwise the rule blocks first and you never test the profile.
+
+?? What's the difference between allow and alert in a URL Filtering profile?
+=> Both let the user through; alert also writes a URL Filtering log entry.
+
+?? You add a URL to the file behind malicious-urls-edl. Do you need to commit?
+=> No. The firewall rereads the list on its schedule (every five minutes here).
+
+?? Does `*.nbcnews.com` match www.nbcnews.com?
+=> Yes. The wildcard covers its subdomains.
+
+= evidence | What to submit | Screenshots to capture | Wrap up
+Take each screenshot at its marker. Name the files by lab and number (for example `lab09-shot5.png`) and submit them in Canvas as your instructor directs.
+
+= cheat | Cheat sheet | Cheat sheet | Wrap up
+<div class="cheat">
+### Objects
+| Name | What |
+| Block-Bad-URLs | Users_Net to Internet, 12 categories + Block-Per-Company-Policy + malicious-urls-edl, Deny, top |
+| Corp-URL-Profile | All alert; 14 categories block; custom category block |
+| Block-Per-Company-Policy | URL List: `*.nbcnews.com`, `*.theguardian.com` |
+| malicious-urls-edl | URL List from `http://192.168.50.80/malicious-urls.txt`, every 5 minutes |
+### Test sites
+| Site | Blocked by |
+| hacker9.com, hidester.com/proxy | Rule (2.4) |
+| nbcnews.com, theguardian.com | Rule (2.8), then profile (2.10) |
+| popurls.com | Rule with EDL (2.13) |
+### Remember
+- Check whether Block-Bad-URLs is enabled before each test.
+- Private window every time. Filter: `( action eq block-url )`.
+</div>
+@cheatprint

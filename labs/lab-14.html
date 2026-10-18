@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab 14 companion: Capstone | Perimeter Security</title>
+<meta name="description" content="Lab 14 companion for Perimeter Security: walkthrough of the detailed steps for Capstone, screenshots to capture, troubleshooting, and a cheat sheet.">
+<link rel="stylesheet" href="../assets/css/site.css">
+<script src="../assets/js/prefs.js"></script>
+</head>
+<body data-root=".." data-lab="14" data-page="labs/index.html">
+<a class="skip-link" href="#main">Skip to main content</a>
+<header id="site-header"></header>
+
+<main id="main" class="page">
+<div class="module-hero">
+<p class="kicker">Lab 14 of 14 in NDG Online. Week 11, due Wed 12/16. The capstone.</p>
+<h1>Lab 14: Capstone</h1>
+<p class="lede">Build a working firewall from a nearly empty configuration, to a written specification, with no click-by-click steps. This companion gives you a build order, points each objective back to the lab where you first did it, and lists every test the capstone uses to decide you're done.</p>
+<ul class="facts"><li>About 2 to 3 hours</li><li>NDG Online, Lab 14</li><li>Uses Labs 1 to 13</li><li>Snapshot <code>edu-210-11.0a-Capstone-start.xml</code></li><li>9 screenshots to capture</li></ul>
+<div class="lab-hero-links"><a class="btn" href="../capstone.html">Capstone briefing page</a><a class="btn btn-quiet" href="index.html">All lab companions</a><a class="btn btn-quiet" href="#s-evidence">Screenshot checklist</a></div>
+</div>
+
+<div class="module-layout">
+<nav class="module-rail" aria-label="This lab companion">
+<h2>This lab</h2>
+<div class="progress-wrap"><span class="label" id="rail-meter-label">0 sections reviewed</span>
+<div class="meter" role="progressbar" aria-labelledby="rail-meter-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="rail-meter"></span></div></div>
+<ol id="rail-list"></ol>
+<p><a href="#s-cheat">Jump to the cheat sheet</a></p>
+</nav>
+<article>
+<section class="unit" id="s-overview" data-section="overview" data-label="What this lab is for" data-part="Prepare">
+<header><span class="sec-n">01</span><h2>What this lab is for</h2></header>
+<p>Every earlier lab told you what to click. The capstone reads like a work ticket: objectives and acceptance tests. Everything in it is something you've already done; the skill being tested is doing it in a sensible order and proving each part works before moving on.</p>
+<p>It's open book. Use your notes, this site, and the earlier lab companions. This page is built to be used that way: each objective below links to the lab where you learned it, so you can reopen that walkthrough instead of guessing.</p>
+<ul><li><strong>You'll leave with:</strong> interfaces, routing, zones with User-ID, source NAT, a Security policy with a URL-category block rule and application-based allow rules, and a full Security Profile group, all passing the guide's tests.</li><li><strong>Builds on:</strong> Labs 4 to 10 especially. See the [capstone briefing page](../capstone.html) for the objective map and the guide's traps.</li><li><strong>Graded:</strong> yes, along with the final exam in Canvas.</li></ul>
+</section>
+
+<section class="unit" id="s-setup" data-section="setup" data-label="Before you begin" data-part="Prepare">
+<header><span class="sec-n">02</span><h2>Before you begin</h2></header>
+<p>Read the whole guide once before you touch the firewall, and list every name you have to create. Grading checks names exactly, including capitalization.</p>
+<div class="table-wrap"><table>
+<caption class="visually-hidden">Hosts in the lab network</caption>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td></tr>
+</tbody></table></div>
+<p class="box-note">Usernames and passwords are in the Lab Settings table on page 5 of each lab guide. They are not repeated here, because this site is public.</p>
+<h4>Names you must create exactly</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Object</th><th scope="col">Name</th></tr></thead><tbody><tr><td>Virtual router</td><td><code>VR-1</code></td></tr><tr><td>Default route</td><td><code>Default-Route</code></td></tr><tr><td>Interface Management Profile</td><td><code>Allow-ping</code></td></tr><tr><td>Zones</td><td><code>Internet</code>, <code>Users</code>, <code>Extranet</code></td></tr><tr><td>NAT rules</td><td><code>Users_to_Internet</code>, <code>Extranet_to_Internet</code></td></tr><tr><td>Security rules</td><td><code>Block_Bad_URLs</code>, <code>Users_to_Extranet</code>, <code>Users_to_Internet</code>, <code>Extranet_to_Internet</code></td></tr><tr><td>Profiles</td><td><code>Corp-URL</code>, <code>Corp-FB</code>, <code>Corp-AV</code>, <code>Corp-AS</code>, <code>Corp-Vuln</code>, <code>Corp-WF</code></td></tr><tr><td>Profile group</td><td><code>Corp-Profiles</code></td></tr></tbody></table></div>
+<div class="callout stuck"><p class="c-title">These are not the names from earlier labs</p><p>The zone is <strong>Users</strong>, not Users_Net. The block rule is <strong>Block_Bad_URLs</strong> with underscores, not Block-Bad-URLs. The file blocking profile is <strong>Corp-FB</strong>, the group is <strong>Corp-Profiles</strong>. Use the capstone's names, not your habits.</p></div>
+</section>
+
+<section class="unit" id="s-walkthrough" data-section="walkthrough" data-label="Build plan" data-part="Do the lab">
+<header><span class="sec-n">03</span><h2>Build plan, objective by objective</h2></header>
+<p class="task-intro">The capstone has no Detailed Lab Steps. Its sections are numbered 1.1 to 1.6; this plan follows them and adds a test checkpoint after each.</p>
+<h3 class="task-head"><span class="tn">1.1</span>Load the starting configuration</h3>
+<ol class="steps-list" start="1">
+<li>Log in to the client and to the firewall at <code>https://192.168.1.254</code> with the credentials in Lab Settings.</li>
+<li>At <span class="path" data-path="Device &gt; Setup &gt; Operations"></span>, load <code>edu-210-11.0a-Capstone-start.xml</code>, confirm the load in Tasks, and <strong>commit</strong>.</li>
+</ol>
+<div class="callout tip"><p class="c-title">Snapshot your progress</p><p>After each section passes its tests, save a named snapshot (<a href="lab-02.html">Lab 2</a>), such as <code>capstone-1-3</code>. If a later change breaks something, you can load back to a known-good point instead of starting over.</p></div>
+<p class="shot" id="shot-1"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 1</span> The commit completing after loading the capstone starting configuration.</span></p>
+<h3 class="task-head"><span class="tn">1.2</span>Networking</h3>
+<ol class="steps-list" start="1">
+<li>Configure ethernet1/1, 1/2, and 1/3 as Layer3 with the guide's addresses, <strong>including the /24</strong>. Reopen <a href="lab-04.html">Lab 4</a>, task 2.2.</li>
+<li>Put all three in a virtual router named <code>VR-1</code>, with a default route named <code>Default-Route</code>. <a href="lab-04.html">Lab 4</a>, task 2.3.</li>
+<li>Create the <code>Allow-ping</code> Interface Management Profile and assign it to <strong>ethernet1/2</strong>. <a href="lab-04.html">Lab 4</a>, task 2.7.</li>
+</ol>
+<div class="callout stuck"><p class="c-title">The guide gives the route's name, not its next hop</p><p>Work out where the internet side of the lab sends traffic. Your Lab 4 notes and the first CLI test below both tell you.</p></div>
+<h3 class="task-head"><span class="tn">1.3</span>Security zones</h3>
+<ol class="steps-list" start="1">
+<li>Create <code>Internet</code> (ethernet1/1), <code>Users</code> (ethernet1/2), and <code>Extranet</code> (ethernet1/3), all Layer3. <a href="lab-04.html">Lab 4</a>, task 2.4.</li>
+<li>Enable <strong>User Identification</strong> on Users. <a href="lab-11.html">Lab 11</a>, task 2.4.</li>
+<li>Commit, then run the networking tests.</li>
+</ol>
+<h4>Checkpoint: networking</h4>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">lab-user@client-a:~/Desktop/Lab-Files$</span> <span class="cmd">ping 192.168.1.1</span>
+<span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">ping source 203.0.113.20 host 203.0.113.1</span>
+<span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">ping source 203.0.113.20 host 8.8.8.8</span>
+<span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">ping source 192.168.1.1 host 192.168.1.20</span>
+<span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">ping source 192.168.50.1 host 192.168.50.150</span></pre>
+<div class="callout tip"><p class="c-title">Which failure means what</p><p>If only the 8.8.8.8 test fails, it's the default route. If the 203.0.113.1 test fails too, it's the ethernet1/1 address or zone. If the client can't ping 192.168.1.1, check Allow-ping on ethernet1/2 and the commit.</p></div>
+<p class="shot" id="shot-2"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 2</span> The firewall CLI showing all four ping tests succeeding.</span></p>
+<p class="shot" id="shot-3"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 3</span> The client terminal showing replies from 192.168.1.1.</span></p>
+<h3 class="task-head"><span class="tn">1.4</span>NAT policy</h3>
+<ol class="steps-list" start="1">
+<li>Create source NAT rule <code>Users_to_Internet</code>: Users to Internet, translating to ethernet1/1's interface address with Dynamic IP And Port. <a href="lab-06.html">Lab 6</a>, task 2.2.</li>
+<li>Create <code>Extranet_to_Internet</code> the same way for Extranet.</li>
+<li>Give both a helpful description. Commit.</li>
+</ol>
+<div class="callout stuck"><p class="c-title">Same names, different rulebases</p><p>Users_to_Internet and Extranet_to_Internet are names for both NAT rules and Security rules. That's allowed, because they're separate rulebases. Keep track of which one you're editing.</p></div>
+<div class="callout why"><p class="c-title">Why NAT can't be tested yet</p><p>With no Security rules, interzone-default still denies everything between zones. The NAT rules are tested by the next section's tests.</p></div>
+<h3 class="task-head"><span class="tn">1.5</span>Security policy</h3>
+<ol class="steps-list" start="1">
+<li>Override <strong>interzone-default</strong> to log at session end. <a href="lab-05.html">Lab 5</a>, task 2.6.</li>
+<li>Create <code>Block_Bad_URLs</code>, denying the URL categories hacking, phishing, malware, and unknown <strong>as rule match criteria</strong>, for all outbound traffic. <a href="lab-09.html">Lab 9</a>, task 2.3.</li>
+<li>Create <code>Users_to_Extranet</code> (Users to Extranet: ping, ssl, ssh, dns, web-browsing). <a href="lab-07.html">Lab 7</a>, task 2.10.</li>
+<li>Create <code>Users_to_Internet</code> (Users to Internet: ping, dns, web-browsing, ssl) and <code>Extranet_to_Internet</code> (Extranet to Internet: the same four).</li>
+<li>Give every rule a description, check the order, and commit.</li>
+</ol>
+<div class="callout stuck"><p class="c-title">"All outbound traffic" and rule order</p><p>Decide which source zones count as outbound, and put Block_Bad_URLs where it can't be shadowed by the allow rules. <a href="lab-09.html">Lab 9</a> and Module 6 cover both.</p></div>
+<div class="callout tip"><p class="c-title">Dependencies</p><p>If the commit warns about application dependencies, add them as you did in <a href="lab-07.html">Lab 7</a>.</p></div>
+<h4>Checkpoint: policy and NAT</h4>
+<ul><li>The client pings 8.8.8.8 and google.com.</li><li>The client opens www.paloaltonetworks.com and http://192.168.50.80.</li><li>The client connects by SSH to 192.168.50.150 with the account in the guide.</li><li>The extranet host pings 8.8.8.8 and google.com.</li><li>The client <strong>cannot</strong> open hacker9.com.</li></ul>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">lab-user@client-a:~/Desktop/Lab-Files$</span> <span class="cmd">ping google.com</span>
+<span class="prompt">lab-user@client-a:~/Desktop/Lab-Files$</span> <span class="cmd">ssh paloalto42@192.168.50.150</span></pre>
+<div class="callout tip"><p class="c-title">Pinging from the extranet host</p><p>Use Remmina's Server-Extranet connection to get a shell on the extranet side, as in <a href="lab-08.html">Lab 8</a>, and ping from there.</p></div>
+<p class="shot" id="shot-4"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 4</span> The client terminal showing google.com answering pings.</span></p>
+<p class="shot" id="shot-5"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 5</span> The block page for hacker9.com.</span></p>
+<p class="shot" id="shot-6"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 6</span> The Security policy rulebase in its final order, with descriptions visible.</span></p>
+<h3 class="task-head"><span class="tn">1.6</span>Security Profiles</h3>
+<ol class="steps-list" start="1">
+<li>Create Corp-URL (from default; <strong>log access to all categories</strong>), Corp-FB (from strict file blocking), Corp-AV (from default), Corp-AS (from strict), Corp-Vuln (from strict), and Corp-WF (all file types to public-cloud). <a href="lab-08.html">Lab 8</a>, <a href="lab-09.html">Lab 9</a>, <a href="lab-10.html">Lab 10</a>.</li>
+<li>Create the <code>Corp-Profiles</code> group with the appropriate profile in each slot. Data Filtering can stay None.</li>
+<li>Apply Corp-Profiles to <strong>all applicable</strong> Security rules, and commit.</li>
+</ol>
+<div class="callout fix"><p class="c-title">Two profile descriptions are swapped</p><p>The guide says Corp-AV should "block vulnerabilities" and Corp-Vuln should "block viruses." Go by the profile type: Antivirus stops viruses and malware; Vulnerability Protection stops exploits. Use the source profiles the guide suggests for each.</p></div>
+<div class="callout stuck"><p class="c-title">"Log access to all web categories"</p><p>allow doesn't write a URL Filtering log entry; alert does. Plan Corp-URL with the last test in mind (<a href="lab-09.html">Lab 9</a>, task 2.5).</p></div>
+<div class="callout stuck"><p class="c-title">"All applicable" rules</p><p>Profiles inspect allowed traffic. Think about which rules the group belongs on (<a href="lab-08.html">Lab 8</a>, task 2.11).</p></div>
+<h4>Checkpoint: profiles</h4>
+<ul><li>The client <strong>cannot</strong> download the test virus from http://192.168.50.80.</li><li>The client <strong>cannot</strong> download http://192.168.50.80/badtarfile.tar.</li><li>Browsing https://www.paloaltonetworks.com creates a URL Filtering log entry.</li></ul>
+<p class="shot" id="shot-7"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 7</span> The block page (or reset) when downloading the test virus over HTTP.</span></p>
+<p class="shot" id="shot-8"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 8</span> The File Transfer Blocked page for badtarfile.tar.</span></p>
+<p class="shot" id="shot-9"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 9</span> The URL Filtering log entry for www.paloaltonetworks.com.</span></p>
+</section>
+
+<section class="unit" id="s-reference" data-section="reference" data-label="Reference" data-part="Understand">
+<header><span class="sec-n">04</span><h2>Where you learned each objective</h2></header>
+<div class="table-wrap"><table><thead><tr><th scope="col">Objective</th><th scope="col">Lab companion</th><th scope="col">Module</th></tr></thead><tbody><tr><td>Load and commit; snapshots</td><td><a href="lab-02.html">Lab 2</a></td><td><a href="../modules/module-03.html">Module 3</a></td></tr><tr><td>Interfaces, VR-1, default route</td><td><a href="lab-04.html">Lab 4</a></td><td><a href="../modules/module-05.html">Module 5</a></td></tr><tr><td>Allow-ping profile</td><td><a href="lab-04.html">Lab 4</a></td><td><a href="../modules/module-05.html">Module 5</a></td></tr><tr><td>Zones; User-ID on a zone</td><td><a href="lab-04.html">Lab 4</a>, <a href="lab-11.html">Lab 11</a></td><td><a href="../modules/module-05.html">Module 5</a>, <a href="../modules/module-09.html">Module 9</a></td></tr><tr><td>Source NAT</td><td><a href="lab-06.html">Lab 6</a></td><td><a href="../modules/module-07.html">Module 7</a></td></tr><tr><td>Logging on interzone-default</td><td><a href="lab-05.html">Lab 5</a></td><td><a href="../modules/module-06.html">Module 6</a></td></tr><tr><td>URL categories as rule criteria</td><td><a href="lab-09.html">Lab 9</a></td><td><a href="../modules/module-11.html">Module 11</a></td></tr><tr><td>Application-based allow rules</td><td><a href="lab-05.html">Lab 5</a>, <a href="lab-07.html">Lab 7</a></td><td><a href="../modules/module-06.html">Module 6</a>, <a href="../modules/module-08.html">Module 8</a></td></tr><tr><td>Security Profiles and the group</td><td><a href="lab-08.html">Lab 8</a>, <a href="lab-09.html">Lab 9</a>, <a href="lab-10.html">Lab 10</a></td><td><a href="../modules/module-10.html">Module 10</a> to <a href="../modules/module-12.html">Module 12</a></td></tr></tbody></table></div>
+<h4>When a test fails, follow the packet</h4>
+<p>Work through the flow from Module 6 in order, and stop at the first thing that's wrong:</p>
+<ol class="steps-list" start="1">
+<li>Is the interface up, addressed with the right mask, and in the right zone?</li>
+<li>Is there a route (the default route for the internet)?</li>
+<li>Does a NAT rule match (Traffic log, NAT Source IP column)?</li>
+<li>Which Security rule matched? (Traffic log Rule column, or Test Policy Match)</li>
+<li>Did a profile block it? (Threat and URL Filtering logs)</li>
+</ol>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">test security-policy-match from Users to Internet source 192.168.1.20 destination 8.8.8.8 protocol 1 application ping</span>
+<span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">show routing route</span>
+<span class="cmd">( addr.src eq 192.168.1.20 ) and ( action neq allow )</span></pre>
+</section>
+
+<section class="unit" id="s-stuck" data-section="stuck" data-label="Where people get stuck" data-part="Understand">
+<header><span class="sec-n">05</span><h2>Where people get stuck</h2></header>
+<div class="table-wrap"><table class="stuck-table"><thead><tr><th scope="col">Symptom</th><th scope="col">Likely cause</th><th scope="col">Fix</th></tr></thead><tbody><tr><td>Nothing works between zones</td><td>Interface in the wrong zone, or zone named Users_Net</td><td>Zone names must be exactly Internet, Users, Extranet.</td></tr><tr><td>CLI ping to 8.8.8.8 fails</td><td>Default route missing or wrong next hop</td><td>Check VR-1's static routes.</td></tr><tr><td>Client pings 8.8.8.8 but not google.com</td><td>dns isn't allowed</td><td>Add dns to Users_to_Internet.</td></tr><tr><td>SSH to 192.168.50.150 fails</td><td>ssh missing from Users_to_Extranet</td><td>Add the application; commit.</td></tr><tr><td>hacker9.com still loads</td><td>Block_Bad_URLs is below an allow rule, or covers the wrong zones</td><td>Move it up; check its source zones.</td></tr><tr><td>No URL log entry for paloaltonetworks.com</td><td>Corp-URL categories set to allow</td><td>Set them to alert.</td></tr><tr><td>Test virus downloads</td><td>Corp-Profiles missing from the rule that matched</td><td>Check the Traffic log's rule, then that rule's Actions tab.</td></tr></tbody></table></div>
+</section>
+
+<section class="unit" id="s-production" data-section="production" data-label="In production" data-part="Understand">
+<header><span class="sec-n">06</span><h2>How this looks on a real firewall</h2></header>
+<ul><li><strong>This is a real first-day build.</strong> Interfaces, zones, routing, NAT, a tight rulebase, and profiles on every allow rule is close to what a new edge firewall gets in its first change window.</li><li><strong>Write it down first.</strong> Production builds start from a design document: addressing, zones, rules, and test plan. The capstone's objectives and tests are a small version of one.</li><li><strong>Test as you go.</strong> Committing and testing section by section, as this plan does, is how engineers keep a failure small and easy to find.</li><li><strong>Back up the result.</strong> Export a named snapshot of the finished configuration. In a real job it goes in the change ticket.</li><li><strong>Talk about it.</strong> "Built a Palo Alto Networks firewall configuration from a written spec, including NAT, App-ID policy, URL filtering, and threat prevention" is a fair line for a resume or an interview.</li></ul>
+</section>
+
+<section class="unit" id="s-selfcheck" data-section="selfcheck" data-label="Check yourself" data-part="Wrap up">
+<header><span class="sec-n">07</span><h2>Check yourself</h2></header>
+<details class="qa"><summary>The CLI can ping 203.0.113.1 from 203.0.113.20 but not 8.8.8.8. What's wrong?</summary><div class="qa-a"><p>The default route: missing, on the wrong interface, or with the wrong next hop.</p></div></details>
+<details class="qa"><summary>The client can ping 8.8.8.8 but not google.com. What's the most likely cause?</summary><div class="qa-a"><p>dns isn't one of the applications allowed in Users_to_Internet.</p></div></details>
+<details class="qa"><summary>Why can two rules both be named Users_to_Internet?</summary><div class="qa-a"><p>One is a NAT rule and one is a Security rule; they're separate rulebases.</p></div></details>
+<details class="qa"><summary>Which Corp-URL action makes allowed sites show up in the URL Filtering log?</summary><div class="qa-a"><p>alert.</p></div></details>
+<details class="qa"><summary>Where must Block_Bad_URLs sit, and why?</summary><div class="qa-a"><p>Above the allow rules for outbound traffic, so it isn't shadowed.</p></div></details>
+</section>
+
+<section class="unit" id="s-evidence" data-section="evidence" data-label="What to submit" data-part="Wrap up">
+<header><span class="sec-n">08</span><h2>Screenshots to capture</h2></header>
+<p>Take each screenshot at its checkpoint. They double as proof that every acceptance test passed. Name the files by lab and number (for example <code>lab14-shot5.png</code>) and submit them in Canvas as your instructor directs.</p>
+<ul class="checklist evidence" data-save="lab14-evidence"><li><input type="checkbox" id="ev14-0"><div><label for="ev14-0">Screenshot 1: The commit completing after loading the capstone starting configuration.</label><a class="ev-where" href="#shot-1">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev14-1"><div><label for="ev14-1">Screenshot 2: The firewall CLI showing all four ping tests succeeding.</label><a class="ev-where" href="#shot-2">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev14-2"><div><label for="ev14-2">Screenshot 3: The client terminal showing replies from 192.168.1.1.</label><a class="ev-where" href="#shot-3">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev14-3"><div><label for="ev14-3">Screenshot 4: The client terminal showing google.com answering pings.</label><a class="ev-where" href="#shot-4">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev14-4"><div><label for="ev14-4">Screenshot 5: The block page for hacker9.com.</label><a class="ev-where" href="#shot-5">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev14-5"><div><label for="ev14-5">Screenshot 6: The Security policy rulebase in its final order, with descriptions visible.</label><a class="ev-where" href="#shot-6">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev14-6"><div><label for="ev14-6">Screenshot 7: The block page (or reset) when downloading the test virus over HTTP.</label><a class="ev-where" href="#shot-7">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev14-7"><div><label for="ev14-7">Screenshot 8: The File Transfer Blocked page for badtarfile.tar.</label><a class="ev-where" href="#shot-8">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev14-8"><div><label for="ev14-8">Screenshot 9: The URL Filtering log entry for www.paloaltonetworks.com.</label><a class="ev-where" href="#shot-9">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev14-9"><div><label for="ev14-9">Export a named snapshot of your finished configuration</label><span class="ev-where">Device &gt; Setup &gt; Operations. Keep it in case you need to show your work.</span></div></li></ul>
+<p class="box-note">Checkmarks are saved in this browser only. They help you keep track; the screenshots themselves go to Canvas.</p>
+</section>
+
+<section class="unit" id="s-cheat" data-section="cheat" data-label="Cheat sheet" data-part="Wrap up">
+<header><span class="sec-n">09</span><h2>Cheat sheet</h2></header>
+<div class="cheat">
+<h4>Addresses</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Interface</th><th scope="col">Address</th><th scope="col">Zone</th></tr></thead><tbody><tr><td>ethernet1/1</td><td><code>203.0.113.20/24</code></td><td>Internet</td></tr><tr><td>ethernet1/2</td><td><code>192.168.1.1/24</code> (Allow-ping)</td><td>Users (User-ID on)</td></tr><tr><td>ethernet1/3</td><td><code>192.168.50.1/24</code></td><td>Extranet</td></tr></tbody></table></div>
+<h4>Allow rules and their applications</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Rule</th><th scope="col">From / To</th><th scope="col">Applications</th></tr></thead><tbody><tr><td>Users_to_Extranet</td><td>Users / Extranet</td><td>ping, ssl, ssh, dns, web-browsing</td></tr><tr><td>Users_to_Internet</td><td>Users / Internet</td><td>ping, dns, web-browsing, ssl</td></tr><tr><td>Extranet_to_Internet</td><td>Extranet / Internet</td><td>ping, dns, web-browsing, ssl</td></tr></tbody></table></div>
+<h4>Block rule</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Rule</th><th scope="col">Categories</th></tr></thead><tbody><tr><td>Block_Bad_URLs</td><td>hacking, phishing, malware, unknown (rule match criteria)</td></tr></tbody></table></div>
+<h4>Profiles in Corp-Profiles</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Slot</th><th scope="col">Profile (based on)</th></tr></thead><tbody><tr><td>URL Filtering</td><td>Corp-URL (default; must log every category)</td></tr><tr><td>File Blocking</td><td>Corp-FB (strict)</td></tr><tr><td>Antivirus</td><td>Corp-AV (default)</td></tr><tr><td>Anti-Spyware</td><td>Corp-AS (strict)</td></tr><tr><td>Vulnerability</td><td>Corp-Vuln (strict)</td></tr><tr><td>WildFire</td><td>Corp-WF (default; all files to public-cloud)</td></tr></tbody></table></div>
+</div>
+<p><button type="button" class="btn" data-print="cheat">Print only this cheat sheet</button></p>
+</section>
+<nav class="pager" id="pager" aria-label="Lab navigation"></nav>
+</article>
+</div>
+</main>
+
+<footer id="site-footer"></footer>
+<script src="../assets/js/course.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/activities.js"></script>
+</body>
+</html>

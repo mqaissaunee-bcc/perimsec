@@ -1,0 +1,198 @@
+title: Using Decryption to Block Threats in Encrypted Traffic
+lede: Prove that encryption blinds the firewall, then fix it. You download a test virus over HTTP (blocked) and HTTPS (allowed), create forward trust and forward untrust certificates, write an SSL forward proxy rule, make the client trust the firewall's CA, block the same file over HTTPS, read the decryption evidence in the logs, and exempt sensitive categories from decryption.
+snapshot: edu-210-11.0a-12.xml
+uses: Module 13, sections 13.1 to 13.5
+
+= overview | What this lab is for | What this lab is for | Prepare
+Most web traffic is encrypted, and so is most malware delivery. Every profile from Labs 8 to 10 inspects content, and none of them can see content inside TLS. {{ssl-forward-proxy|SSL forward proxy}} puts the firewall in the middle: it completes the TLS session with the client using a certificate it generates, opens its own session to the server, and inspects everything between.
+
+For that to work without warnings, clients must trust the CA certificate the firewall signs with (the **{{forward-trust|forward trust}}** certificate). And for sites whose own certificates are bad, the firewall signs with a second CA nobody trusts (the **{{forward-untrust|forward untrust}}** certificate), so users still get a warning.
+
+- **You'll leave with:** trusted-cert and untrusted-cert, Decrypt_User_Traffic and No-Decryption rules in the right order, the firewall CA imported into Firefox, and log evidence of a decrypted, blocked threat.
+- **Builds on:** ->Mod 13<-. Simulation 13.1 (what does the browser see?) predicts every certificate you'll meet in this lab.
+- **Sets up:** nothing later depends on it, but it's the lab employers ask about most.
+
+= setup | Before you begin | Before you begin | Prepare
+You'll use the web interface and Firefox, including its certificate manager.
+
+@network
+
+### What's already in the baseline
+Everything through Lab 10. The allow rules carry Security Profiles, so the test virus is caught whenever the firewall can actually see it: the guide's first test proves that over HTTP.
+
+### The test file
+`eicar.com` is the industry-standard antivirus test file: harmless text that every security product is designed to detect. The extranet server offers it over both HTTP and HTTPS, and its HTTPS certificate is self-signed.
+
+= walkthrough | Walkthrough | Walkthrough of the detailed steps | Do the lab
+@baseline
+
+## 2.2 See what the firewall misses without decryption
+1. In a new Firefox tab, open `http://192.168.50.80/eicar.com`. The connection is reset. Close the tab.
+2. In [[Monitor > Logs > Threat]], find the entry showing the firewall blocked the eicar download.
+3. Now open `https://192.168.50.80/eicar.com`. At the warning, click **Advanced**, then **Accept the Risk and Continue**.
+4. When asked to save the file, click **Cancel**. The download wasn't blocked. Close the tab.
+!fix Misleading task title | The guide calls this "Examine Firewall Configuration." It's the before test: the same file over HTTP and over HTTPS.
+!why The whole lab in one comparison | Same file, same server, same profiles. Over HTTP the firewall sees it; over HTTPS it can't.
+!shot The Threat log entry for the eicar file blocked over HTTP.
+!shot The Firefox prompt to save eicar.com over HTTPS, showing it was not blocked.
+
+## 2.3 Create the forward trust certificate
+1. Go to [[Device > Certificate Management > Certificates]] and click **Generate**.
+2. Certificate Name `trusted-cert`, Common Name `192.168.1.1`, and check **Certificate Authority**. Click **Generate**, then OK.
+3. Open **trusted-cert**, check **Forward Trust Certificate**, and click OK.
+!why It must be a CA | The firewall uses this certificate to sign a fresh certificate for every site a user visits. Only a CA certificate can sign other certificates.
+
+## 2.4 Create the forward untrust certificate
+1. Click **Generate** again. Certificate Name `untrusted-cert`, Common Name `DO NOT TRUST`, **Certificate Authority** checked. Generate, then OK.
+2. Open **untrusted-cert**, check **Forward Untrust Certificate**, and click OK.
+!stuck The high-level steps skip this | Creating untrusted-cert (here) and testing it (2.9) appear only in the detailed steps. A forward proxy without an untrust certificate is incomplete: users wouldn't be warned about servers with bad certificates.
+!shot The Certificates page showing trusted-cert as Forward Trust and untrusted-cert as Forward Untrust, both CAs.
+
+## 2.5 Create the decryption policy
+1. Go to [[Policies > Decryption]] and click **Add**.
+2. **General:** name `Decrypt_User_Traffic`, description `Decrypts web traffic from Users_Net.`
+3. **Source:** zone **Users_Net**, address Any, user any.
+4. **Destination:** zones **Internet** and **Extranet**, address Any.
+5. **Service/URL Category:** Service any, URL Category Any.
+6. **Options:** Action **Decrypt**, Type **SSL Forward Proxy**, Decryption Profile **default**. Click OK, then commit.
+!why Why Extranet too? | The test server, 192.168.50.80, is in the Extranet zone. Without it here, the HTTPS eicar test would never be decrypted.
+!tip Decrypting "any" category is a starting point | The guide notes it exposes personal data in categories like health, finance, and government. Task 2.12 adds exemptions.
+!shot The Decrypt_User_Traffic rule with action Decrypt and type SSL Forward Proxy.
+
+## 2.6 Test outbound decryption
+1. In a new tab, open `https://paloaltonetworks.com`. You get a warning. Click **Advanced**, then **View Certificate**.
+2. Note the **Issuer**: 192.168.1.1. The firewall signed this certificate on the site's behalf.
+3. Close the certificate and warning tabs (keep the firewall tab).
+!why Why the warning | Firefox doesn't yet trust the firewall's CA. The certificate is technically fine; the browser just doesn't know the issuer. The next two tasks fix that.
+!shot The certificate viewer showing www.paloaltonetworks.com issued by 192.168.1.1.
+
+## 2.7 Export the firewall's CA certificate
+1. In [[Device > Certificate Management > Certificates]], select (don't open) **trusted-cert** and click **Export Certificate**.
+2. File Format **Base64 Encoded Certificate (PEM)**, **uncheck Export Private Key**, and click OK. Save it in Downloads.
+!stuck Never export the private key here | Clients need only the public certificate. Anyone with the private key could impersonate every site your users visit.
+
+## 2.8 Import it into Firefox
+1. Open Firefox's menu (three lines) > **Settings** > **Privacy & Security**, scroll to **Certificates**, and click **View Certificates**.
+2. On the **Authorities** tab, click **Import**, choose `cert_trusted-cert.crt` from Downloads, and click Open.
+3. Check both **Trust this CA** boxes and click OK. Confirm 192.168.1.1 appears in the list, then click OK and close Settings.
+!stuck Authorities, not Your Certificates | CA certificates go on the Authorities tab, and the trust box must be checked. Imported anywhere else, nothing changes.
+!tip If it isn't listed | Click OK, then View Certificates again; the list sometimes doesn't refresh.
+!shot Firefox's Authorities tab showing the 192.168.1.1 certificate imported.
+
+## 2.9 Test the forward untrust certificate
+1. In a new tab, open `https://192.168.50.80`. Firefox still warns. Click **Advanced**, then **View Certificate**.
+2. The issuer is **DO NOT TRUST**: the firewall saw the server's self-signed certificate and passed that untrustworthiness on.
+3. Close the certificate tab and leave the warning tab open.
+!fix The guide's note names the wrong issuer | After step 2 the guide repeats the earlier note that the certificate was "generated by the firewall (192.168.1.1)." For this site, the issuer you should see is **DO NOT TRUST**, the forward untrust certificate. That's the whole point of the task.
+!why A warning here is correct | The warning after importing trusted-cert proves the forward proxy isn't hiding bad server certificates from users.
+!shot The certificate viewer showing 192.168.50.80's certificate issued by DO NOT TRUST.
+
+## 2.10 Test the virus download again
+1. On the warning tab, click **Accept the Risk and Continue**. The server's default page loads.
+2. Change the address to `https://192.168.50.80/eicar.com` and press Enter. The connection fails: the firewall decrypted the session and the antivirus profile blocked the file.
+3. Close the tab.
+!fix Two eicar paths | The high-level steps test with www.eicar.org; the detailed steps use https://192.168.50.80/eicar.com. Either proves decryption works.
+
+## 2.11 Review the logs
+1. In [[Monitor > Logs > Traffic]], add the **Decrypted** column and drag **Session End Reason** to the left.
+2. Apply the filter below. Wait a minute or two if it's empty.
+$f ( flags has proxy ) and ( session_end_reason eq threat )
+3. Open an entry's details (magnifying glass) and confirm **Decrypted** is checked.
+4. In [[Monitor > Logs > Threat]], add the Decrypted column, clear filters, and apply the filter below. Open the vulnerability entry.
+$f ( flags has proxy )
+5. In the Details section, note the threat ID (the guide shows 39040) and the **View in Threat Vault** link. Select rows in the lower pane to see more about why the session was terminated.
+!tip What "flags has proxy" means | The firewall acted as a proxy for the session, which is what decryption is. Those rows show yes in the Decrypted column.
+!shot The Traffic log filtered to decrypted sessions ended by a threat, with the Decrypted column showing yes.
+!shot The Threat log detail for the decrypted eicar entry showing the threat ID.
+
+## 2.12 Exclude sensitive categories from decryption
+1. In [[Policies > Decryption]], click **Add**. Name `No-Decryption`, description `Do not decrypt URLs in gov, shopping and finance.`
+2. Source zone **Users_Net**; destination zone **Internet**; Service any.
+3. URL Category: add **government**, **financial-services**, and **shopping**.
+4. **Options:** Action **No Decrypt**, Decryption Profile **default**. Click OK.
+5. Look at the two rules' order, answer the guide's question, then drag **No-Decryption** above Decrypt_User_Traffic. Commit.
+!q Q1: Is there anything wrong with these rules? | **a. Yes.** Decrypt_User_Traffic matches any category and sits first, so No-Decryption would never be reached. No-decrypt rules always go at the top.
+!fix Rule name drift | The guide's answer text calls the rule "Decrypt_Users_Traffic." It's Decrypt_User_Traffic.
+!shot The decryption policy with No-Decryption above Decrypt_User_Traffic.
+
+## 2.13 Test the exemption
+1. Open Firefox and browse to `https://www.texas.gov`.
+2. Click the padlock > the arrow next to **Connection secure** > **More Information** > **View Certificate**.
+3. The issuer is a public CA, **not** 192.168.1.1. The government category was exempt, so the firewall didn't decrypt.
+!shot The certificate for www.texas.gov showing an issuer other than 192.168.1.1.
+
+= reference | Reference | Decryption reference | Understand
+### The three certificates in forward proxy
+| Certificate | Who signs it | When the user sees it |
+| Forward trust (trusted-cert, CN 192.168.1.1) | Your firewall CA, trusted by clients | Sites with valid certificates |
+| Forward untrust (untrusted-cert, CN DO NOT TRUST) | A firewall CA nobody trusts | Sites with invalid, expired, or self-signed certificates |
+| The real server certificate | A public CA | Sites exempted by a No Decrypt rule |
+
+### Decryption types
+| Type | Protects | Needs |
+| SSL forward proxy | Users going out to any site | A CA certificate clients trust |
+| SSL inbound inspection | Your own servers | The server's certificate and private key |
+| SSH proxy | SSH sessions | Nothing extra; controls tunneling over SSH |
+
+### Useful filters and CLI
+$f ( flags has proxy )
+$f ( flags has proxy ) and ( session_end_reason eq threat )
+$fw show counter global filter category proxy
+$fw show running decryption-policy
+
+= stuck | Where people get stuck | Where people get stuck | Understand
+| Symptom | Likely cause | Fix |
+| Every site still warns after importing | Imported to the wrong tab, or trust not checked | Authorities tab; check Trust this CA. |
+| eicar over HTTPS still downloads | Extranet not a destination zone, or not committed | Add Extranet to Decrypt_User_Traffic; commit. |
+| texas.gov shows issuer 192.168.1.1 | No-Decryption is below the decrypt rule | Move it to the top; commit; open a new tab. |
+| 192.168.50.80 warns after the import | That's correct | The server's own certificate is self-signed; the firewall used DO NOT TRUST. |
+| Filter finds nothing | Logs not written yet | Wait one to two minutes and refresh. |
+| Export includes a .key | Export Private Key left checked | Re-export with it unchecked. |
+
+= production | In production | How this looks on a real firewall | Understand
+- **Use an enterprise CA, deployed by policy.** Production firewalls usually get a subordinate CA certificate from the organization's PKI, and clients trust it through Group Policy or MDM, not manual browser imports.
+- **Decide exemptions with HR and legal.** Which categories you don't decrypt depends on company policy, privacy law, and where users are. Health and finance are the common starting point.
+- **Plan for pinned and incompatible apps.** Some applications break when decrypted; Palo Alto Networks maintains a predefined exclusion list, and you'll add your own.
+- **Tune the Decryption profile.** The default profile allows a lot. Production profiles block expired and untrusted server certificates and weak protocol versions.
+- **Size for it.** Decryption is CPU-intensive; it's a real factor in choosing a firewall model.
+- **Other vendors:** Fortinet deep inspection, Cisco TLS server identity and decryption, and Check Point HTTPS Inspection work the same way and raise the same privacy questions.
+
+= selfcheck | Check yourself | Check yourself | Wrap up
+?? Before decryption, why did the HTTPS eicar download succeed when the HTTP one was blocked?
+=> The antivirus profile couldn't see the file inside the encrypted session.
+
+?? Why must trusted-cert be a Certificate Authority?
+=> The firewall uses it to sign a new certificate for each site, and only a CA can sign certificates.
+
+?? After importing trusted-cert, why does https://192.168.50.80 still warn?
+=> The server's own certificate is self-signed, so the firewall signs with the forward untrust certificate, which the browser doesn't trust.
+
+?? Why must No-Decryption sit above Decrypt_User_Traffic?
+=> Decryption rules are first-match; the decrypt rule matches any category, so the exemption below it would never apply.
+
+?? How do you tell from the browser whether the firewall decrypted a site?
+=> View the certificate. If the issuer is 192.168.1.1, it was decrypted.
+
+= evidence | What to submit | Screenshots to capture | Wrap up
+Take each screenshot at its marker. Name the files by lab and number (for example `lab12-shot9.png`) and submit them in Canvas as your instructor directs.
+
+= cheat | Cheat sheet | Cheat sheet | Wrap up
+<div class="cheat">
+### Certificates
+| Name | CN | Role |
+| trusted-cert | `192.168.1.1` | CA, Forward Trust; exported (no key) and imported into Firefox Authorities |
+| untrusted-cert | `DO NOT TRUST` | CA, Forward Untrust |
+### Decryption rules (top to bottom)
+| Rule | From / To | URL category | Action |
+| No-Decryption | Users_Net / Internet | government, financial-services, shopping | No Decrypt |
+| Decrypt_User_Traffic | Users_Net / Internet, Extranet | any | Decrypt, SSL Forward Proxy |
+### Tests
+| Test | Expect |
+| `https://paloaltonetworks.com` | Issuer 192.168.1.1 |
+| `https://192.168.50.80` | Issuer DO NOT TRUST (warning is correct) |
+| `https://192.168.50.80/eicar.com` | Blocked |
+| `https://www.texas.gov` | Real issuer, not decrypted |
+### Filter
+`( flags has proxy ) and ( session_end_reason eq threat )`
+</div>
+@cheatprint

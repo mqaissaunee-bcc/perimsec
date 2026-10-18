@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab 10 companion: Blocking Unknown Threats with WildFire | Perimeter Security</title>
+<meta name="description" content="Lab 10 companion for Perimeter Security: walkthrough of the detailed steps for Blocking Unknown Threats with WildFire, screenshots to capture, troubleshooting, and a cheat sheet.">
+<link rel="stylesheet" href="../assets/css/site.css">
+<script src="../assets/js/prefs.js"></script>
+</head>
+<body data-root=".." data-lab="10" data-page="labs/index.html">
+<a class="skip-link" href="#main">Skip to main content</a>
+<header id="site-header"></header>
+
+<main id="main" class="page">
+<div class="module-hero">
+<p class="kicker">Lab 10 of 14 in NDG Online. Week 7, due Wed 11/18. Goes with Module 12: WildFire.</p>
+<h1>Lab 10: Blocking Unknown Threats with WildFire</h1>
+<p class="lede">Signatures only stop malware someone has already seen. You create a WildFire Analysis profile that sends files to the public cloud sandbox, isolate it in the profile group, download a harmless test file built to look like zero-day malware, confirm the upload from the CLI, and read the verdict and analysis report.</p>
+<ul class="facts"><li>About 45 minutes</li><li>NDG Online, Lab 10</li><li>Uses Module 12, sections 12.2 to 12.4</li><li>Snapshot <code>edu-210-11.0a-10.xml</code></li><li>4 screenshots to capture</li></ul>
+<div class="lab-hero-links"><a class="btn" href="../modules/module-12.html#s-lab">Lab 10 briefing in Module 12</a><a class="btn btn-quiet" href="index.html">All lab companions</a><a class="btn btn-quiet" href="#s-evidence">Screenshot checklist</a></div>
+</div>
+
+<div class="module-layout">
+<nav class="module-rail" aria-label="This lab companion">
+<h2>This lab</h2>
+<div class="progress-wrap"><span class="label" id="rail-meter-label">0 sections reviewed</span>
+<div class="meter" role="progressbar" aria-labelledby="rail-meter-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="rail-meter"></span></div></div>
+<ol id="rail-list"></ol>
+<p><a href="#s-cheat">Jump to the cheat sheet</a></p>
+</nav>
+<article>
+<section class="unit" id="s-overview" data-section="overview" data-label="What this lab is for" data-part="Prepare">
+<header><span class="sec-n">01</span><h2>What this lab is for</h2></header>
+<p>Lab 8's profiles match known threats. A brand-new piece of malware has no signature yet, so it walks past them. <dfn data-term="wildfire">WildFire</dfn> closes that gap: the firewall forwards unknown files to a cloud sandbox, which runs them, watches what they do, and returns a <dfn data-term="verdict">verdict</dfn> (benign, grayware, phishing, or malicious). A malicious verdict produces a signature that protects every subscribing firewall.</p>
+<p>This lab is mostly about watching that flow happen and reading what WildFire tells you, which makes it shorter than most. The wait for a verdict is real; plan for it.</p>
+<ul><li><strong>You'll leave with:</strong> a Corp-WF profile in Corp-Profiles-Group, a submitted test file, its verdict, and its PDF analysis report.</li><li><strong>Builds on:</strong> <a href="../modules/module-12.html">Module 12</a>. Simulation 12.1 follows files through WildFire at different license levels.</li><li><strong>Sets up:</strong> the capstone's Corp-WF profile.</li></ul>
+</section>
+
+<section class="unit" id="s-setup" data-section="setup" data-label="Before you begin" data-part="Prepare">
+<header><span class="sec-n">02</span><h2>Before you begin</h2></header>
+<p>You'll use the web interface, Firefox, and <strong>Remmina</strong> (Firewall-A) for one CLI command.</p>
+<div class="table-wrap"><table>
+<caption class="visually-hidden">Hosts in the lab network</caption>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td></tr>
+</tbody></table></div>
+<p class="box-note">Usernames and passwords are in the Lab Settings table on page 5 of each lab guide. They are not repeated here, because this site is public.</p>
+<h4>What's already in the baseline</h4>
+<p>Everything through Lab 9: Corp-Profiles-Group with the Lab 8 profiles and Corp-URL-Profile, applied to the allow rules.</p>
+<h4>The test file is harmless</h4>
+<p><code>wildfire-test-pe-file.exe</code> is generated by Palo Alto Networks to receive a malicious verdict. It does nothing harmful, and it's unique each time it's downloaded, so WildFire analyzes it as new.</p>
+</section>
+
+<section class="unit" id="s-walkthrough" data-section="walkthrough" data-label="Walkthrough" data-part="Do the lab">
+<header><span class="sec-n">03</span><h2>Walkthrough of the detailed steps</h2></header>
+<h3 class="task-head"><span class="tn">2.1</span>Load the lab configuration</h3>
+<p class="task-intro">Every lab starts from a known baseline, so your firewall matches the guide no matter what you did last time.</p>
+<ol class="steps-list" start="1"><li>On the client desktop, log in as <code>lab-user</code>, open Firefox, and browse to <code>https://192.168.1.254</code>. Log in as <code>admin</code> with the password from Lab Settings. If the login page does not appear, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li>Go to <span class="path" data-path="Device > Setup > Operations"></span> and click <strong>Load named configuration snapshot</strong>. Choose <code>edu-210-11.0a-10.xml</code> and click OK, then Close.</li><li>Open <strong>Tasks</strong> (lower right) and confirm the Load task shows completed.</li><li>Click <strong>Commit</strong> (upper right), then <strong>Commit</strong> in the dialog, and wait for it to finish.</li></ol>
+<div class="callout stuck"><p class="c-title">Loading is not committing</p><p>A loaded snapshot replaces only the candidate configuration. Until you commit, the firewall is still running whatever was there before, and nothing in the lab will match the guide.</p></div>
+<h3 class="task-head"><span class="tn">2.2</span>Create a WildFire Analysis profile</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Objects &gt; Security Profiles &gt; WildFire Analysis"></span> and click <strong>Add</strong>.</li>
+<li>Name <code>Corp-WF</code>, description <code>WildFire profile for Corp security rules.</code></li>
+<li>Click <strong>Add</strong> for a rule: name <code>All_Files</code>, Applications <strong>any</strong>, File Types <strong>any</strong>, Direction <strong>both</strong>, Analysis <strong>public-cloud</strong>. Click OK.</li>
+</ol>
+<p class="shot" id="shot-1"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 1</span> The Corp-WF profile showing the All_Files rule sending any file type to public-cloud.</span></p>
+<h3 class="task-head"><span class="tn">2.3</span>Isolate WildFire in the profile group</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Objects &gt; Security Profile Groups"></span> and open <strong>Corp-Profiles-Group</strong>.</li>
+<li>Set <strong>WildFire Analysis Profile</strong> to <strong>Corp-WF</strong>, and set every other profile to <strong>None</strong>. Click OK.</li>
+</ol>
+<div class="callout why"><p class="c-title">Why turn the others off?</p><p>With Antivirus or its inline machine learning active, the test file could be caught on the firewall before WildFire ever sees it. Turning them off lets you watch the cloud do its job alone. In production, all the profiles work together.</p></div>
+<div class="callout stuck"><p class="c-title">A lab-only setting</p><p>The next lab's baseline restores a normal group, so you don't need to undo this. But never leave a real firewall like this.</p></div>
+<h3 class="task-head"><span class="tn">2.4</span>Update WildFire settings</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Device &gt; Setup &gt; WildFire"></span> and click the gear on <strong>General Settings</strong>.</li>
+<li>Check <strong>Report Benign Files</strong> and <strong>Report Grayware Files</strong>. Leave the rest. Click OK.</li>
+<li>In <span class="path" data-path="Policies &gt; Security"></span>, open <strong>Allow-PANW-Apps</strong>. On <strong>Source</strong>, set Source Address to <strong>Any</strong>. Click OK.</li>
+<li>Commit.</li>
+</ol>
+<div class="callout why"><p class="c-title">Why change Allow-PANW-Apps?</p><p>The rule was limited to the firewall's management address. WildFire uploads and verdict lookups (<code>paloalto-wildfire-cloud</code>) need to match it reliably, so the lab widens the source.</p></div>
+<div class="callout tip"><p class="c-title">Benign and grayware reporting</p><p>By default the WildFire Submissions log shows only malicious verdicts. These boxes make benign and grayware results visible too, which is useful when you're learning what gets sent.</p></div>
+<h3 class="task-head"><span class="tn">2.5</span>Test the profile</h3>
+<ol class="steps-list" start="1">
+<li>In a new Firefox tab, open <code>http://192.168.50.80/wildfire-test-pe-file.exe</code> and click <strong>Save</strong> when prompted. Close the tab.</li>
+<li>Open <strong>Remmina</strong>, double-click <strong>Firewall-A</strong>, and check the upload log. It may take a minute or two to show the file.</li>
+</ol>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">debug wildfire upload-log show</span></pre>
+<ol class="steps-list" start="3">
+<li>Exit the SSH session.</li>
+</ol>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">exit</span></pre>
+<div class="callout stuck"><p class="c-title">Download the file, don't just open the link</p><p>The firewall forwards files it sees transferred. Make sure Firefox actually saves it.</p></div>
+<p class="shot" id="shot-2"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 2</span> The CLI showing wildfire-test-pe-file.exe in the upload log.</span></p>
+<h3 class="task-head"><span class="tn">2.6</span>Examine the WildFire analysis</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Monitor &gt; Logs &gt; WildFire Submissions"></span>. Refresh until <code>wildfire-test-pe-file.exe</code> appears. Analysis can take <strong>5 to 15 minutes</strong>; the log stays empty until there's a verdict.</li>
+<li>Click the magnifying glass on the entry to open the <strong>Detailed Log View</strong> and note the <strong>Verdict</strong>.</li>
+<li>Select the <strong>WildFire Analysis Report</strong> tab and click <strong>Download PDF</strong>.</li>
+<li>Scroll through the report. Section 3.1 describes the sandbox environment and what the file did.</li>
+</ol>
+<div class="callout tip"><p class="c-title">Use the wait</p><p>Read Module 12's section on analysis reports while you wait. Don't reload the baseline or redo steps; that just restarts the clock.</p></div>
+<p class="shot" id="shot-3"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 3</span> The WildFire Submissions log showing the test file with a malicious verdict.</span></p>
+<p class="shot" id="shot-4"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 4</span> The WildFire analysis report PDF open in Firefox.</span></p>
+</section>
+
+<section class="unit" id="s-reference" data-section="reference" data-label="Reference" data-part="Understand">
+<header><span class="sec-n">04</span><h2>WildFire reference</h2></header>
+<h4>Verdicts</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Verdict</th><th scope="col">Means</th><th scope="col">Default logging</th></tr></thead><tbody><tr><td>benign</td><td>Safe</td><td>Only if Report Benign Files is on</td></tr><tr><td>grayware</td><td>Unwanted but not malicious (adware, trackers)</td><td>Only if Report Grayware Files is on</td></tr><tr><td>phishing</td><td>A phishing page or link</td><td>Logged</td></tr><tr><td>malicious</td><td>Malware; a signature will follow</td><td>Logged</td></tr></tbody></table></div>
+<h4>Where to look</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Question</th><th scope="col">Where</th></tr></thead><tbody><tr><td>Was the file sent?</td><td><code>debug wildfire upload-log show</code></td></tr><tr><td>What was the verdict?</td><td><span class="path" data-path="Monitor &gt; Logs &gt; WildFire Submissions"></span></td></tr><tr><td>What did it do?</td><td>The entry's WildFire Analysis Report, or the PDF</td></tr><tr><td>Is the firewall connected to WildFire?</td><td><code>show wildfire status</code></td></tr></tbody></table></div>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">show wildfire status</span>
+<span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">show wildfire statistics</span></pre>
+</section>
+
+<section class="unit" id="s-stuck" data-section="stuck" data-label="Where people get stuck" data-part="Understand">
+<header><span class="sec-n">05</span><h2>Where people get stuck</h2></header>
+<div class="table-wrap"><table class="stuck-table"><thead><tr><th scope="col">Symptom</th><th scope="col">Likely cause</th><th scope="col">Fix</th></tr></thead><tbody><tr><td>upload-log shows nothing</td><td>Commit not finished, or the client's traffic matches a rule without the group</td><td>Check the Traffic log's Rule column for the download; confirm that rule uses Corp-Profiles-Group.</td></tr><tr><td>Submissions log empty after 5 minutes</td><td>Still analyzing</td><td>Wait up to 15 minutes and refresh.</td></tr><tr><td>File blocked instead of uploaded</td><td>Antivirus still in the group</td><td>Set the other profiles to None (task 2.3).</td></tr><tr><td>You opened the link but didn't save</td><td>Download not completed</td><td>Request it again and Save.</td></tr><tr><td>Can't find Download PDF</td><td>You're on the General tab</td><td>Switch to the WildFire Analysis Report tab.</td></tr></tbody></table></div>
+</section>
+
+<section class="unit" id="s-production" data-section="production" data-label="In production" data-part="Understand">
+<header><span class="sec-n">06</span><h2>How this looks on a real firewall</h2></header>
+<ul><li><strong>WildFire alongside everything else.</strong> Production groups include Antivirus, Anti-Spyware, Vulnerability, URL Filtering, and WildFire together. Inline machine learning stops many threats on the firewall in real time; WildFire covers what's left.</li><li><strong>Get verdicts fast.</strong> With a WildFire license, new signatures arrive within minutes. Set the WildFire content update schedule to the shortest interval available.</li><li><strong>Mind privacy and regulation.</strong> Some organizations can't send certain files to a public cloud. Options include a regional cloud, a private cloud appliance (WF-500), or excluding file types.</li><li><strong>Decrypt to see files in HTTPS.</strong> Most downloads are encrypted. Without decryption (Lab 12), the firewall never sees the file to forward it.</li><li><strong>Other vendors:</strong> Fortinet FortiSandbox, Cisco Secure Malware Analytics (Threat Grid), and Check Point SandBlast do the same job.</li></ul>
+</section>
+
+<section class="unit" id="s-selfcheck" data-section="selfcheck" data-label="Check yourself" data-part="Wrap up">
+<header><span class="sec-n">07</span><h2>Check yourself</h2></header>
+<details class="qa"><summary>Why can't Lab 8's antivirus profile stop a true zero-day file?</summary><div class="qa-a"><p>It matches signatures, and a zero-day has no signature yet.</p></div></details>
+<details class="qa"><summary>Why does the lab set every other profile in the group to None?</summary><div class="qa-a"><p>So nothing on the firewall stops the file before WildFire analyzes it.</p></div></details>
+<details class="qa"><summary>The WildFire Submissions log is empty right after the download. Is something wrong?</summary><div class="qa-a"><p>Not necessarily. Entries appear only after a verdict, which can take 5 to 15 minutes.</p></div></details>
+<details class="qa"><summary>Which CLI command confirms the file was actually sent?</summary><div class="qa-a"><p><code>debug wildfire upload-log show</code>.</p></div></details>
+<details class="qa"><summary>What do Report Benign Files and Report Grayware Files change?</summary><div class="qa-a"><p>They make benign and grayware verdicts appear in the WildFire Submissions log, not just malicious ones.</p></div></details>
+</section>
+
+<section class="unit" id="s-evidence" data-section="evidence" data-label="What to submit" data-part="Wrap up">
+<header><span class="sec-n">08</span><h2>Screenshots to capture</h2></header>
+<p>Take each screenshot at its marker. Name the files by lab and number (for example <code>lab10-shot3.png</code>) and submit them in Canvas as your instructor directs.</p>
+<ul class="checklist evidence" data-save="lab10-evidence"><li><input type="checkbox" id="ev10-0"><div><label for="ev10-0">Screenshot 1: The Corp-WF profile showing the All_Files rule sending any file type to public-cloud.</label><a class="ev-where" href="#shot-1">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev10-1"><div><label for="ev10-1">Screenshot 2: The CLI showing wildfire-test-pe-file.exe in the upload log.</label><a class="ev-where" href="#shot-2">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev10-2"><div><label for="ev10-2">Screenshot 3: The WildFire Submissions log showing the test file with a malicious verdict.</label><a class="ev-where" href="#shot-3">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev10-3"><div><label for="ev10-3">Screenshot 4: The WildFire analysis report PDF open in Firefox.</label><a class="ev-where" href="#shot-4">Find it in the walkthrough</a></div></li></ul>
+<p class="box-note">Checkmarks are saved in this browser only. They help you keep track; the screenshots themselves go to Canvas.</p>
+</section>
+
+<section class="unit" id="s-cheat" data-section="cheat" data-label="Cheat sheet" data-part="Wrap up">
+<header><span class="sec-n">09</span><h2>Cheat sheet</h2></header>
+<div class="cheat">
+<h4>Settings</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Item</th><th scope="col">Value</th></tr></thead><tbody><tr><td>Profile</td><td><code>Corp-WF</code>, rule <code>All_Files</code>: any app, any file type, both directions, public-cloud</td></tr><tr><td>Group</td><td>Corp-Profiles-Group: WildFire = Corp-WF, all others None (lab only)</td></tr><tr><td>WildFire settings</td><td>Report Benign Files and Report Grayware Files on</td></tr><tr><td>Allow-PANW-Apps</td><td>Source address Any</td></tr><tr><td>Test file</td><td><code>http://192.168.50.80/wildfire-test-pe-file.exe</code></td></tr></tbody></table></div>
+<h4>Checks</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Purpose</th><th scope="col">Use</th></tr></thead><tbody><tr><td>Uploaded?</td><td><code>debug wildfire upload-log show</code></td></tr><tr><td>Verdict</td><td><span class="path" data-path="Monitor &gt; Logs &gt; WildFire Submissions"></span></td></tr></tbody></table></div>
+<h4>Remember</h4>
+<ul><li>Save the file. Wait 5 to 15 minutes for the verdict.</li></ul>
+</div>
+<p><button type="button" class="btn" data-print="cheat">Print only this cheat sheet</button></p>
+</section>
+<nav class="pager" id="pager" aria-label="Lab navigation"></nav>
+</article>
+</div>
+</main>
+
+<footer id="site-footer"></footer>
+<script src="../assets/js/course.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/activities.js"></script>
+</body>
+</html>

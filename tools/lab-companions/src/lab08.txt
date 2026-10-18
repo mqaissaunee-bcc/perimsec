@@ -1,0 +1,180 @@
+title: Blocking Known Threats Using Security Profiles
+lede: Allowed traffic still needs inspecting. You run attacks and risky downloads through the firewall unprotected, then build antivirus, vulnerability, file blocking, data filtering, and anti-spyware profiles, add a DNS sinkhole fed by an external dynamic list, bundle them in a profile group, attach it to every allow rule, and run the same tests again.
+snapshot: edu-210-11.0a-08.xml
+uses: Module 10, sections 10.1 to 10.6
+
+= overview | What this lab is for | What this lab is for | Prepare
+A Security rule decides **whether** a session is allowed. A {{security-profile|Security Profile}} decides what happens to the content **inside** an allowed session. An allow rule with no profiles is an open door with no one watching it, which is exactly the state the firewall is in at the start of this lab.
+
+The before-and-after design is the point. You'll see attacks, a forbidden file type, a file full of Social Security numbers, and a lookup for a banned domain all pass. Then the same tests produce block pages, a {{dns-sinkhole|sinkholed}} DNS answer, and a full Threat log.
+
+- **You'll leave with:** Corp-AV, Corp-Vuln, Corp-FileBlock, Corp-DataFilter, and Corp-AS (with an EDL sinkhole), grouped in Corp-Profiles-Group on all six allow rules.
+- **Builds on:** ->Mod 10<-. Simulation 10.1 (which profile catches it?) and 10.2 (follow a sinkholed lookup) are the best preparation.
+- **Sets up:** Labs 9 and 10 add URL Filtering and WildFire profiles to this same group; the capstone rebuilds it from scratch.
+
+= setup | Before you begin | Before you begin | Prepare
+You'll use the web interface, **Remmina** (Server-Extranet runs a 6-minute attack script), Firefox, and the client terminal for `dig`.
+
+@network
+
+### What's already in the baseline
+All earlier work, including Lab 11's Acquisition rules, plus an **Extranet_to_User_Net** rule. Six rules allow traffic; none has a Security Profile yet.
+
+### The test files are safe
+`badtarfile.tar` is an ordinary archive, and `companyssns.txt` holds fictitious names and numbers. The attack script replays packet captures; nothing on your client is actually exploited.
+
+= walkthrough | Walkthrough | Walkthrough of the detailed steps | Do the lab
+@baseline
+
+## 2.2 Generate traffic without Security Profiles
+1. Open **Remmina**, double-click **Server-Extranet**, and start the attack script. Let it run uninterrupted (about 6 minutes) and minimize the window.
+$srv cd pcaps92019/attack.pcaps/
+$srv ./malwareattacks.sh
+2. In a new Firefox window, open `http://192.168.50.80/badtarfile.tar` and **Save** it. The download succeeds.
+3. In a new tab, open `http://192.168.50.80/companyssns.txt`. The file displays. Close Firefox.
+4. In the client terminal, look up a domain you'll later sinkhole. You get a normal public address.
+$cl dig @8.8.8.8 www.quora.com
+!shot The client terminal showing dig returning a real IP address for www.quora.com.
+!tip Leave the terminal open | You'll repeat the same dig at the end.
+
+## 2.3 Create an antivirus profile
+1. Go to [[Objects > Security Profiles > Antivirus]], check **default**, and click **Clone**, then OK.
+2. Open **default-1**, rename it `Corp-AV`, description `Standard antivirus profile for all security policy rules`. Click OK.
+!why Why clone? | Predefined profiles can't be edited. Cloning gives you a copy you can tune later without starting from scratch.
+
+## 2.4 Create a vulnerability protection profile
+1. Go to [[Objects > Security Profiles > Vulnerability Protection]], check **strict**, Clone, OK.
+2. Open **strict-1**, rename it `Corp-Vuln`, description `Standard vulnerability profile for all security policy rules`.
+
+## 2.5 Create a file blocking profile
+1. Go to [[Objects > Security Profiles > File Blocking]], check **strict file blocking**, Clone, OK.
+2. Open **strict file blocking-1**, rename it `Corp-FileBlock`, description `Standard file blocking profile for all security policy rules`.
+
+## 2.6 Create a data filtering profile
+1. Go to [[Objects > Custom Objects > Data Patterns]] and click **Add**. Name `US-SSNs`, description `US Social Security Numbers`, Pattern Type **Predefined Pattern**. Add **Social Security Numbers** and **Social Security Numbers (without dash separator)**. Click OK.
+2. Go to [[Objects > Security Profiles > Data Filtering]] and click **Add**. Name `Corp-DataFilter`, description `Standard data filtering profile for all security rules`.
+3. Add the **US-SSNs** pattern. Set **Alert Threshold** to `1`, **Block Threshold** to `3`, and **Log Severity** to **critical**. Click OK.
+!fix "More than three" means three or more | The guide says the profile blocks files with more than three SSNs, but a block threshold of 3 blocks at three matches. One or two matches only alert.
+
+## 2.7 Create an anti-spyware profile
+1. Go to [[Objects > Security Profiles > Anti-Spyware]], check **strict**, Clone, OK.
+2. Open **strict-1**, rename it `Corp-AS`, description `Standard anti-spyware profile for all security policy rules`.
+
+## 2.8 Create an external dynamic list of malicious domains
+1. Go to [[Objects > External Dynamic Lists]] and click **Add**. Read the notice about domain tokens and click **Cancel**.
+2. Name `malicious-domains-edl`, Type **Domain List**, description `Custom list of bad domains maintained on Extranet server`, Source `http://192.168.50.80/malicious-domains.txt`. Check **Automatically expand to include subdomains**. Check for updates **Every Five Minutes**. Click OK.
+3. Open the list again, cancel the notice, and click **Test Source URL**. It should report the URL is accessible.
+!tip What's on the list | quora.com and producthunt.com, chosen for the lab. They aren't actually malicious.
+!shot The Test Source URL result showing the EDL source is accessible.
+
+## 2.9 Sinkhole the EDL in the anti-spyware profile
+1. Open **Corp-AS** and select the **DNS Policies** tab.
+2. Under External Dynamic Lists, set the **Policy Action** for **malicious-domains-edl** to **sinkhole**. Click OK.
+!fix Name drift | The guide calls the profile "Corporate-AS" once. It's the Corp-AS you just created.
+
+## 2.10 Create a Security Profile Group
+1. Go to [[Objects > Security Profile Groups]] and click **Add**. Name it `Corp-Profiles-Group`.
+2. Choose Corp-AV, Corp-AS, Corp-Vuln, Corp-FileBlock, and Corp-DataFilter in their drop-downs. Leave URL Filtering and WildFire Analysis at **None**. Click OK.
+!shot The Corp-Profiles-Group window with all five Corp- profiles selected.
+
+## 2.11 Apply the group to every allow rule
+1. In [[Policies > Security]], open each allow rule in turn. On **Actions**, set **Profile Type** to **Group** and choose **Corp-Profiles-Group**. Click OK.
+2. Do all six: Allow-PANW-Apps, Users_to_Extranet, Users_to_Internet, Extranet_to_Internet, Extranet_to_User_Net, and the Acquisition allow rule.
+3. Hover over each rule's profile icon to confirm, then commit.
+!fix The Acquisition rule's name | The guide lists **Acquisition-Allow-All**. If your baseline carries Lab 11's rename, it's **Allow-Corp-Apps** (and Allow-Mktg-Apps also allows traffic). Apply the group to every rule whose action is Allow, whatever it's called.
+!stuck A skipped rule is uninspected traffic | Profiles only act on traffic matched by a rule that carries them. Block and deny rules don't need them.
+!shot The Security policy with the profile icon showing on all six allow rules.
+
+## 2.12 Test again with Security Profiles
+1. In the Server-Extranet window, run `./malwareattacks.sh` again (same folder) and let it finish.
+2. Open a **private** Firefox window (right-click Firefox in the taskbar) and request `http://192.168.50.80/badtarfile.tar`. You get **File Transfer Blocked**.
+3. In a new tab, request `http://192.168.50.80/companyssns.txt`. You get **Data Transfer Blocked**. Close Firefox.
+4. In the terminal, run the dig again. It now returns `sinkhole.paloaltonetworks.com`.
+$cl dig @8.8.8.8 www.quora.com
+5. Go to [[Monitor > Logs > Threat]], clear filters, and page through entries for spyware, vulnerabilities, file blocking, data filtering, and the DNS sinkhole.
+!why Why a private window | It avoids Firefox's cache, which could serve the earlier, unblocked copies of the files.
+!tip The sinkhole answer is success | It means the firewall intercepted the lookup and replaced the answer. A real infected host would then try to connect to the sinkhole address, and that attempt identifies it in the Traffic log.
+!stuck The high-level steps stop early | Task 1 ends at the tar file. Do the SSN file, the dig, and the Threat log review whichever version you follow; they prove the data filtering and sinkhole work.
+!shot The File Transfer Blocked page for badtarfile.tar.
+!shot The Data Transfer Blocked page for companyssns.txt.
+!shot The terminal showing dig returning sinkhole.paloaltonetworks.com.
+!shot The Threat log showing spyware and vulnerability entries from the attack script.
+
+= reference | Reference | Security Profiles reference | Understand
+### What each profile stops
+| Profile | Stops | Built from |
+| Antivirus (Corp-AV) | Known malware in files and traffic | default |
+| Anti-Spyware (Corp-AS) | Command-and-control and spyware; DNS sinkhole | strict |
+| Vulnerability Protection (Corp-Vuln) | Exploits against client and server flaws | strict |
+| File Blocking (Corp-FileBlock) | Risky file types by type, not content | strict file blocking |
+| Data Filtering (Corp-DataFilter) | Sensitive data patterns leaving | new, with US-SSNs |
+| URL Filtering | Web categories | added in Lab 9 |
+| WildFire Analysis | Unknown files, sent for analysis | added in Lab 10 |
+
+### Logs to check
+| Event | Log |
+| Virus, spyware, vulnerability, sinkhole | [[Monitor > Logs > Threat]] |
+| File blocked | Threat log (type file) |
+| Data pattern match | [[Monitor > Logs > Data Filtering]] |
+
+### Threat log filters
+$f ( subtype eq spyware )
+$f ( subtype eq vulnerability )
+$f ( subtype eq file )
+To isolate the sinkhole entries, click the threat name on one of them; the firewall builds the exact filter for you.
+
+= stuck | Where people get stuck | Where people get stuck | Understand
+| Symptom | Likely cause | Fix |
+| The tar file still downloads | Group not on Users_to_Extranet, cached copy, or not committed | Check the rule, use a private window, commit. |
+| SSN file still displays | Data Filtering profile not in the group | Edit Corp-Profiles-Group. |
+| dig still returns a real address | Sinkhole action not set, or EDL not reachable | Corp-AS DNS Policies: sinkhole; Test Source URL on the EDL. |
+| Threat log nearly empty | Script still running, or stopped early | Let it finish (about 6 minutes) and refresh. |
+| Test Source URL fails | Typo in the URL | `http://192.168.50.80/malicious-domains.txt` |
+| Threat entry's source isn't the client | Expected for DNS through a resolver | Here it is the client, because it queried 8.8.8.8 directly. Behind an internal DNS server, it would be the server. |
+
+= production | In production | How this looks on a real firewall | Understand
+- **Profiles on every allow rule.** Best practice is a profile group on every allow rule. Many teams name their group `default` so new rules get it automatically.
+- **Start strict, tune exceptions.** Use strict or best-practice profiles and handle false positives with specific exceptions, not by weakening the whole profile.
+- **Sinkhole with internal DNS in mind.** With an internal resolver, the Threat log shows the resolver as the source; you find the infected host by who connects to the sinkhole address afterward.
+- **Data filtering is not full DLP.** It's a useful backstop; dedicated DLP (Module 16) handles sensitive data more completely.
+- **Other vendors:** Fortinet security profiles, Cisco Snort IPS and malware policies, and Check Point Threat Prevention play the same roles.
+
+= selfcheck | Check yourself | Check yourself | Wrap up
+?? An allow rule has no profiles. What does the firewall do with malware inside that session?
+=> Nothing. Profiles are what inspect allowed traffic.
+
+?? Which profile blocked badtarfile.tar, and does it look at what's inside the file?
+=> File Blocking. It acts on file type, not content.
+
+?? With alert threshold 1 and block threshold 3, what happens to a file with two SSNs?
+=> It's allowed with an alert logged. Three or more are blocked.
+
+?? Why is dig returning sinkhole.paloaltonetworks.com a success?
+=> The anti-spyware profile intercepted a lookup for a listed domain and replaced the answer.
+
+?? Why clone the predefined profiles instead of editing them?
+=> Predefined profiles are read-only.
+
+= evidence | What to submit | Screenshots to capture | Wrap up
+Take each screenshot at its marker. Name the files by lab and number (for example `lab08-shot7.png`) and submit them in Canvas as your instructor directs.
+
+= cheat | Cheat sheet | Cheat sheet | Wrap up
+<div class="cheat">
+### Profiles
+| Name | Type | Cloned from |
+| Corp-AV | Antivirus | default |
+| Corp-Vuln | Vulnerability Protection | strict |
+| Corp-FileBlock | File Blocking | strict file blocking |
+| Corp-DataFilter | Data Filtering, US-SSNs, alert 1, block 3, critical | new |
+| Corp-AS | Anti-Spyware, sinkhole malicious-domains-edl | strict |
+| Corp-Profiles-Group | All five above; URL and WildFire none | new |
+### Tests
+| Test | Before | After |
+| `badtarfile.tar` | Downloads | File Transfer Blocked |
+| `companyssns.txt` | Displays | Data Transfer Blocked |
+| `dig @8.8.8.8 www.quora.com` | Real IP | sinkhole.paloaltonetworks.com |
+### Remember
+- Group on all six allow rules.
+- Private window for the retest. Let the script finish.
+</div>
+@cheatprint

@@ -1,0 +1,172 @@
+title: Managing Firewall Configurations
+lede: Learn the safety net before you need it. You save and export a configuration snapshot, make a mistake on purpose and undo it, compare pending changes with the running configuration before committing, and learn to tame the System log with columns and filters.
+snapshot: edu-210-11.0a-02.xml
+uses: Module 3, sections 3.1 to 3.5
+
+= overview | What this lab is for | What this lab is for | Prepare
+Every firewall administrator eventually commits something they regret. This lab practices the tools that make that survivable: a {{snapshot|named snapshot}} you can return to, an export that lives off the box, **Revert Changes** for mistakes you haven't committed yet, and **Preview Changes** so you see exactly what a commit will do before you click it.
+
+The second half is about logs. Every later lab asks you to find something in a log: a denied ping, a blocked file, a sinkholed lookup. The column, click-to-filter, and Filter Builder skills here work the same way in every log on the firewall.
+
+- **You'll leave with:** a saved and exported snapshot, a reverted mistake, a previewed (uncommitted) SNMP change, and a filtered System log.
+- **Builds on:** ->Mod 3<-, especially candidate versus running configuration (3.1 to 3.3) and log filter syntax (3.5). Simulation 3.1 lets you rehearse save, revert, and commit.
+- **Sets up:** log filtering in every lab from Lab 5 on.
+
+= setup | Before you begin | Before you begin | Prepare
+You work in the web interface from the client's Firefox browser. Exporting a snapshot downloads a file to the client's Downloads folder.
+
+@network
+
+### What's already in the baseline
+The Lab 1 settings (DNS, NTP, banner, management access) are already in `edu-210-11.0a-02.xml`. There are still no data interfaces, zones, or policy.
+
+### Three configurations to keep straight
+| Name | What it is |
+| Running configuration | What the firewall is enforcing right now. Changes only by commit (or by loading and committing). |
+| Candidate configuration | Your working copy. Every OK writes here. |
+| Saved snapshot | A copy of the candidate stored as a file on the firewall, such as `snapshot.xml` or a name you choose. |
+
+= walkthrough | Walkthrough | Walkthrough of the detailed steps | Do the lab
+@baseline
+!shot The commit completing after loading the Lab 2 baseline.
+
+## 2.2 Save a named configuration snapshot
+1. Go to [[Device > Setup > Operations]] and click **Save named configuration snapshot**.
+2. Name it `firewall-a-lab2` and click OK, then Close.
+!tip Where the file went | Save writes the snapshot to the firewall's own storage. It is not on your workstation yet; that is what the next task does.
+!fix The two halves use different names | The high-level steps (Task 1) name the snapshot `firewall-a` plus today's date. The detailed steps use `firewall-a-lab2`. Either is fine; use the detailed name if you're following this page.
+
+## 2.3 Export a named configuration snapshot
+1. On the same Operations page, click **Export named configuration snapshot**.
+2. Choose `firewall-a-lab2` and click OK.
+3. When Firefox asks, save the file in **Downloads**.
+!why Why export at all | A snapshot stored on the firewall dies with the firewall. An exported copy is your backup for hardware failure, a bad upgrade, or a replacement unit.
+!shot The Downloads folder (or Firefox's download list) showing firewall-a-lab2 saved on the client.
+
+## 2.4 Revert ongoing configuration changes
+> You'll introduce a believable typo, confirm it's there, then throw it away without committing.
+1. Go to [[Device > Setup > Services]], click the Services gear, and change **Primary DNS Server** to `88.8.8.8`. Click OK.
+2. Confirm the wrong value shows on the Services panel.
+3. At the upper right, click **Changes** and choose **Revert Changes**.
+4. Leave the scope as shown (device-and-network) and click **Revert**, then Close.
+5. Check the Services panel again: the primary DNS server is back to `8.8.8.8`.
+!shot The Services panel showing the mistaken 88.8.8.8 before you revert.
+!shot The Services panel showing 8.8.8.8 restored after Revert Changes.
+!stuck Which revert is this? | **Revert Changes** (under the Changes button) returns the candidate to the running configuration. That is different from **Revert to running configuration** and **Revert to last saved configuration** on the Operations page, covered in Module 3. Here they would all have the same effect, because the typo is the only pending change.
+
+## 2.5 Preview configuration changes
+1. Go to [[Device > Setup > Operations]] and click **SNMP Setup** (Miscellaneous section).
+2. Set **Physical Location** to `Santa Clara, CA, USA`, **Contact** to `Unit 42`, and **SNMP Community String** to `paloalto42`. Click OK.
+3. Click **Commit**, but in the Commit window click **Preview Changes**, not Commit.
+4. Leave **Lines of Context** at 10 and click OK. A **Device Config Audit** window opens: running configuration on the left, candidate on the right.
+5. Find your SNMP lines. Green is added, yellow is modified, red is deleted.
+6. Close the audit window and click **Cancel** in the Commit window.
+!fix A comma in the wrong place | The guide's step reads "Physical Location to Santa Clara, CA, USA for Contact". It means three separate fields: Physical Location is `Santa Clara, CA, USA`; Contact is `Unit 42`.
+!shot The Device Config Audit window with the SNMP changes highlighted on the candidate side.
+!tip Leave it uncommitted | The lesson is seeing the difference, not applying it. Lab 3 loads a fresh baseline, so nothing carries over either way.
+
+## 2.6 Examine log files
+1. Go to [[Monitor > Logs > System]].
+2. Open any column header's drop-down arrow, choose **Columns**, and uncheck **Object**.
+3. Drag the **Severity** column header to the far left.
+!why Why bother arranging columns | Every log has more columns than fit on screen. Putting the one you scan most (here, Severity) on the left saves time in every lab that follows. The same menu adds hidden columns, which you'll need in Labs 6, 11, and 12.
+!shot The System log with Object hidden and Severity as the first column.
+
+## 2.7 Create a log file filter
+1. In the System log, click any **informational** value in the Severity column. The filter box fills in for you.
+2. Click **Apply Filter** (the arrow at the upper right of the filter box).
+3. Now click any **general** value in the Type column. The filter grows an `and` clause. Apply it again.
+4. Click **Clear Filter** when you're done.
+$f ( severity eq informational )
+$f ( severity eq informational ) and ( subtype eq general )
+!tip Click to learn the syntax | Clicking a value is the fastest way to learn the field names. The System log calls the Type column `subtype` in filters, which you'd never guess.
+!shot The System log filtered to informational and general entries, with the filter text visible.
+
+## 2.8 Use the Filter Builder
+1. Go to the **Dashboard** and note the current date and time under General Information.
+2. Back in [[Monitor > Logs > System]], clear any filter, then click **Add Filter** (the plus icon).
+3. Build the first clause: connector **and**, attribute **Severity**, operator **equal**, value **informational**. Click **Add**.
+4. Build the second: **and**, **Time Generated**, **greater than or equal to**, today's date, and a time about 60 minutes before the time you noted. Click **Add**, then **Apply**.
+5. Click **Apply Filter** in the log. You see only the last hour of informational entries.
+!stuck Your time is not the guide's time | The screenshots use 17:25. Use your own lab clock, which runs in UTC because of the time zone you set in Lab 1. The result should look roughly like this:
+$f ( severity eq informational ) and ( time_generated geq '2026/10/21 16:25:00' )
+!shot The Add Log Filter window showing both clauses and the generated filter text.
+
+= reference | Reference | Configuration and log reference | Understand
+### Where each operation lives
+| Operation | Where | Effect |
+| Save named configuration snapshot | [[Device > Setup > Operations]] | Writes the candidate to a named file on the firewall |
+| Export named configuration snapshot | [[Device > Setup > Operations]] | Downloads a snapshot file to your computer |
+| Load named configuration snapshot | [[Device > Setup > Operations]] | Replaces the candidate with a saved file; commit to apply |
+| Revert Changes | Changes button (upper right) | Discards uncommitted changes, by scope |
+| Preview Changes | Commit window | Side-by-side diff of running versus candidate |
+| Commit history | [[Device > Config Audit]] and the commit versions on Operations | Compare or load any earlier committed version |
+
+### Filter operators you'll use all term
+| Operator | Meaning | Example |
+| `eq` / `neq` | equals, not equals | `( severity eq high )` |
+| `geq` / `leq` | greater or less than, or equal | `( severity geq high )` |
+| `in` | address in a network or equals | `( addr.src in 192.168.1.0/24 )` |
+| `has` | flag is present | `( flags has proxy )` |
+| `and` / `or` / `not` | combine clauses | `( zone.src eq Users_Net ) and ( app eq ping )` |
+
+### The same ideas in the CLI
+These are read-only and safe to try once you have SSH access in Lab 4.
+$fw show config diff
+`show config diff` is the CLI version of Preview Changes.
+
+= stuck | Where people get stuck | Where people get stuck | Understand
+| Symptom | Likely cause | Fix |
+| Can't find the exported file | Firefox saved it somewhere else, or you cancelled | Check Firefox's download list (the arrow at the top right) and the Downloads folder. |
+| Revert Changes is greyed out | Nothing is pending | Make the 88.8.8.8 change first and click OK. |
+| Preview Changes shows nothing | You committed instead of previewing, or reverted the SNMP change | Make the SNMP change again and choose Preview Changes. |
+| A log looks empty in a later task | A filter from earlier is still applied | Click Clear Filter. Filters persist while you move around. |
+| The Filter Builder returns no rows | Your time is in the future, or a different date | Use the Dashboard clock (UTC) and subtract an hour. |
+| Typed filter returns an error | Missing spaces or wrong case | Filters are case sensitive. Keep the spaces inside the parentheses. |
+
+= production | In production | How this looks on a real firewall | Understand
+- **Snapshot before every change window.** Many teams save a named snapshot (with a date and ticket number) before any significant change, then export it.
+- **Automate backups.** Production firewalls usually export the running configuration on a schedule, or are managed by Panorama, which keeps every device's configuration centrally.
+- **Preview is your peer review.** Teams that use change control often paste the Preview Changes diff into the change ticket so a second person can approve it.
+- **Lock when you share.** On a firewall several admins use, configuration and commit locks (Module 3) keep two people from committing over each other.
+- **Use SNMPv3 in real networks.** The lab uses an SNMPv2c community string. v2c sends it in clear text; SNMPv3 adds authentication and encryption.
+- **Every vendor has this.** Diff before commit, rollback, and scheduled backups exist on Fortinet, Cisco, Juniper, and Check Point too.
+
+= selfcheck | Check yourself | Check yourself | Wrap up
+?? You load a named snapshot. What has changed on the firewall, and what hasn't?
+=> Only the candidate configuration changed. The firewall keeps enforcing the running configuration until you commit.
+
+?? Why export a snapshot when it's already saved on the firewall?
+=> Because a copy on the firewall is lost if the firewall fails or is replaced. The export is an off-box backup.
+
+?? What does Revert Changes compare your candidate configuration against?
+=> The running configuration. It throws away uncommitted changes in the scope you choose.
+
+?? In Preview Changes, which side is the running configuration?
+=> The left. The candidate, with your pending changes, is on the right.
+
+?? Write a System log filter for high or critical severity entries.
+=> `( severity geq high )`. You could also write `( severity eq high ) or ( severity eq critical )`.
+
+= evidence | What to submit | Screenshots to capture | Wrap up
+Take each screenshot when you reach its marker in the walkthrough. Name the files by lab and number (for example `lab02-shot4.png`) and submit them in Canvas as your instructor directs.
+
+= cheat | Cheat sheet | Cheat sheet | Wrap up
+<div class="cheat">
+### Values used in this lab
+| Item | Value |
+| Snapshot to load | `edu-210-11.0a-02.xml` |
+| Snapshot to save and export | `firewall-a-lab2` |
+| Deliberate typo | Primary DNS `88.8.8.8` (correct is `8.8.8.8`) |
+| SNMP location, contact, community | `Santa Clara, CA, USA`, `Unit 42`, `paloalto42` |
+### Filters
+| Purpose | Filter |
+| Informational entries | `( severity eq informational )` |
+| Add a second condition | `( severity eq informational ) and ( subtype eq general )` |
+| Last hour | `( time_generated geq 'YYYY/MM/DD HH:MM:SS' )` |
+### Remember
+- Revert Changes discards what you haven't committed.
+- Preview Changes, then Cancel. Don't commit the SNMP change.
+- Clear filters before you leave a log.
+</div>
+@cheatprint

@@ -50,6 +50,27 @@
     14: "Capstone"
   };
 
+  /* Full lab companion pages in /labs/. Keys are NDG lab numbers.
+     module: the module whose briefing introduces the lab (null for the capstone).
+     sections: number of trackable sections on the lab page (progress uses it).
+     order: the course's teaching order (Lab 11 moves up to week 5). */
+  window.PS_LAB_PAGES = {
+    1:  { file: "lab-01.html", module: 2,  time: "45 to 60 minutes", sections: 9, order: 1 },
+    2:  { file: "lab-02.html", module: 3,  time: "45 to 60 minutes", sections: 9, order: 2 },
+    3:  { file: "lab-03.html", module: 4,  time: "60 to 75 minutes", sections: 9, order: 3 },
+    4:  { file: "lab-04.html", module: 5,  time: "60 to 75 minutes", sections: 9, order: 4 },
+    5:  { file: "lab-05.html", module: 6,  time: "75 to 90 minutes", sections: 9, order: 5 },
+    6:  { file: "lab-06.html", module: 7,  time: "45 to 60 minutes", sections: 9, order: 6 },
+    7:  { file: "lab-07.html", module: 8,  time: "75 to 90 minutes", sections: 9, order: 7 },
+    11: { file: "lab-11.html", module: 9,  time: "60 to 75 minutes", sections: 9, order: 8 },
+    8:  { file: "lab-08.html", module: 10, time: "75 to 90 minutes", sections: 9, order: 9 },
+    9:  { file: "lab-09.html", module: 11, time: "60 to 75 minutes", sections: 9, order: 10 },
+    10: { file: "lab-10.html", module: 12, time: "About 45 minutes", sections: 9, order: 11 },
+    12: { file: "lab-12.html", module: 13, time: "75 to 90 minutes", sections: 9, order: 12 },
+    13: { file: "lab-13.html", module: 14, time: "60 to 75 minutes", sections: 9, order: 13 },
+    14: { file: "lab-14.html", module: null, time: "2 to 3 hours", sections: 9, order: 14 }
+  };
+
   /* available: true once the module page exists in /modules/. */
   window.PS_MODULES = [
     { n: 1, file: "module-01.html", available: true, edu: "EDU-210 Module 1", lab: null,

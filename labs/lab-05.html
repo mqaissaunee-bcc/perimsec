@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab 5 companion: Creating and Managing Security Policy Rules | Perimeter Security</title>
+<meta name="description" content="Lab 5 companion for Perimeter Security: walkthrough of the detailed steps for Creating and Managing Security Policy Rules, screenshots to capture, troubleshooting, and a cheat sheet.">
+<link rel="stylesheet" href="../assets/css/site.css">
+<script src="../assets/js/prefs.js"></script>
+</head>
+<body data-root=".." data-lab="5" data-page="labs/index.html">
+<a class="skip-link" href="#main">Skip to main content</a>
+<header id="site-header"></header>
+
+<main id="main" class="page">
+<div class="module-hero">
+<p class="kicker">Lab 5 of 14 in NDG Online. Week 3, due Wed 10/21. Goes with Module 6: Security Policies.</p>
+<h1>Lab 5: Creating and Managing Security Policy Rules</h1>
+<p class="lede">Write the firewall's first Security policy rules. You allow users to reach the extranet, read hit counts and the Traffic log, make denied traffic visible by overriding the interzone-default rule, block known-bad addresses, and allow users and servers out to the internet, then find out why the last ping still fails.</p>
+<ul class="facts"><li>About 75 to 90 minutes</li><li>NDG Online, Lab 5</li><li>Uses Module 6, sections 6.2 to 6.6</li><li>Snapshot <code>edu-210-11.0a-05.xml</code></li><li>5 screenshots to capture</li></ul>
+<div class="lab-hero-links"><a class="btn" href="../modules/module-06.html#s-lab">Lab 5 briefing in Module 6</a><a class="btn btn-quiet" href="index.html">All lab companions</a><a class="btn btn-quiet" href="#s-evidence">Screenshot checklist</a></div>
+</div>
+
+<div class="module-layout">
+<nav class="module-rail" aria-label="This lab companion">
+<h2>This lab</h2>
+<div class="progress-wrap"><span class="label" id="rail-meter-label">0 sections reviewed</span>
+<div class="meter" role="progressbar" aria-labelledby="rail-meter-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="rail-meter"></span></div></div>
+<ol id="rail-list"></ol>
+<p><a href="#s-cheat">Jump to the cheat sheet</a></p>
+</nav>
+<article>
+<section class="unit" id="s-overview" data-section="overview" data-label="What this lab is for" data-part="Prepare">
+<header><span class="sec-n">01</span><h2>What this lab is for</h2></header>
+<p>After Lab 4 the firewall routes between three zones but allows nothing between them, because the predefined <strong>interzone-default</strong> rule denies everything that no other rule allows. This lab writes the rules that open specific paths, and teaches the two habits that make troubleshooting possible: watching <strong>hit counts</strong> and reading the <strong><dfn data-term="traffic-log">Traffic log</dfn></strong>.</p>
+<p>It also delivers the most useful failure in the course. At the end, your ping to 8.8.8.8 is allowed by policy and still gets no reply. Allowing traffic and traffic working are two different things; Lab 6 supplies the missing piece.</p>
+<ul><li><strong>You'll leave with:</strong> Users_to_Extranet, Users_to_Internet, Extranet_to_Internet, two known-bad-address block rules, and logging on interzone-default.</li><li><strong>Builds on:</strong> <a href="../modules/module-06.html">Module 6</a>, especially rule types and default rules (6.2), rule order (6.3), and external dynamic lists (6.5). Do all four Try this prompts in Simulation 6.2 first.</li><li><strong>Sets up:</strong> NAT in Lab 6, App-ID in Lab 7, and every lab after that edits these rules.</li></ul>
+</section>
+
+<section class="unit" id="s-setup" data-section="setup" data-label="Before you begin" data-part="Prepare">
+<header><span class="sec-n">02</span><h2>Before you begin</h2></header>
+<p>You'll use the web interface, the client's <strong>Terminal Emulator</strong> for ping, and Firefox's <strong>Extranet</strong> bookmark.</p>
+<div class="table-wrap"><table>
+<caption class="visually-hidden">Hosts in the lab network</caption>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td></tr>
+</tbody></table></div>
+<p class="box-note">Usernames and passwords are in the Lab Settings table on page 5 of each lab guide. They are not repeated here, because this site is public.</p>
+<h4>What's already in the baseline</h4>
+<p>Lab 4's interfaces, VR-1, and zones (Internet, Users_Net, Extranet). The Security policy holds only the two predefined rules: <strong>intrazone-default</strong> (allow) and <strong>interzone-default</strong> (deny).</p>
+</section>
+
+<section class="unit" id="s-walkthrough" data-section="walkthrough" data-label="Walkthrough" data-part="Do the lab">
+<header><span class="sec-n">03</span><h2>Walkthrough of the detailed steps</h2></header>
+<h3 class="task-head"><span class="tn">2.1</span>Load the lab configuration</h3>
+<p class="task-intro">Every lab starts from a known baseline, so your firewall matches the guide no matter what you did last time.</p>
+<ol class="steps-list" start="1"><li>On the client desktop, log in as <code>lab-user</code>, open Firefox, and browse to <code>https://192.168.1.254</code>. Log in as <code>admin</code> with the password from Lab Settings. If the login page does not appear, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li>Go to <span class="path" data-path="Device > Setup > Operations"></span> and click <strong>Load named configuration snapshot</strong>. Choose <code>edu-210-11.0a-05.xml</code> and click OK, then Close.</li><li>Open <strong>Tasks</strong> (lower right) and confirm the Load task shows completed.</li><li>Click <strong>Commit</strong> (upper right), then <strong>Commit</strong> in the dialog, and wait for it to finish.</li></ol>
+<div class="callout stuck"><p class="c-title">Loading is not committing</p><p>A loaded snapshot replaces only the candidate configuration. Until you commit, the firewall is still running whatever was there before, and nothing in the lab will match the guide.</p></div>
+<h3 class="task-head"><span class="tn">2.2</span>Create a Security policy rule</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Policies &gt; Security"></span> and click <strong>Add</strong>.</li>
+<li><strong>General:</strong> name <code>Users_to_Extranet</code>, description <code>Allows hosts in Users_Net zone to access servers in Extranet zone</code>.</li>
+<li><strong>Source:</strong> add source zone <strong>Users_Net</strong>.</li>
+<li><strong>Destination:</strong> add destination zone <strong>Extranet</strong>.</li>
+<li><strong>Application:</strong> leave <strong>Any</strong>.</li>
+<li><strong>Service/URL Category:</strong> leave Service <strong>application-default</strong> and URL Category <strong>Any</strong>.</li>
+<li><strong>Actions:</strong> leave Action <strong>Allow</strong>. Click OK.</li>
+<li>Confirm the rule sits above intrazone-default and interzone-default, then commit.</li>
+</ol>
+<div class="callout why"><p class="c-title">application-default</p><p>It allows each application only on its standard ports: web-browsing on TCP 80, ssl on TCP 443. An application on an unusual port won't match. That's tighter than Service <strong>any</strong>.</p></div>
+<div class="callout stuck"><p class="c-title">New rules default to Allow</p><p>Every new rule starts as Allow. When you build a block rule, change the action on the Actions tab before you click OK.</p></div>
+<p class="shot" id="shot-1"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 1</span> The Security policy showing Users_to_Extranet above the two default rules.</span></p>
+<h3 class="task-head"><span class="tn">2.3</span>Modify Security policy table columns</h3>
+<ol class="steps-list" start="1">
+<li>Hover over the <strong>Name</strong> column header, open its drop-down, and choose <strong>Columns</strong>.</li>
+<li>Uncheck <strong>Type</strong>, <strong>Source Device</strong>, <strong>Destination Device</strong>, and <strong>Options</strong>.</li>
+<li>Open the drop-down again and choose <strong>Adjust Columns</strong>.</li>
+</ol>
+<div class="callout tip"><p class="c-title">Optional, but worth it</p><p>Hiding columns you never use makes Hit Count and the rule details easier to see. The same menu works in every table on the firewall.</p></div>
+<h3 class="task-head"><span class="tn">2.4</span>Test the new rule</h3>
+<ol class="steps-list" start="1">
+<li>Minimize Firefox and open the <strong>Terminal Emulator</strong> on the client.</li>
+<li>Ping the extranet web server for a few seconds, then press Ctrl+C. You should get replies.</li>
+</ol>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">lab-user@client-a:~/Desktop/Lab-Files$</span> <span class="cmd">ping 192.168.50.80</span></pre>
+<ol class="steps-list" start="3">
+<li>Open a new Firefox window and choose the bookmark <strong>Extranet &gt; Extranet</strong>. You should see <strong>Hello World !</strong></li>
+</ol>
+<p class="shot" id="shot-2"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 2</span> The terminal showing replies from 192.168.50.80 and the Hello World page.</span></p>
+<h3 class="task-head"><span class="tn">2.5</span>Examine and reset the rule hit count</h3>
+<ol class="steps-list" start="1">
+<li>Back in <span class="path" data-path="Policies &gt; Security"></span>, scroll right to <strong>Hit Count</strong> and note the number on Users_to_Extranet.</li>
+<li>Ping 192.168.50.80 again, then click <strong>Refresh</strong> (upper right). The count rises.</li>
+<li>Select (don't open) Users_to_Extranet, then click <strong>Reset Rule Hit Counter &gt; Selected rules</strong>. It drops to 0.</li>
+</ol>
+<div class="callout why"><p class="c-title">Why reset before a test</p><p>Starting from zero proves that <strong>your</strong> test, and nothing else, is hitting the rule. It's the quickest way to answer "is my rule being used?"</p></div>
+<h3 class="task-head"><span class="tn">2.6</span>Examine the Traffic log and make denies visible</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Monitor &gt; Logs &gt; Traffic"></span>. From the Receive Time column drop-down, open <strong>Columns</strong> and hide Type, Source Dynamic Address Group, Destination Dynamic Address Group, and Dynamic User Group.</li>
+<li>In the terminal, ping 8.8.8.8 for a few seconds. It fails. Press Ctrl+C.</li>
+<li>Apply this filter in the Traffic log. Nothing appears.</li>
+</ol>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( addr.dst eq 8.8.8.8 ) and ( zone.src eq Users_Net )</span></pre>
+<ol class="steps-list" start="4">
+<li>Go to <span class="path" data-path="Policies &gt; Security"></span>, select (don't open) <strong>interzone-default</strong>, and click <strong>Override</strong>.</li>
+<li>On the <strong>Actions</strong> tab, check <strong>Log at Session End</strong>. Click OK and commit.</li>
+<li>Ping 8.8.8.8 again, then reapply the filter. Now the denied sessions appear, matched to interzone-default.</li>
+</ol>
+<div class="callout guideq"><p class="c-title">Q1: Have any entries been recorded?</p><p><strong>No.</strong> The ping matched interzone-default, which denies it and, until you override it, doesn't log. The Why box below explains both reasons.</p></div>
+<div class="callout why"><p class="c-title">Why the first search was empty</p><p>Two reasons. No rule allows Users_Net to Internet, so the ping matches interzone-default. And interzone-default doesn't log by default. Denied traffic you can't see is the hardest kind to troubleshoot.</p></div>
+<div class="callout stuck"><p class="c-title">Filters are exact</p><p>Field names and zone names are case sensitive, and the spaces inside the parentheses matter. Copy the filter with the button rather than retyping it.</p></div>
+<p class="shot" id="shot-3"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 3</span> The Traffic log showing denied 8.8.8.8 sessions matched by interzone-default.</span></p>
+<h3 class="task-head">Added from the high-level steps: block known-bad addresses</h3>
+<p class="task-intro">The detailed steps skip these two rules, but the high-level steps (Task 1.12) include them, the in-module briefing lists them, and the baselines for later labs already contain them. Build them here so your rulebase matches.</p>
+<ol class="steps-list" start="1">
+<li>Add a rule named <code>Block-to-Known-Bad-Addresses</code>, description <code>Blocks traffic from Users and Extranet to known bad IP addresses</code>. Source zones <strong>Users_Net</strong> and <strong>Extranet</strong>. Destination zone <strong>Internet</strong>. Destination addresses: <strong>Palo Alto Networks - Bulletproof IP addresses</strong>, <strong>Palo Alto Networks - High risk IP addresses</strong>, and <strong>Palo Alto Networks - Known malicious IP addresses</strong>. Application <strong>any</strong>, Service <strong>any</strong>. Action <strong>Deny</strong>.</li>
+<li>Add <code>Block-from-Known-Bad-Addresses</code>, description <code>Blocks traffic from known bad IP addresses to Users and Extranet</code>. Source zone <strong>Internet</strong> with the same three lists as source addresses. Destination zones <strong>Users_Net</strong> and <strong>Extranet</strong>. Application <strong>any</strong>, Service <strong>any</strong>. Action <strong>Deny</strong>.</li>
+<li>Move both rules to the top of the rulebase: Block-to first, then Block-from.</li>
+</ol>
+<div class="callout fix"><p class="c-title">The detailed steps leave these out</p><p>Task 2 jumps from the Traffic log straight to the internet rules. Follow only Task 2 and your finished rulebase won't match the high-level steps or what you'll see at the top of the Lab 7 baseline.</p></div>
+<div class="callout why"><p class="c-title">Service any, not application-default</p><p>A block rule should catch the bad address on any port. application-default would let an application on an unusual port slip past the block.</p></div>
+<div class="callout tip"><p class="c-title">Where the lists come from</p><p>These predefined external dynamic lists are maintained by Palo Alto Networks and refresh with content updates. You'll find them in the address picker under External Dynamic Lists.</p></div>
+<p class="shot" id="shot-4"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 4</span> The rulebase with both block rules at the top, above Users_to_Extranet.</span></p>
+<h3 class="task-head"><span class="tn">2.7</span>Create Security rules for internet access</h3>
+<ol class="steps-list" start="1">
+<li>Add <code>Users_to_Internet</code>, description <code>Allows hosts in Users_Net zone to access Internet zone</code>. Source zone <strong>Users_Net</strong>, destination zone <strong>Internet</strong>, Application <strong>Any</strong>, Service <strong>application-default</strong>, Action <strong>Allow</strong>.</li>
+<li>Add <code>Extranet_to_Internet</code>, description <code>Allows hosts in Extranet zone to access Internet zone</code>. Source zone <strong>Extranet</strong>, destination zone <strong>Internet</strong>, same settings.</li>
+<li>Confirm both block rules are still above these allow rules, then commit.</li>
+</ol>
+<div class="callout stuck"><p class="c-title">Block rules belong on top</p><p>If Users_to_Internet sits above Block-to-Known-Bad-Addresses, the block rule is shadowed and never matches. The commit's Rule Shadow tab will warn you.</p></div>
+<h3 class="task-head"><span class="tn">2.8</span>Ping an internet host from the client</h3>
+<ol class="steps-list" start="1">
+<li>In the terminal, ping 8.8.8.8 again. It <strong>still</strong> fails. Press Ctrl+C.</li>
+<li>In the Traffic log, apply the filter below. Wait a minute and refresh if needed. The sessions are now <strong>allowed</strong> by Users_to_Internet.</li>
+</ol>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( addr.dst eq 8.8.8.8 ) and ( app eq ping )</span></pre>
+<div class="callout why"><p class="c-title">Allowed, but no reply</p><p>The client's address, 192.168.1.20, is private. The packet leaves the firewall with that source, and nothing on the internet can route a reply back to it. Lab 6 adds the source NAT that fixes this.</p></div>
+<p class="shot" id="shot-5"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 5</span> The Traffic log showing the 8.8.8.8 ping allowed by Users_to_Internet.</span></p>
+</section>
+
+<section class="unit" id="s-reference" data-section="reference" data-label="Reference" data-part="Understand">
+<header><span class="sec-n">04</span><h2>Security policy reference</h2></header>
+<h4>A rule's tabs</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Tab</th><th scope="col">Decides</th></tr></thead><tbody><tr><td>General</td><td>Name, description, tags, rule type (universal, intrazone, interzone)</td></tr><tr><td>Source</td><td>Source zones, addresses, users, devices</td></tr><tr><td>Destination</td><td>Destination zones, addresses, devices</td></tr><tr><td>Application</td><td>Which App-ID applications match</td></tr><tr><td>Service/URL Category</td><td>Ports (application-default, any, or specific services) and URL categories</td></tr><tr><td>Actions</td><td>Allow, deny, drop, reset; logging; Security Profiles</td></tr></tbody></table></div>
+<h4>Traffic log filter fields</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Field</th><th scope="col">Meaning</th><th scope="col">Example</th></tr></thead><tbody><tr><td><code>addr.src</code> / <code>addr.dst</code></td><td>Source or destination address</td><td><code>( addr.dst eq 8.8.8.8 )</code></td></tr><tr><td><code>zone.src</code> / <code>zone.dst</code></td><td>Source or destination zone</td><td><code>( zone.src eq Users_Net )</code></td></tr><tr><td><code>app</code></td><td>Application</td><td><code>( app eq ping )</code></td></tr><tr><td><code>rule</code></td><td>Rule that matched</td><td><code>( rule eq Users_to_Internet )</code></td></tr><tr><td><code>action</code></td><td>allow, deny, drop, reset</td><td><code>( action eq deny )</code></td></tr></tbody></table></div>
+<h4>Ask the firewall instead of guessing</h4>
+<p>It reports which rule a session would match. The same tool is in the web interface as <strong>Test Policy Match</strong>.</p>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">test security-policy-match from Users_Net to Internet source 192.168.1.20 destination 8.8.8.8 protocol 1 application ping</span></pre>
+</section>
+
+<section class="unit" id="s-stuck" data-section="stuck" data-label="Where people get stuck" data-part="Understand">
+<header><span class="sec-n">05</span><h2>Where people get stuck</h2></header>
+<div class="table-wrap"><table class="stuck-table"><thead><tr><th scope="col">Symptom</th><th scope="col">Likely cause</th><th scope="col">Fix</th></tr></thead><tbody><tr><td>Ping to 192.168.50.80 fails</td><td>Not committed, or zones reversed</td><td>Users_Net is the source, Extranet the destination. Commit.</td></tr><tr><td>The filter finds nothing, even after logging</td><td>Typo or case in the filter, or logs not written yet</td><td>Copy the filter exactly; wait a minute and refresh.</td></tr><tr><td>Denied traffic still isn't logged</td><td>interzone-default overridden but not committed</td><td>Commit after the override.</td></tr><tr><td>Block rule hit count stays at 0</td><td>It's below an allow rule</td><td>Move block rules to the top.</td></tr><tr><td>Final ping to 8.8.8.8 fails</td><td>Expected: no NAT yet</td><td>Nothing to fix. Lab 6 adds source NAT.</td></tr><tr><td>Your rulebase doesn't match the briefing</td><td>You followed only Task 2, which skips the block rules</td><td>Add the two block rules from the high-level steps.</td></tr></tbody></table></div>
+</section>
+
+<section class="unit" id="s-production" data-section="production" data-label="In production" data-part="Understand">
+<header><span class="sec-n">06</span><h2>How this looks on a real firewall</h2></header>
+<ul><li><strong>Never leave Application any.</strong> Users_to_Internet with any application is a starting point. Lab 7 narrows it with App-ID; production rules list the applications the business needs.</li><li><strong>Log what you deny.</strong> Overriding interzone-default to log at session end is common practice, often with log forwarding to a SIEM.</li><li><strong>Use the known-bad lists everywhere.</strong> Blocking Palo Alto Networks' bulletproof, high-risk, and known malicious lists in both directions is a widely recommended baseline.</li><li><strong>Describe and tag every rule.</strong> Descriptions and tags (owner, ticket, purpose) are what let the next admin clean up the rulebase safely.</li><li><strong>Review hit counts.</strong> Rules with zero hits for months are candidates for removal. Policy Optimizer (Module 8) helps.</li><li><strong>Same logic, other vendors.</strong> Top-down, first-match rulebases with an implicit deny at the bottom are standard on Fortinet, Cisco, and Check Point.</li></ul>
+</section>
+
+<section class="unit" id="s-selfcheck" data-section="selfcheck" data-label="Check yourself" data-part="Wrap up">
+<header><span class="sec-n">07</span><h2>Check yourself</h2></header>
+<details class="qa"><summary>Before you overrode interzone-default, why did the Traffic log show nothing for the failed 8.8.8.8 ping?</summary><div class="qa-a"><p>The ping matched interzone-default, and that rule doesn't log until you override it and turn on Log at Session End.</p></div></details>
+<details class="qa"><summary>Does Users_to_Extranet need a second rule so the web server's replies reach the client?</summary><div class="qa-a"><p>No. Replies belong to the same session, and the rule allows the session.</p></div></details>
+<details class="qa"><summary>Why must the known-bad block rules sit above Users_to_Internet?</summary><div class="qa-a"><p>Rules are evaluated top-down and the first match wins. Below the allow rule, the block rules would be shadowed.</p></div></details>
+<details class="qa"><summary>At the end of the lab, the ping to 8.8.8.8 is allowed. Why doesn't it get a reply?</summary><div class="qa-a"><p>The source address 192.168.1.20 is private and can't be routed on the internet. Source NAT (Lab 6) fixes it.</p></div></details>
+<details class="qa"><summary>What does application-default do for web-browsing?</summary><div class="qa-a"><p>It allows web-browsing only on its standard port, TCP 80.</p></div></details>
+</section>
+
+<section class="unit" id="s-evidence" data-section="evidence" data-label="What to submit" data-part="Wrap up">
+<header><span class="sec-n">08</span><h2>Screenshots to capture</h2></header>
+<p>Take each screenshot at its marker. Name the files by lab and number (for example <code>lab05-shot3.png</code>) and submit them in Canvas as your instructor directs.</p>
+<ul class="checklist evidence" data-save="lab5-evidence"><li><input type="checkbox" id="ev5-0"><div><label for="ev5-0">Screenshot 1: The Security policy showing Users_to_Extranet above the two default rules.</label><a class="ev-where" href="#shot-1">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev5-1"><div><label for="ev5-1">Screenshot 2: The terminal showing replies from 192.168.50.80 and the Hello World page.</label><a class="ev-where" href="#shot-2">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev5-2"><div><label for="ev5-2">Screenshot 3: The Traffic log showing denied 8.8.8.8 sessions matched by interzone-default.</label><a class="ev-where" href="#shot-3">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev5-3"><div><label for="ev5-3">Screenshot 4: The rulebase with both block rules at the top, above Users_to_Extranet.</label><a class="ev-where" href="#shot-4">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev5-4"><div><label for="ev5-4">Screenshot 5: The Traffic log showing the 8.8.8.8 ping allowed by Users_to_Internet.</label><a class="ev-where" href="#shot-5">Find it in the walkthrough</a></div></li></ul>
+<p class="box-note">Checkmarks are saved in this browser only. They help you keep track; the screenshots themselves go to Canvas.</p>
+</section>
+
+<section class="unit" id="s-cheat" data-section="cheat" data-label="Cheat sheet" data-part="Wrap up">
+<header><span class="sec-n">09</span><h2>Cheat sheet</h2></header>
+<div class="cheat">
+<h4>The rulebase you finish with (top to bottom)</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Rule</th><th scope="col">From</th><th scope="col">To</th><th scope="col">App / Service</th><th scope="col">Action</th></tr></thead><tbody><tr><td>Block-to-Known-Bad-Addresses</td><td>Users_Net, Extranet</td><td>Internet (3 PANW lists)</td><td>any / any</td><td>Deny</td></tr><tr><td>Block-from-Known-Bad-Addresses</td><td>Internet (3 PANW lists)</td><td>Users_Net, Extranet</td><td>any / any</td><td>Deny</td></tr><tr><td>Users_to_Extranet</td><td>Users_Net</td><td>Extranet</td><td>any / application-default</td><td>Allow</td></tr><tr><td>Users_to_Internet</td><td>Users_Net</td><td>Internet</td><td>any / application-default</td><td>Allow</td></tr><tr><td>Extranet_to_Internet</td><td>Extranet</td><td>Internet</td><td>any / application-default</td><td>Allow</td></tr><tr><td>intrazone-default</td><td>(same zone)</td><td></td><td></td><td>Allow</td></tr><tr><td>interzone-default</td><td>(any other)</td><td></td><td></td><td>Deny, <strong>log at session end</strong></td></tr></tbody></table></div>
+<h4>Filters</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Purpose</th><th scope="col">Filter</th></tr></thead><tbody><tr><td>Denied ping</td><td><code>( addr.dst eq 8.8.8.8 ) and ( zone.src eq Users_Net )</code></td></tr><tr><td>Allowed ping</td><td><code>( addr.dst eq 8.8.8.8 ) and ( app eq ping )</code></td></tr></tbody></table></div>
+<h4>Remember</h4>
+<ul><li>New rules start as Allow. Block rules on top.</li><li>Policy allowed is not the same as working: no NAT yet.</li></ul>
+</div>
+<p><button type="button" class="btn" data-print="cheat">Print only this cheat sheet</button></p>
+</section>
+<nav class="pager" id="pager" aria-label="Lab navigation"></nav>
+</article>
+</div>
+</main>
+
+<footer id="site-footer"></footer>
+<script src="../assets/js/course.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/activities.js"></script>
+</body>
+</html>

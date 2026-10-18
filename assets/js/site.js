@@ -58,6 +58,21 @@
     var done = Object.keys(p.sections).filter(function (k) { return p.sections[k]; }).length;
     return Math.min(100, Math.round((done / total) * 100));
   }
+  var LABS = window.PS_LABS || {};
+  var LABPAGES = window.PS_LAB_PAGES || {};
+  function labProgress(n) { return store.get("lab-" + n, { sections: {} }); }
+  function saveLabProgress(n, p) { store.set("lab-" + n, p); }
+  function labPercent(n) {
+    var info = LABPAGES[n];
+    var p = labProgress(n);
+    var total = (info && info.sections) || 0;
+    if (!total) { return 0; }
+    var done = Object.keys(p.sections).filter(function (k) { return p.sections[k]; }).length;
+    return Math.min(100, Math.round((done / total) * 100));
+  }
+  function labNumbersInOrder() {
+    return Object.keys(LABPAGES).map(Number).sort(function (a, b) { return LABPAGES[a].order - LABPAGES[b].order; });
+  }
   function courseStats() {
     var avail = MODS.filter(function (m) { return m.available; });
     var done = 0, started = 0, sum = 0;
@@ -84,7 +99,8 @@
   /* ---------- header & footer ---------- */
   var NAV = [
     ["index.html", "Modules"], ["schedule.html", "Schedule"], ["syllabus.html", "Syllabus"],
-    ["glossary.html", "Glossary"], ["simulations.html", "Simulations"], ["my-work.html", "My work"]
+    ["glossary.html", "Glossary"], ["simulations.html", "Simulations"],
+    ["labs/index.html", "Labs"], ["my-work.html", "My work"]
   ];
   function buildHeader() {
     var h = document.getElementById("site-header");
@@ -181,6 +197,15 @@
     return '<a class="mod-link" href="' + url("modules/" + m.file) + '">' + inner + "</a>";
   }
 
+  function weekLabLink(n) {
+    var info = LABPAGES[n];
+    if (!info) { return ""; }
+    var pc = labPercent(n);
+    var status = pc >= 100 ? "Reviewed" : (pc > 0 ? pc + "% reviewed" : "Lab companion");
+    return '<a class="mod-link lab-link" href="' + url("labs/" + info.file) + '"><span class="n">L' + n + '</span><span><span class="t">Lab ' + n + ": " + esc(LABS[n] || "") +
+      '</span><span class="d">Walkthrough, screenshots to capture, and cheat sheet for the NDG Online lab.</span></span><span class="s">' + status + "</span></a>";
+  }
+
   function buildWeeks() {
     var box = document.getElementById("week-list");
     if (!box) { return; }
@@ -188,9 +213,11 @@
       var items = w.modules.map(function (n) {
         return weekModuleLink(MODS.filter(function (m) { return m.n === n; })[0]);
       }).join("");
+      if (!w.checkpoint) { items += w.labs.map(weekLabLink).join(""); }
       if (w.checkpoint) {
         items += '<a class="mod-link checkpoint" href="' + url("capstone.html") + '"><span class="n">✓</span><span><span class="t">' + esc(w.checkpoint) +
           '</span><span class="d">Lab ' + (w.labs[0] || "") + " in NDG Online, then the final exam in Canvas. Open the capstone companion.</span></span><span class=\"s\">Checkpoint</span></a>";
+        items += w.labs.map(weekLabLink).join("");
       }
       return '<div class="week-block"><div class="week-label">Week ' + w.week + "<small>Due " + esc(w.due) + "</small></div>" +
         '<div class="week-items">' + items + "</div></div>";
@@ -202,9 +229,12 @@
   var currentSection = null;
   function initModule() {
     var n = parseInt(document.body.getAttribute("data-module"), 10);
-    if (!n) { return; }
+    var labN = parseInt(document.body.getAttribute("data-lab"), 10);
+    if (!n && !labN) { return; }
+    var load = n ? function () { return modProgress(n); } : function () { return labProgress(labN); };
+    var save = n ? function (p) { saveModProgress(n, p); } : function (p) { saveLabProgress(labN, p); };
     var units = Array.prototype.slice.call(document.querySelectorAll(".unit[data-section]"));
-    var prog = modProgress(n);
+    var prog = load();
     var rail = document.getElementById("rail-list");
     var meter = document.getElementById("rail-meter");
     var meterLabel = document.getElementById("rail-meter-label");
@@ -257,7 +287,7 @@
       b.addEventListener("click", function () {
         var id = u.getAttribute("data-section");
         prog.sections[id] = !prog.sections[id];
-        saveModProgress(n, prog);
+        save(prog);
         refresh();
       });
       row.appendChild(b);
@@ -266,9 +296,9 @@
 
     // Let other scripts (quiz) mark sections
     document.addEventListener("ps:section-complete", function (e) {
-      prog = modProgress(n);
+      prog = load();
       prog.sections[e.detail] = true;
-      saveModProgress(n, prog);
+      save(prog);
       refresh();
     });
 
@@ -289,7 +319,7 @@
     }
     if (units.length) { currentSection = units[0]; }
     refresh();
-    buildPager(n);
+    if (n) { buildPager(n); } else { buildLabPager(labN); }
     buildVideo();
   }
 
@@ -303,6 +333,55 @@
     if (next && next.available) { html += '<a class="next" href="' + next.file + '"><small>Next</small>Module ' + next.n + ": " + esc(next.title) + "</a>"; }
     else if (next) { html += '<a class="next" href="' + url("index.html") + '"><small>Next up</small>Module ' + next.n + " opens soon. Back to modules</a>"; }
     p.innerHTML = html;
+  }
+
+  /* Lab pages: previous and next lab in the order the course teaches them */
+  function buildLabPager(n) {
+    var p = document.getElementById("pager");
+    if (!p) { return; }
+    var order = labNumbersInOrder();
+    var i = order.indexOf(n);
+    var html = "";
+    var prev = order[i - 1], next = order[i + 1];
+    if (prev) { html += '<a class="prev" href="' + LABPAGES[prev].file + '"><small>Previous lab</small>Lab ' + prev + ": " + esc(LABS[prev]) + "</a>"; }
+    if (next) { html += '<a class="next" href="' + LABPAGES[next].file + '"><small>Next lab</small>Lab ' + next + ": " + esc(LABS[next]) + "</a>"; }
+    else { html += '<a class="next" href="index.html"><small>All labs</small>Back to the lab companions</a>'; }
+    p.innerHTML = html;
+  }
+
+  /* Lab pages: copy buttons on command and filter blocks, and a cheat-sheet-only print */
+  function initLabTools() {
+    if (!document.body.hasAttribute("data-lab")) { return; }
+    document.querySelectorAll("pre.cli").forEach(function (pre) {
+      var wrap = el("div", { "class": "cli-wrap" });
+      pre.parentNode.insertBefore(wrap, pre);
+      wrap.appendChild(pre);
+      var b = el("button", { type: "button", "class": "copy-btn" }, "Copy");
+      b.setAttribute("aria-label", "Copy " + (pre.getAttribute("data-kind") || "command"));
+      b.addEventListener("click", function () {
+        var text = Array.prototype.map.call(pre.querySelectorAll(".cmd"), function (c) { return c.textContent; }).join("\n") || pre.textContent;
+        function done(ok) { b.textContent = ok ? "Copied" : "Select and copy"; setTimeout(function () { b.textContent = "Copy"; }, 1600); }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(false); });
+        } else {
+          var ta = el("textarea");
+          ta.value = text; document.body.appendChild(ta); ta.select();
+          var ok = false; try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+          ta.remove(); done(ok);
+        }
+      });
+      wrap.appendChild(b);
+    });
+    document.querySelectorAll("[data-print]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var only = b.getAttribute("data-print");
+        if (only) { document.body.classList.add("print-only-" + only); }
+        window.print();
+      });
+    });
+    window.addEventListener("afterprint", function () {
+      document.body.className = document.body.className.replace(/\bprint-only-\S+/g, "").trim();
+    });
   }
 
   /* Overview video: set data-embed (iframe URL) or data-link (external page) on .video-slot */
@@ -356,8 +435,12 @@
 
   /* ---------- notes panel ---------- */
   var notesPanel, notesArea, notesCtx, notesSaved, notesTab = "section";
+  function notesPageKey() {
+    var lab = document.body.getAttribute("data-lab");
+    return document.body.getAttribute("data-module") || (lab ? "lab" + lab : "page");
+  }
   function notesKey() {
-    var n = document.body.getAttribute("data-module") || "page";
+    var n = notesPageKey();
     if (notesTab === "scratch") { return "notes-" + n + "-scratch"; }
     var s = currentSection ? currentSection.getAttribute("data-section") : "general";
     return "notes-" + n + "-" + s;
@@ -367,14 +450,14 @@
     loadNote();
   }
   function loadNote() {
-    var label = notesTab === "scratch" ? "Scratchpad for this module"
+    var label = notesTab === "scratch" ? (document.body.hasAttribute("data-lab") ? "Scratchpad for this lab" : "Scratchpad for this module")
       : "Notes for: " + (currentSection ? (currentSection.getAttribute("data-label") || "this section") : "this page");
     notesCtx.textContent = label;
     notesArea.value = store.get(notesKey(), "");
     notesSaved.textContent = "";
   }
   function collectNotes() {
-    var n = document.body.getAttribute("data-module") || "page";
+    var n = notesPageKey();
     var title = document.title;
     var parts = [];
     document.querySelectorAll(".unit[data-section]").forEach(function (u) {
@@ -394,7 +477,8 @@
   }
   function exportNotes(kind) {
     var d = collectNotes();
-    var slug = "notes-module-" + (document.body.getAttribute("data-module") || "page");
+    var lab = document.body.getAttribute("data-lab");
+    var slug = lab ? "notes-lab-" + lab : "notes-module-" + (document.body.getAttribute("data-module") || "page");
     if (!d.parts.length) { notesSaved.textContent = "No notes to export yet."; return; }
     if (kind === "md") {
       var md = "# " + d.title + "\n\n" + d.parts.map(function (p) { return "## " + p.h + "\n\n" + p.t + "\n"; }).join("\n");
@@ -407,7 +491,7 @@
     notesSaved.textContent = "Exported.";
   }
   function initNotes() {
-    if (!document.body.hasAttribute("data-module")) { return; }
+    if (!document.body.hasAttribute("data-module") && !document.body.hasAttribute("data-lab")) { return; }
     var fab = el("button", { type: "button", "class": "notes-fab", "aria-expanded": "false", "aria-controls": "notes-panel" }, "Notes");
     notesPanel = el("aside", { "class": "notes-panel", id: "notes-panel", "aria-label": "Notes" });
     notesPanel.hidden = true;
@@ -469,6 +553,7 @@
   window.PS = {
     store: store, esc: esc, el: el, url: url, pad: pad,
     modProgress: modProgress, saveModProgress: saveModProgress, modPercent: modPercent, courseStats: courseStats,
+    labProgress: labProgress, labPercent: labPercent, labNumbersInOrder: labNumbersInOrder,
     download: download
   };
 
@@ -479,6 +564,7 @@
   buildFaceplate();
   buildWeeks();
   initModule();
+  initLabTools();
   initTips();
   initNotes();
 })();

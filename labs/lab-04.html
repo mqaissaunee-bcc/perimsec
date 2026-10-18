@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab 4 companion: Connecting the Firewall to Production Networks with Security Zones | Perimeter Security</title>
+<meta name="description" content="Lab 4 companion for Perimeter Security: walkthrough of the detailed steps for Connecting the Firewall to Production Networks with Security Zones, screenshots to capture, troubleshooting, and a cheat sheet.">
+<link rel="stylesheet" href="../assets/css/site.css">
+<script src="../assets/js/prefs.js"></script>
+</head>
+<body data-root=".." data-lab="4" data-page="labs/index.html">
+<a class="skip-link" href="#main">Skip to main content</a>
+<header id="site-header"></header>
+
+<main id="main" class="page">
+<div class="module-hero">
+<p class="kicker">Lab 4 of 14 in NDG Online. Week 3, due Wed 10/21. Goes with Module 5: Connecting Security Zones.</p>
+<h1>Lab 4: Connecting the Firewall to Production Networks with Security Zones</h1>
+<p class="lede">Turn the firewall into a router with security boundaries. You address three Layer 3 interfaces, attach them to a virtual router with a default route, place each in its own security zone, test reachability from the firewall's CLI, and then use Interface Management Profiles to decide which interfaces answer ping and SSH.</p>
+<ul class="facts"><li>About 60 to 75 minutes</li><li>NDG Online, Lab 4</li><li>Uses Module 5, sections 5.2 to 5.5</li><li>Snapshot <code>edu-210-11.0a-04.xml</code></li><li>6 screenshots to capture</li></ul>
+<div class="lab-hero-links"><a class="btn" href="../modules/module-05.html#s-lab">Lab 4 briefing in Module 5</a><a class="btn btn-quiet" href="index.html">All lab companions</a><a class="btn btn-quiet" href="#s-evidence">Screenshot checklist</a></div>
+</div>
+
+<div class="module-layout">
+<nav class="module-rail" aria-label="This lab companion">
+<h2>This lab</h2>
+<div class="progress-wrap"><span class="label" id="rail-meter-label">0 sections reviewed</span>
+<div class="meter" role="progressbar" aria-labelledby="rail-meter-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="rail-meter"></span></div></div>
+<ol id="rail-list"></ol>
+<p><a href="#s-cheat">Jump to the cheat sheet</a></p>
+</nav>
+<article>
+<section class="unit" id="s-overview" data-section="overview" data-label="What this lab is for" data-part="Prepare">
+<header><span class="sec-n">01</span><h2>What this lab is for</h2></header>
+<p>Until now the firewall has only had a management port. This lab connects its data ports to three networks: the internet (203.0.113.0/24), your users (192.168.1.0/24), and the extranet servers (192.168.50.0/24). Every packet a user sends from here on enters one of these interfaces.</p>
+<p>Two ideas carry the rest of the course. First, an interface can't pass traffic until it belongs to a <strong><dfn data-term="security-zone">security zone</dfn></strong>, and zones, not interfaces, are what Security policy talks about. Second, the firewall's own data interfaces ignore ping and management traffic until an <strong><dfn data-term="interface-management-profile">Interface Management Profile</dfn></strong> says otherwise.</p>
+<ul><li><strong>You'll leave with:</strong> ethernet1/1 to 1/3 addressed, virtual router VR-1 with a default route, zones Internet, Users_Net, and Extranet, and two management profiles applied.</li><li><strong>Builds on:</strong> <a href="../modules/module-05.html">Module 5</a>, sections 5.2 to 5.5. Simulation 5.1 (zone mapper) and 5.2 (route lookup) mirror this lab.</li><li><strong>Sets up:</strong> every policy lab. Lab 5 writes the first rules between these zones.</li></ul>
+</section>
+
+<section class="unit" id="s-setup" data-section="setup" data-label="Before you begin" data-part="Prepare">
+<header><span class="sec-n">02</span><h2>Before you begin</h2></header>
+<p>You'll use the web interface, then <strong>Remmina</strong> (an SSH client on the client desktop) for the firewall CLI, and the <strong>Terminal Emulator</strong> for tests from the client.</p>
+<div class="table-wrap"><table>
+<caption class="visually-hidden">Hosts in the lab network</caption>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td></tr>
+</tbody></table></div>
+<p class="box-note">Usernames and passwords are in the Lab Settings table on page 5 of each lab guide. They are not repeated here, because this site is public.</p>
+<h4>The design you're building</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Interface</th><th scope="col">Address</th><th scope="col">Zone</th><th scope="col">Faces</th></tr></thead><tbody><tr><td>ethernet1/1</td><td><code>203.0.113.20/24</code></td><td>Internet</td><td>ISP router <code>203.0.113.1</code></td></tr><tr><td>ethernet1/2</td><td><code>192.168.1.1/24</code></td><td>Users_Net</td><td>Client <code>192.168.1.20</code></td></tr><tr><td>ethernet1/3</td><td><code>192.168.50.1/24</code></td><td>Extranet</td><td>Servers in <code>192.168.50.0/24</code></td></tr></tbody></table></div>
+</section>
+
+<section class="unit" id="s-walkthrough" data-section="walkthrough" data-label="Walkthrough" data-part="Do the lab">
+<header><span class="sec-n">03</span><h2>Walkthrough of the detailed steps</h2></header>
+<h3 class="task-head"><span class="tn">2.1</span>Load the lab configuration</h3>
+<p class="task-intro">Every lab starts from a known baseline, so your firewall matches the guide no matter what you did last time.</p>
+<ol class="steps-list" start="1"><li>On the client desktop, log in as <code>lab-user</code>, open Firefox, and browse to <code>https://192.168.1.254</code>. Log in as <code>admin</code> with the password from Lab Settings. If the login page does not appear, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li>Go to <span class="path" data-path="Device > Setup > Operations"></span> and click <strong>Load named configuration snapshot</strong>. Choose <code>edu-210-11.0a-04.xml</code> and click OK, then Close.</li><li>Open <strong>Tasks</strong> (lower right) and confirm the Load task shows completed.</li><li>Click <strong>Commit</strong> (upper right), then <strong>Commit</strong> in the dialog, and wait for it to finish.</li></ol>
+<div class="callout stuck"><p class="c-title">Loading is not committing</p><p>A loaded snapshot replaces only the candidate configuration. Until you commit, the firewall is still running whatever was there before, and nothing in the lab will match the guide.</p></div>
+<h3 class="task-head"><span class="tn">2.2</span>Create Layer 3 network interfaces</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Network &gt; Interfaces &gt; Ethernet"></span> and click <strong>ethernet1/1</strong>.</li>
+<li>Set <strong>Comment</strong> to <code>Internet Connection</code>, <strong>Interface Type</strong> to <strong>Layer3</strong>, and leave <strong>Virtual Router</strong> at None for now.</li>
+<li>On the <strong>IPv4</strong> tab, leave Type <strong>Static</strong>, click <strong>Add</strong>, and enter <code>203.0.113.20/24</code>. Click OK.</li>
+<li>Repeat for <strong>ethernet1/2</strong>: comment <code>Users network connection</code>, Layer3, address <code>192.168.1.1/24</code>.</li>
+<li>Repeat for <strong>ethernet1/3</strong>: comment <code>Extranet servers connection</code>, Layer3, address <code>192.168.50.1/24</code>.</li>
+<li>Confirm all three interfaces show Layer3 with their addresses.</li>
+</ol>
+<div class="callout stuck"><p class="c-title">Always type the mask</p><p>Enter every address with its <code>/24</code>. Without it, PAN-OS treats the entry as a /32 host address, and nothing else on that subnet is reachable through the interface.</p></div>
+<p class="shot" id="shot-1"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 1</span> The Ethernet interface table showing ethernet1/1 to 1/3 as Layer3 with their addresses.</span></p>
+<h3 class="task-head"><span class="tn">2.3</span>Create a virtual router</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Network &gt; Virtual Routers"></span> and click <strong>default</strong>.</li>
+<li>Rename it <code>VR-1</code>. Under <strong>Interfaces</strong>, click <strong>Add</strong> and add ethernet1/1, ethernet1/2, and ethernet1/3 (any order).</li>
+<li>Select <strong>Static Routes</strong>, then the <strong>IPv4</strong> tab, and click <strong>Add</strong>.</li>
+<li>Name the route <code>Firewall Default Gateway</code>, destination <code>0.0.0.0/0</code>, interface <strong>ethernet1/1</strong>, next hop <strong>IP Address</strong> <code>203.0.113.1</code>. Click OK, then OK again.</li>
+</ol>
+<div class="callout why"><p class="c-title">What the default route does</p><p>The firewall already knows its three connected networks. For every other destination, including 8.8.8.8 and every website, it needs somewhere to send the packet. The default route says "anything else goes to the ISP router at 203.0.113.1."</p></div>
+<div class="callout tip"><p class="c-title">Remember this route</p><p>The capstone (Lab 14) asks for a default route named <code>Default-Route</code> and doesn't give you the next hop. This is where you learn it.</p></div>
+<p class="shot" id="shot-2"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 2</span> The VR-1 static route showing 0.0.0.0/0 via ethernet1/1 to 203.0.113.1.</span></p>
+<h3 class="task-head"><span class="tn">2.4</span>Segment the network with security zones</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Network &gt; Zones"></span> and click <strong>Add</strong>.</li>
+<li>Name it <code>Internet</code>, Type <strong>Layer3</strong>, and add <strong>ethernet1/1</strong> under Interfaces. Click OK.</li>
+<li>Add <code>Users_Net</code> (Layer3) with <strong>ethernet1/2</strong>.</li>
+<li>Add <code>Extranet</code> (Layer3) with <strong>ethernet1/3</strong>.</li>
+<li>Commit.</li>
+</ol>
+<div class="callout stuck"><p class="c-title">Zone names are case sensitive</p><p>Every later lab, filter, and rule uses <code>Users_Net</code> with a capital U, capital N, and an underscore. A zone called <code>users_net</code> or <code>Users-Net</code> breaks the baselines' expectations and your filters.</p></div>
+<p class="shot" id="shot-3"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 3</span> The Zones page showing Internet, Users_Net, and Extranet with their interfaces.</span></p>
+<h3 class="task-head"><span class="tn">2.5</span>Test connectivity to each zone from the firewall</h3>
+<ol class="steps-list" start="1">
+<li>On the client, open <strong>Remmina</strong> and double-click <strong>Firewall-A</strong>. It logs you in to the CLI automatically.</li>
+<li>Ping a host in each zone, using the firewall's address in that zone as the source. Let each run a few seconds, then press Ctrl+C.</li>
+</ol>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">ping source 192.168.1.1 host 192.168.1.20</span>
+<span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">ping source 192.168.50.1 host 192.168.50.150</span>
+<span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">ping source 203.0.113.20 host 8.8.8.8</span></pre>
+<ol class="steps-list" start="3">
+<li>All three should succeed. Close the Remmina session and Remmina.</li>
+</ol>
+<div class="callout why"><p class="c-title">Why "source" matters</p><p>Without <code>source</code>, the firewall pings from its management address (192.168.1.254), which tests the management network, not your new interfaces. With <code>source 203.0.113.20</code>, the ping leaves ethernet1/1 and follows VR-1's default route.</p></div>
+<div class="callout why"><p class="c-title">Why these pings work with no Security rules</p><p>Traffic the firewall itself originates isn't checked against Security policy. Traffic passing <strong>through</strong> the firewall is, starting in Lab 5.</p></div>
+<p class="shot" id="shot-4"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 4</span> The CLI showing all three ping tests succeeding.</span></p>
+<h3 class="task-head"><span class="tn">2.6</span>Test interface access before management profiles</h3>
+<ol class="steps-list" start="1">
+<li>Open the <strong>Terminal Emulator</strong> on the client.</li>
+<li>Ping the firewall's users interface, then try SSH to it. Both should fail; press Ctrl+C to stop each.</li>
+</ol>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">lab-user@client-a:~/Desktop/Lab-Files$</span> <span class="cmd">ping 192.168.1.1</span>
+<span class="prompt">lab-user@client-a:~/Desktop/Lab-Files$</span> <span class="cmd">ssh admin@192.168.1.1</span></pre>
+<ol class="steps-list" start="3">
+<li>Leave the terminal open.</li>
+</ol>
+<div class="callout tip"><p class="c-title">The failure is the lesson</p><p>A data interface silently drops ping and management traffic addressed to it until a management profile allows it. That's a deliberate secure default.</p></div>
+<div class="callout fix"><p class="c-title">The guide names the wrong interface</p><p>Step 6 says you'll repeat these tests after applying a profile to ethernet1/1. The tests target 192.168.1.1, which is <strong>ethernet1/2</strong>.</p></div>
+<h3 class="task-head"><span class="tn">2.7</span>Define Interface Management Profiles</h3>
+<ol class="steps-list" start="1">
+<li>In the web interface, go to <span class="path" data-path="Network &gt; Network Profiles &gt; Interface Management"></span> and click <strong>Add</strong>.</li>
+<li>Name it <code>Allow-ping</code>, check <strong>Ping</strong> under Network Services, and click OK.</li>
+<li>Add a second profile named <code>Allow-mgt</code>. Check <strong>HTTPS</strong> and <strong>SSH</strong> under Administrative Management Services, and <strong>Ping</strong>, <strong>SNMP</strong>, <strong>Response Pages</strong>, and <strong>User-ID</strong> under Network Services. Click OK.</li>
+<li>Go to <span class="path" data-path="Network &gt; Interfaces &gt; Ethernet"></span>, open <strong>ethernet1/1</strong>, select <strong>Advanced</strong>, and set <strong>Management Profile</strong> to <code>Allow-ping</code>. Click OK.</li>
+<li>Open <strong>ethernet1/2</strong>, set its management profile to <code>Allow-mgt</code>, click OK, and click <strong>Yes</strong> at the warning.</li>
+<li>Do the same for <strong>ethernet1/3</strong> with <code>Allow-mgt</code>.</li>
+<li>Confirm each interface shows its profile, then commit.</li>
+</ol>
+<div class="callout why"><p class="c-title">Why the warning appears</p><p>Allow-mgt opens HTTPS and SSH on a data interface. The firewall warns because exposing management on a network users can reach is a real risk. You accept it here because both are internal lab networks.</p></div>
+<div class="callout tip"><p class="c-title">Response Pages and User-ID will matter later</p><p>Response Pages lets the firewall show block pages from ethernet1/2 (Labs 7 to 9). User-ID lets it receive user-mapping information.</p></div>
+<p class="shot" id="shot-5"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 5</span> The Ethernet interface table showing the Management Profile column filled in for all three interfaces.</span></p>
+<h3 class="task-head"><span class="tn">2.8</span>Test interface access after management profiles</h3>
+<ol class="steps-list" start="1">
+<li>In the client terminal, ping 192.168.1.1 again. Now it answers.</li>
+<li>Become root, then SSH to the firewall's users interface. Accept the key fingerprint with <code>yes</code> and enter the admin password from the guide.</li>
+</ol>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">lab-user@client-a:~/Desktop/Lab-Files$</span> <span class="cmd">ping 192.168.1.1</span>
+<span class="prompt">lab-user@client-a:~/Desktop/Lab-Files$</span> <span class="cmd">sudo su</span>
+<span class="prompt">root@client-a:/home/lab-user/Desktop/Lab-Files#</span> <span class="cmd">ssh admin@192.168.1.1</span></pre>
+<ol class="steps-list" start="3">
+<li>You see the firewall CLI prompt, reached through ethernet1/2 rather than the management port.</li>
+</ol>
+<div class="callout tip"><p class="c-title">Why sudo?</p><p>The guide elevates to root before SSH. It isn't needed for SSH itself; it's a quirk of how the lab client is set up. If SSH works as lab-user, that's fine too.</p></div>
+<p class="shot" id="shot-6"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 6</span> The terminal showing a successful ping to 192.168.1.1 and the firewall CLI prompt over SSH.</span></p>
+</section>
+
+<section class="unit" id="s-reference" data-section="reference" data-label="Reference" data-part="Understand">
+<header><span class="sec-n">04</span><h2>Interfaces, routing, and zones reference</h2></header>
+<h4>Interface types</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Type</th><th scope="col">Has an IP?</th><th scope="col">Use</th></tr></thead><tbody><tr><td>Layer 3</td><td>Yes</td><td>Routes between subnets. What this lab and the course use.</td></tr><tr><td>Layer 2</td><td>No</td><td>Switches between ports in the same subnet.</td></tr><tr><td>Virtual wire</td><td>No</td><td>Drops in transparently between two devices.</td></tr><tr><td>Tap</td><td>No</td><td>Receives a copy of traffic from a switch SPAN port; visibility only.</td></tr></tbody></table></div>
+<h4>Useful CLI checks</h4>
+<p><code>show interface all</code> lists each interface's state, address, and zone. <code>show routing route</code> shows the routing table, including your default route (flag <code>A S</code> for active static).</p>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">show interface all</span>
+<span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">show routing route</span>
+<span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">show interface ethernet1/2</span></pre>
+<h4>What each management profile allows</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Service</th><th scope="col">Allow-ping</th><th scope="col">Allow-mgt</th></tr></thead><tbody><tr><td>Ping</td><td>Yes</td><td>Yes</td></tr><tr><td>HTTPS (web interface)</td><td>No</td><td>Yes</td></tr><tr><td>SSH (CLI)</td><td>No</td><td>Yes</td></tr><tr><td>SNMP</td><td>No</td><td>Yes</td></tr><tr><td>Response Pages</td><td>No</td><td>Yes</td></tr><tr><td>User-ID</td><td>No</td><td>Yes</td></tr></tbody></table></div>
+</section>
+
+<section class="unit" id="s-stuck" data-section="stuck" data-label="Where people get stuck" data-part="Understand">
+<header><span class="sec-n">05</span><h2>Where people get stuck</h2></header>
+<div class="table-wrap"><table class="stuck-table"><thead><tr><th scope="col">Symptom</th><th scope="col">Likely cause</th><th scope="col">Fix</th></tr></thead><tbody><tr><td>CLI ping from 203.0.113.20 to 8.8.8.8 fails</td><td>No default route, or the wrong next hop</td><td>Check VR-1's static route: 0.0.0.0/0, ethernet1/1, next hop 203.0.113.1.</td></tr><tr><td>CLI ping to 192.168.1.20 fails</td><td>Address entered without /24, or interface not in VR-1</td><td>Re-enter <code>192.168.1.1/24</code>; confirm all three interfaces are in VR-1.</td></tr><tr><td>Interface shows no zone or router</td><td>Commit not done, or zone step skipped</td><td>Check Network &gt; Zones, then commit.</td></tr><tr><td>Client ping to 192.168.1.1 still fails after the profile</td><td>Profile on the wrong interface, or not committed</td><td>ethernet1/2 needs Allow-mgt. Commit.</td></tr><tr><td>SSH says connection refused</td><td>Allow-mgt is missing SSH</td><td>Edit the profile, check SSH, commit.</td></tr><tr><td>Ping in the CLI never stops</td><td>That's normal</td><td>Press Ctrl+C.</td></tr></tbody></table></div>
+</section>
+
+<section class="unit" id="s-production" data-section="production" data-label="In production" data-part="Understand">
+<header><span class="sec-n">06</span><h2>How this looks on a real firewall</h2></header>
+<ul><li><strong>Keep management off data interfaces.</strong> Here Allow-mgt opens HTTPS and SSH on user and server networks for convenience. In production, administrative access usually stays on the dedicated management port, or on a tightly limited internal interface with permitted IPs set in the profile.</li><li><strong>Be careful pinging the internet edge.</strong> Allow-ping on ethernet1/1 lets anyone on the internet confirm the firewall exists. Many organizations allow it only from their monitoring service's addresses.</li><li><strong>Separate the management network.</strong> In this lab the management port (192.168.1.254) and ethernet1/2 (192.168.1.1) sit on the same subnet. Real designs keep them apart (Module 2).</li><li><strong>Use more zones, not fewer.</strong> Production networks often split users, servers, guests, voice, and management into separate zones so policy can treat each differently.</li><li><strong>Plan for redundancy.</strong> Production edges usually have two ISP links with path monitoring on the static routes (Module 5), or a dynamic routing protocol.</li></ul>
+</section>
+
+<section class="unit" id="s-selfcheck" data-section="selfcheck" data-label="Check yourself" data-part="Wrap up">
+<header><span class="sec-n">07</span><h2>Check yourself</h2></header>
+<details class="qa"><summary>Can an interface pass user traffic if it has an IP address and is in a virtual router but no zone?</summary><div class="qa-a"><p>No. Every interface must belong to a security zone before it can process traffic.</p></div></details>
+<details class="qa"><summary>Why does <code>ping source 203.0.113.20 host 8.8.8.8</code> need a default route, but <code>ping source 192.168.1.1 host 192.168.1.20</code> doesn't?</summary><div class="qa-a"><p>192.168.1.0/24 is directly connected to ethernet1/2. 8.8.8.8 isn't on any connected network, so the firewall needs the default route to reach it.</p></div></details>
+<details class="qa"><summary>Before Allow-mgt, the client couldn't ping 192.168.1.1. Why not, if there was nothing to block it?</summary><div class="qa-a"><p>Data interfaces don't answer ping or management services addressed to them unless an Interface Management Profile allows it.</p></div></details>
+<details class="qa"><summary>You entered <code>192.168.50.1</code> without a mask. What breaks?</summary><div class="qa-a"><p>It becomes a /32, so the firewall has no connected route to the rest of 192.168.50.0/24 through ethernet1/3.</p></div></details>
+<details class="qa"><summary>Which zone is the client in, and which interface does its traffic enter?</summary><div class="qa-a"><p>Users_Net, through ethernet1/2.</p></div></details>
+</section>
+
+<section class="unit" id="s-evidence" data-section="evidence" data-label="What to submit" data-part="Wrap up">
+<header><span class="sec-n">08</span><h2>Screenshots to capture</h2></header>
+<p>Take each screenshot at its marker. Name the files by lab and number (for example <code>lab04-shot5.png</code>) and submit them in Canvas as your instructor directs.</p>
+<ul class="checklist evidence" data-save="lab4-evidence"><li><input type="checkbox" id="ev4-0"><div><label for="ev4-0">Screenshot 1: The Ethernet interface table showing ethernet1/1 to 1/3 as Layer3 with their addresses.</label><a class="ev-where" href="#shot-1">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev4-1"><div><label for="ev4-1">Screenshot 2: The VR-1 static route showing 0.0.0.0/0 via ethernet1/1 to 203.0.113.1.</label><a class="ev-where" href="#shot-2">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev4-2"><div><label for="ev4-2">Screenshot 3: The Zones page showing Internet, Users_Net, and Extranet with their interfaces.</label><a class="ev-where" href="#shot-3">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev4-3"><div><label for="ev4-3">Screenshot 4: The CLI showing all three ping tests succeeding.</label><a class="ev-where" href="#shot-4">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev4-4"><div><label for="ev4-4">Screenshot 5: The Ethernet interface table showing the Management Profile column filled in for all three interfaces.</label><a class="ev-where" href="#shot-5">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev4-5"><div><label for="ev4-5">Screenshot 6: The terminal showing a successful ping to 192.168.1.1 and the firewall CLI prompt over SSH.</label><a class="ev-where" href="#shot-6">Find it in the walkthrough</a></div></li></ul>
+<p class="box-note">Checkmarks are saved in this browser only. They help you keep track; the screenshots themselves go to Canvas.</p>
+</section>
+
+<section class="unit" id="s-cheat" data-section="cheat" data-label="Cheat sheet" data-part="Wrap up">
+<header><span class="sec-n">09</span><h2>Cheat sheet</h2></header>
+<div class="cheat">
+<h4>Build values</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Item</th><th scope="col">Value</th></tr></thead><tbody><tr><td>ethernet1/1</td><td><code>203.0.113.20/24</code>, Layer3, zone <code>Internet</code>, profile <code>Allow-ping</code></td></tr><tr><td>ethernet1/2</td><td><code>192.168.1.1/24</code>, Layer3, zone <code>Users_Net</code>, profile <code>Allow-mgt</code></td></tr><tr><td>ethernet1/3</td><td><code>192.168.50.1/24</code>, Layer3, zone <code>Extranet</code>, profile <code>Allow-mgt</code></td></tr><tr><td>Virtual router</td><td><code>VR-1</code> (renamed from default)</td></tr><tr><td>Default route</td><td><code>0.0.0.0/0</code> via ethernet1/1, next hop <code>203.0.113.1</code></td></tr></tbody></table></div>
+<h4>Tests</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">From</th><th scope="col">Command</th></tr></thead><tbody><tr><td>Firewall CLI</td><td><code>ping source 192.168.1.1 host 192.168.1.20</code></td></tr><tr><td>Firewall CLI</td><td><code>ping source 192.168.50.1 host 192.168.50.150</code></td></tr><tr><td>Firewall CLI</td><td><code>ping source 203.0.113.20 host 8.8.8.8</code></td></tr><tr><td>Client</td><td><code>ping 192.168.1.1</code>, then <code>ssh admin@192.168.1.1</code></td></tr></tbody></table></div>
+<h4>Where things live</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Task</th><th scope="col">Path</th></tr></thead><tbody><tr><td>Interfaces</td><td><span class="path" data-path="Network &gt; Interfaces &gt; Ethernet"></span></td></tr><tr><td>Routing</td><td><span class="path" data-path="Network &gt; Virtual Routers"></span></td></tr><tr><td>Zones</td><td><span class="path" data-path="Network &gt; Zones"></span></td></tr><tr><td>Management profiles</td><td><span class="path" data-path="Network &gt; Network Profiles &gt; Interface Management"></span></td></tr></tbody></table></div>
+</div>
+<p><button type="button" class="btn" data-print="cheat">Print only this cheat sheet</button></p>
+</section>
+<nav class="pager" id="pager" aria-label="Lab navigation"></nav>
+</article>
+</div>
+</main>
+
+<footer id="site-footer"></footer>
+<script src="../assets/js/course.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/activities.js"></script>
+</body>
+</html>

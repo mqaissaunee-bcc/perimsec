@@ -1,0 +1,189 @@
+title: Capstone
+lede: Build a working firewall from a nearly empty configuration, to a written specification, with no click-by-click steps. This companion gives you a build order, points each objective back to the lab where you first did it, and lists every test the capstone uses to decide you're done.
+snapshot: edu-210-11.0a-Capstone-start.xml
+uses: Labs 1 to 13
+
+= overview | What this lab is for | What this lab is for | Prepare
+Every earlier lab told you what to click. The capstone reads like a work ticket: objectives and acceptance tests. Everything in it is something you've already done; the skill being tested is doing it in a sensible order and proving each part works before moving on.
+
+It's open book. Use your notes, this site, and the earlier lab companions. This page is built to be used that way: each objective below links to the lab where you learned it, so you can reopen that walkthrough instead of guessing.
+
+- **You'll leave with:** interfaces, routing, zones with User-ID, source NAT, a Security policy with a URL-category block rule and application-based allow rules, and a full Security Profile group, all passing the guide's tests.
+- **Builds on:** Labs 4 to 10 especially. See the [capstone briefing page](../capstone.html) for the objective map and the guide's traps.
+- **Graded:** yes, along with the final exam in Canvas.
+
+= setup | Before you begin | Before you begin | Prepare
+Read the whole guide once before you touch the firewall, and list every name you have to create. Grading checks names exactly, including capitalization.
+
+@network
+
+### Names you must create exactly
+| Object | Name |
+| Virtual router | `VR-1` |
+| Default route | `Default-Route` |
+| Interface Management Profile | `Allow-ping` |
+| Zones | `Internet`, `Users`, `Extranet` |
+| NAT rules | `Users_to_Internet`, `Extranet_to_Internet` |
+| Security rules | `Block_Bad_URLs`, `Users_to_Extranet`, `Users_to_Internet`, `Extranet_to_Internet` |
+| Profiles | `Corp-URL`, `Corp-FB`, `Corp-AV`, `Corp-AS`, `Corp-Vuln`, `Corp-WF` |
+| Profile group | `Corp-Profiles` |
+
+!stuck These are not the names from earlier labs | The zone is **Users**, not Users_Net. The block rule is **Block_Bad_URLs** with underscores, not Block-Bad-URLs. The file blocking profile is **Corp-FB**, the group is **Corp-Profiles**. Use the capstone's names, not your habits.
+
+= walkthrough | Build plan | Build plan, objective by objective | Do the lab
+> The capstone has no Detailed Lab Steps. Its sections are numbered 1.1 to 1.6; this plan follows them and adds a test checkpoint after each.
+
+## 1.1 Load the starting configuration
+1. Log in to the client and to the firewall at `https://192.168.1.254` with the credentials in Lab Settings.
+2. At [[Device > Setup > Operations]], load `edu-210-11.0a-Capstone-start.xml`, confirm the load in Tasks, and **commit**.
+!tip Snapshot your progress | After each section passes its tests, save a named snapshot (->Lab 2<-), such as `capstone-1-3`. If a later change breaks something, you can load back to a known-good point instead of starting over.
+!shot The commit completing after loading the capstone starting configuration.
+
+## 1.2 Networking
+1. Configure ethernet1/1, 1/2, and 1/3 as Layer3 with the guide's addresses, **including the /24**. Reopen ->Lab 4<-, task 2.2.
+2. Put all three in a virtual router named `VR-1`, with a default route named `Default-Route`. ->Lab 4<-, task 2.3.
+3. Create the `Allow-ping` Interface Management Profile and assign it to **ethernet1/2**. ->Lab 4<-, task 2.7.
+!stuck The guide gives the route's name, not its next hop | Work out where the internet side of the lab sends traffic. Your Lab 4 notes and the first CLI test below both tell you.
+
+## 1.3 Security zones
+1. Create `Internet` (ethernet1/1), `Users` (ethernet1/2), and `Extranet` (ethernet1/3), all Layer3. ->Lab 4<-, task 2.4.
+2. Enable **User Identification** on Users. ->Lab 11<-, task 2.4.
+3. Commit, then run the networking tests.
+### Checkpoint: networking
+$cl ping 192.168.1.1
+$fw ping source 203.0.113.20 host 203.0.113.1
+$fw ping source 203.0.113.20 host 8.8.8.8
+$fw ping source 192.168.1.1 host 192.168.1.20
+$fw ping source 192.168.50.1 host 192.168.50.150
+!tip Which failure means what | If only the 8.8.8.8 test fails, it's the default route. If the 203.0.113.1 test fails too, it's the ethernet1/1 address or zone. If the client can't ping 192.168.1.1, check Allow-ping on ethernet1/2 and the commit.
+!shot The firewall CLI showing all four ping tests succeeding.
+!shot The client terminal showing replies from 192.168.1.1.
+
+## 1.4 NAT policy
+1. Create source NAT rule `Users_to_Internet`: Users to Internet, translating to ethernet1/1's interface address with Dynamic IP And Port. ->Lab 6<-, task 2.2.
+2. Create `Extranet_to_Internet` the same way for Extranet.
+3. Give both a helpful description. Commit.
+!stuck Same names, different rulebases | Users_to_Internet and Extranet_to_Internet are names for both NAT rules and Security rules. That's allowed, because they're separate rulebases. Keep track of which one you're editing.
+!why Why NAT can't be tested yet | With no Security rules, interzone-default still denies everything between zones. The NAT rules are tested by the next section's tests.
+
+## 1.5 Security policy
+1. Override **interzone-default** to log at session end. ->Lab 5<-, task 2.6.
+2. Create `Block_Bad_URLs`, denying the URL categories hacking, phishing, malware, and unknown **as rule match criteria**, for all outbound traffic. ->Lab 9<-, task 2.3.
+3. Create `Users_to_Extranet` (Users to Extranet: ping, ssl, ssh, dns, web-browsing). ->Lab 7<-, task 2.10.
+4. Create `Users_to_Internet` (Users to Internet: ping, dns, web-browsing, ssl) and `Extranet_to_Internet` (Extranet to Internet: the same four).
+5. Give every rule a description, check the order, and commit.
+!stuck "All outbound traffic" and rule order | Decide which source zones count as outbound, and put Block_Bad_URLs where it can't be shadowed by the allow rules. ->Lab 9<- and Module 6 cover both.
+!tip Dependencies | If the commit warns about application dependencies, add them as you did in ->Lab 7<-.
+### Checkpoint: policy and NAT
+- The client pings 8.8.8.8 and google.com.
+- The client opens www.paloaltonetworks.com and http://192.168.50.80.
+- The client connects by SSH to 192.168.50.150 with the account in the guide.
+- The extranet host pings 8.8.8.8 and google.com.
+- The client **cannot** open hacker9.com.
+$cl ping google.com
+$cl ssh paloalto42@192.168.50.150
+!tip Pinging from the extranet host | Use Remmina's Server-Extranet connection to get a shell on the extranet side, as in ->Lab 8<-, and ping from there.
+!shot The client terminal showing google.com answering pings.
+!shot The block page for hacker9.com.
+!shot The Security policy rulebase in its final order, with descriptions visible.
+
+## 1.6 Security Profiles
+1. Create Corp-URL (from default; **log access to all categories**), Corp-FB (from strict file blocking), Corp-AV (from default), Corp-AS (from strict), Corp-Vuln (from strict), and Corp-WF (all file types to public-cloud). ->Lab 8<-, ->Lab 9<-, ->Lab 10<-.
+2. Create the `Corp-Profiles` group with the appropriate profile in each slot. Data Filtering can stay None.
+3. Apply Corp-Profiles to **all applicable** Security rules, and commit.
+!fix Two profile descriptions are swapped | The guide says Corp-AV should "block vulnerabilities" and Corp-Vuln should "block viruses." Go by the profile type: Antivirus stops viruses and malware; Vulnerability Protection stops exploits. Use the source profiles the guide suggests for each.
+!stuck "Log access to all web categories" | allow doesn't write a URL Filtering log entry; alert does. Plan Corp-URL with the last test in mind (->Lab 9<-, task 2.5).
+!stuck "All applicable" rules | Profiles inspect allowed traffic. Think about which rules the group belongs on (->Lab 8<-, task 2.11).
+### Checkpoint: profiles
+- The client **cannot** download the test virus from http://192.168.50.80.
+- The client **cannot** download http://192.168.50.80/badtarfile.tar.
+- Browsing https://www.paloaltonetworks.com creates a URL Filtering log entry.
+!shot The block page (or reset) when downloading the test virus over HTTP.
+!shot The File Transfer Blocked page for badtarfile.tar.
+!shot The URL Filtering log entry for www.paloaltonetworks.com.
+
+= reference | Reference | Where you learned each objective | Understand
+| Objective | Lab companion | Module |
+| Load and commit; snapshots | ->Lab 2<- | ->Mod 3<- |
+| Interfaces, VR-1, default route | ->Lab 4<- | ->Mod 5<- |
+| Allow-ping profile | ->Lab 4<- | ->Mod 5<- |
+| Zones; User-ID on a zone | ->Lab 4<-, ->Lab 11<- | ->Mod 5<-, ->Mod 9<- |
+| Source NAT | ->Lab 6<- | ->Mod 7<- |
+| Logging on interzone-default | ->Lab 5<- | ->Mod 6<- |
+| URL categories as rule criteria | ->Lab 9<- | ->Mod 11<- |
+| Application-based allow rules | ->Lab 5<-, ->Lab 7<- | ->Mod 6<-, ->Mod 8<- |
+| Security Profiles and the group | ->Lab 8<-, ->Lab 9<-, ->Lab 10<- | ->Mod 10<- to ->Mod 12<- |
+
+### When a test fails, follow the packet
+Work through the flow from Module 6 in order, and stop at the first thing that's wrong:
+1. Is the interface up, addressed with the right mask, and in the right zone?
+2. Is there a route (the default route for the internet)?
+3. Does a NAT rule match (Traffic log, NAT Source IP column)?
+4. Which Security rule matched? (Traffic log Rule column, or Test Policy Match)
+5. Did a profile block it? (Threat and URL Filtering logs)
+$fw test security-policy-match from Users to Internet source 192.168.1.20 destination 8.8.8.8 protocol 1 application ping
+$fw show routing route
+$f ( addr.src eq 192.168.1.20 ) and ( action neq allow )
+
+= stuck | Where people get stuck | Where people get stuck | Understand
+| Symptom | Likely cause | Fix |
+| Nothing works between zones | Interface in the wrong zone, or zone named Users_Net | Zone names must be exactly Internet, Users, Extranet. |
+| CLI ping to 8.8.8.8 fails | Default route missing or wrong next hop | Check VR-1's static routes. |
+| Client pings 8.8.8.8 but not google.com | dns isn't allowed | Add dns to Users_to_Internet. |
+| SSH to 192.168.50.150 fails | ssh missing from Users_to_Extranet | Add the application; commit. |
+| hacker9.com still loads | Block_Bad_URLs is below an allow rule, or covers the wrong zones | Move it up; check its source zones. |
+| No URL log entry for paloaltonetworks.com | Corp-URL categories set to allow | Set them to alert. |
+| Test virus downloads | Corp-Profiles missing from the rule that matched | Check the Traffic log's rule, then that rule's Actions tab. |
+
+= production | In production | How this looks on a real firewall | Understand
+- **This is a real first-day build.** Interfaces, zones, routing, NAT, a tight rulebase, and profiles on every allow rule is close to what a new edge firewall gets in its first change window.
+- **Write it down first.** Production builds start from a design document: addressing, zones, rules, and test plan. The capstone's objectives and tests are a small version of one.
+- **Test as you go.** Committing and testing section by section, as this plan does, is how engineers keep a failure small and easy to find.
+- **Back up the result.** Export a named snapshot of the finished configuration. In a real job it goes in the change ticket.
+- **Talk about it.** "Built a Palo Alto Networks firewall configuration from a written spec, including NAT, App-ID policy, URL filtering, and threat prevention" is a fair line for a resume or an interview.
+
+= selfcheck | Check yourself | Check yourself | Wrap up
+?? The CLI can ping 203.0.113.1 from 203.0.113.20 but not 8.8.8.8. What's wrong?
+=> The default route: missing, on the wrong interface, or with the wrong next hop.
+
+?? The client can ping 8.8.8.8 but not google.com. What's the most likely cause?
+=> dns isn't one of the applications allowed in Users_to_Internet.
+
+?? Why can two rules both be named Users_to_Internet?
+=> One is a NAT rule and one is a Security rule; they're separate rulebases.
+
+?? Which Corp-URL action makes allowed sites show up in the URL Filtering log?
+=> alert.
+
+?? Where must Block_Bad_URLs sit, and why?
+=> Above the allow rules for outbound traffic, so it isn't shadowed.
+
+= evidence | What to submit | Screenshots to capture | Wrap up
+Take each screenshot at its checkpoint. They double as proof that every acceptance test passed. Name the files by lab and number (for example `lab14-shot5.png`) and submit them in Canvas as your instructor directs.
+[] Export a named snapshot of your finished configuration | Device > Setup > Operations. Keep it in case you need to show your work.
+
+= cheat | Cheat sheet | Cheat sheet | Wrap up
+<div class="cheat">
+### Addresses
+| Interface | Address | Zone |
+| ethernet1/1 | `203.0.113.20/24` | Internet |
+| ethernet1/2 | `192.168.1.1/24` (Allow-ping) | Users (User-ID on) |
+| ethernet1/3 | `192.168.50.1/24` | Extranet |
+### Allow rules and their applications
+| Rule | From / To | Applications |
+| Users_to_Extranet | Users / Extranet | ping, ssl, ssh, dns, web-browsing |
+| Users_to_Internet | Users / Internet | ping, dns, web-browsing, ssl |
+| Extranet_to_Internet | Extranet / Internet | ping, dns, web-browsing, ssl |
+### Block rule
+| Rule | Categories |
+| Block_Bad_URLs | hacking, phishing, malware, unknown (rule match criteria) |
+### Profiles in Corp-Profiles
+| Slot | Profile (based on) |
+| URL Filtering | Corp-URL (default; must log every category) |
+| File Blocking | Corp-FB (strict) |
+| Antivirus | Corp-AV (default) |
+| Anti-Spyware | Corp-AS (strict) |
+| Vulnerability | Corp-Vuln (strict) |
+| WildFire | Corp-WF (default; all files to public-cloud) |
+</div>
+@cheatprint

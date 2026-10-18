@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab 13 companion: Locating Valuable Information Using Logs and Reports | Perimeter Security</title>
+<meta name="description" content="Lab 13 companion for Perimeter Security: walkthrough of the detailed steps for Locating Valuable Information Using Logs and Reports, screenshots to capture, troubleshooting, and a cheat sheet.">
+<link rel="stylesheet" href="../assets/css/site.css">
+<script src="../assets/js/prefs.js"></script>
+</head>
+<body data-root=".." data-lab="13" data-page="labs/index.html">
+<a class="skip-link" href="#main">Skip to main content</a>
+<header id="site-header"></header>
+
+<main id="main" class="page">
+<div class="module-hero">
+<p class="kicker">Lab 13 of 14 in NDG Online. Week 9, due Wed 12/2. Goes with Module 14: Logs and Reports.</p>
+<h1>Lab 13: Locating Valuable Information Using Logs and Reports</h1>
+<p class="lede">Answer questions with the firewall's own data. After a script fills the logs, you use Dashboard widgets, the ACC with global filters, filtered Threat and Traffic logs, App Scope's Threat Monitor, predefined reports, and a custom report, each time choosing the tool that answers the question fastest.</p>
+<ul class="facts"><li>About 60 to 75 minutes</li><li>NDG Online, Lab 13</li><li>Uses Module 14, sections 14.1 to 14.5</li><li>Snapshot <code>edu-210-11.0a-13.xml</code></li><li>8 screenshots to capture</li></ul>
+<div class="lab-hero-links"><a class="btn" href="../modules/module-14.html#s-lab">Lab 13 briefing in Module 14</a><a class="btn btn-quiet" href="index.html">All lab companions</a><a class="btn btn-quiet" href="#s-evidence">Screenshot checklist</a></div>
+</div>
+
+<div class="module-layout">
+<nav class="module-rail" aria-label="This lab companion">
+<h2>This lab</h2>
+<div class="progress-wrap"><span class="label" id="rail-meter-label">0 sections reviewed</span>
+<div class="meter" role="progressbar" aria-labelledby="rail-meter-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="rail-meter"></span></div></div>
+<ol id="rail-list"></ol>
+<p><a href="#s-cheat">Jump to the cheat sheet</a></p>
+</nav>
+<article>
+<section class="unit" id="s-overview" data-section="overview" data-label="What this lab is for" data-part="Prepare">
+<header><span class="sec-n">01</span><h2>What this lab is for</h2></header>
+<p>A firewall that blocks threats but can't tell you what happened is only half useful. Analysts, auditors, and managers all ask questions: what's attacking us, who's using that application, did the block actually work? This lab tours every place PAN-OS keeps answers and practices the habit that makes them useful: <strong>start broad, then filter</strong>.</p>
+<p>The tools go from summary to detail. The <strong>Dashboard</strong> shows the last hour at a glance. The <strong><dfn data-term="acc">ACC</dfn></strong> lets you pivot on any value with global filters. <strong>Logs</strong> show every event. <strong><dfn data-term="app-scope">App Scope</dfn></strong> shows trends. <strong>Reports</strong> package it for other people.</p>
+<ul><li><strong>You'll leave with:</strong> practice with each tool, all predefined reports enabled, and a custom report named Apps Used by Internal Zones.</li><li><strong>Builds on:</strong> <a href="../modules/module-14.html">Module 14</a>. Simulation 14.1 (where would you look?) and 14.2 (log filter builder) are direct rehearsals.</li><li><strong>Sets up:</strong> the troubleshooting you'll do in the capstone, and any job that involves a SIEM.</li></ul>
+</section>
+
+<section class="unit" id="s-setup" data-section="setup" data-label="Before you begin" data-part="Prepare">
+<header><span class="sec-n">02</span><h2>Before you begin</h2></header>
+<p>You'll use the web interface throughout, after running one script on the extranet server.</p>
+<div class="table-wrap"><table>
+<caption class="visually-hidden">Hosts in the lab network</caption>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td></tr>
+</tbody></table></div>
+<p class="box-note">Usernames and passwords are in the Lab Settings table on page 5 of each lab guide. They are not repeated here, because this site is public.</p>
+<h4>What's already in the baseline</h4>
+<p>A complete configuration from the earlier labs, including the Acquisition zone and its users, Security Profiles, and URL Filtering. The <code>UsingLogs-V1.sh</code> script replays attacks, browsing, and application traffic so every log has data.</p>
+<h4>This lab is mostly reading</h4>
+<p>There's little configuration. Most steps ask you to look and answer the guide's questions. The answers below come with an explanation; your counts and names will differ from the screenshots.</p>
+</section>
+
+<section class="unit" id="s-walkthrough" data-section="walkthrough" data-label="Walkthrough" data-part="Do the lab">
+<header><span class="sec-n">03</span><h2>Walkthrough of the detailed steps</h2></header>
+<h3 class="task-head"><span class="tn">2.1</span>Load the lab configuration</h3>
+<p class="task-intro">Every lab starts from a known baseline, so your firewall matches the guide no matter what you did last time.</p>
+<ol class="steps-list" start="1"><li>On the client desktop, log in as <code>lab-user</code>, open Firefox, and browse to <code>https://192.168.1.254</code>. Log in as <code>admin</code> with the password from Lab Settings. If the login page does not appear, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li>Go to <span class="path" data-path="Device > Setup > Operations"></span> and click <strong>Load named configuration snapshot</strong>. Choose <code>edu-210-11.0a-13.xml</code> and click OK, then Close.</li><li>Open <strong>Tasks</strong> (lower right) and confirm the Load task shows completed.</li><li>Click <strong>Commit</strong> (upper right), then <strong>Commit</strong> in the dialog, and wait for it to finish.</li></ol>
+<div class="callout stuck"><p class="c-title">Loading is not committing</p><p>A loaded snapshot replaces only the candidate configuration. Until you commit, the firewall is still running whatever was there before, and nothing in the lab will match the guide.</p></div>
+<h3 class="task-head"><span class="tn">2.2</span>Generate traffic</h3>
+<ol class="steps-list" start="1">
+<li>Open <strong>Remmina</strong> and double-click <strong>Server-Extranet</strong>.</li>
+<li>Run the script and press Enter to start it. Let it run 5 to 7 minutes, uninterrupted.</li>
+</ol>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">paloalto42@extranet1:~$</span> <span class="cmd">./UsingLogs-V1.sh</span></pre>
+<ol class="steps-list" start="3">
+<li>When it finishes, close the session and Remmina.</li>
+</ol>
+<div class="callout stuck"><p class="c-title">Don't start early</p><p>Widgets, the ACC, and App Scope summarize what's in the logs. Before the script finishes, they're thin or empty.</p></div>
+<h3 class="task-head"><span class="tn">2.3</span>Recent threats on the Dashboard</h3>
+<ol class="steps-list" start="1">
+<li>On the <strong>Dashboard</strong>, click <strong>Widgets &gt; Logs &gt; Threat Logs</strong>. (Greyed out means it's already shown.)</li>
+<li>Add <strong>Widgets &gt; Logs &gt; URL Filtering Logs</strong> and <strong>Logs &gt; Data Filtering Logs</strong>.</li>
+</ol>
+<div class="callout guideq"><p class="c-title">Q1: Any threats in the Threat Logs widget?</p><p><strong>a. Yes</strong>, once the script has run. It shows the 10 most recent threats from the last hour.</p></div>
+<div class="callout guideq"><p class="c-title">Q2: Any URLs in the URL Filtering Logs widget?</p><p><strong>a. Yes.</strong> The script's browsing generates URL entries.</p></div>
+<div class="callout guideq"><p class="c-title">Q3: Any files in the Data Filtering Logs widget?</p><p>It <strong>may be b. No.</strong> The guide says so too: the widget only shows the last hour, and the script may not produce data filtering events in that window.</p></div>
+<p class="shot" id="shot-1"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 1</span> The Dashboard showing the Threat Logs and URL Filtering Logs widgets with entries.</span></p>
+<h3 class="task-head"><span class="tn">2.4</span>Recent applications on the Dashboard</h3>
+<ol class="steps-list" start="1">
+<li>Add <strong>Widgets &gt; Application &gt; Top Applications</strong>, then <strong>Application &gt; Top High Risk Applications</strong>.</li>
+<li>Risk 4 applications show in orange, risk 5 in red. Allow 3 to 5 minutes if they're empty.</li>
+</ol>
+<h3 class="task-head"><span class="tn">2.5</span>Threats in the ACC</h3>
+<ol class="steps-list" start="1">
+<li>Click the <strong>ACC</strong> tab. Under <strong>Global Filters</strong>, click <strong>Clear all</strong> if anything's there. Set <strong>Time</strong> to <strong>Last Hour</strong> and choose the <strong>Threat Activity</strong> tab.</li>
+<li>In the Threat Activity table, hover over a <strong>high</strong> severity item and click the small arrow to promote it to a global filter.</li>
+<li>Find it under Global Filters, note how every widget changes, then click <strong>Clear all</strong>.</li>
+</ol>
+<div class="callout guideq"><p class="c-title">Q4: Do you see threats in the Threat Activity widget?</p><p><strong>b. Yes, multiple threats are listed</strong>: some mix of flood, scan, spyware, packet, vulnerability, and virus.</p></div>
+<div class="callout guideq"><p class="c-title">Q5: Did the table change to show only high severity?</p><p><strong>a. Yes.</strong> Promoting a value makes it a global filter for every widget.</p></div>
+<div class="callout guideq"><p class="c-title">Q6: Is high severity listed in the Global Filters box?</p><p><strong>b. Yes, the high severity is listed.</strong></p></div>
+<div class="callout guideq"><p class="c-title">Q7: Which widgets show hosts that visited or resolved malicious domains?</p><p><strong>a and d: Hosts Visiting Malicious URLs and Hosts Resolving Malicious Domains.</strong></p></div>
+<div class="callout fix"><p class="c-title">"Last seven days" versus Last Hour</p><p>The guide's notes mention counts "in the last seven days," but step 1 sets the time to Last Hour. Whatever range you pick is the range the widgets show.</p></div>
+<p class="shot" id="shot-2"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 2</span> The ACC with high severity applied as a global filter.</span></p>
+<h3 class="task-head"><span class="tn">2.6</span>Applications in the ACC</h3>
+<ol class="steps-list" start="1">
+<li>In the ACC, open <strong>Network Activity</strong>. Collapse the sidebar with its small arrow for more room.</li>
+<li>In <strong>Application Usage</strong>, choose the <strong>sessions</strong> radio button and hover over <strong>web-browsing</strong> in the chart.</li>
+<li>In the table below, hover over web-browsing and click the left arrow to make it a global filter. Reopen the sidebar to see it.</li>
+<li>Scroll to <strong>Rule Usage</strong>, choose <strong>bytes</strong>, and set the time to Last Hour.</li>
+<li>Click <strong>Jump to Logs</strong> in that widget and choose the <strong>Traffic log</strong>.</li>
+<li>Clear the log filter, return to the ACC, and click <strong>Clear all</strong> under Global Filters.</li>
+</ol>
+<div class="callout guideq"><p class="c-title">Q8: Which rules allowed web-browsing?</p><p>Read the Rule Usage widget. In this baseline, expect <strong>Users_to_Internet</strong> and <strong>Users_to_Extranet</strong> (b and d). Allow-Corp-Apps also appears if web-browsing is one of Acquisition's approved apps.</p></div>
+<div class="callout guideq"><p class="c-title">Q9: Which log opens?</p><p><strong>a. Traffic.</strong></p></div>
+<div class="callout guideq"><p class="c-title">Q10: Which filters were applied automatically?</p><p><strong>a and b: a time range filter and the application filter</strong> you promoted. Check the filter text in the log to confirm.</p></div>
+<p class="shot" id="shot-3"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 3</span> The Traffic log opened from Jump to Logs, showing the filter it applied.</span></p>
+<h3 class="task-head"><span class="tn">2.7</span>Threats in the Threat log</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Monitor &gt; Logs &gt; Threat"></span> and clear any filter.</li>
+<li>Click <strong>+</strong> (Add Log Filter): <strong>and</strong>, <strong>Severity</strong>, <strong>greater than or equal</strong>, <strong>high</strong>. Add, Apply, then click the arrow to run it.</li>
+</ol>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( severity geq high )</span></pre>
+<ol class="steps-list" start="3">
+<li>Clear it, then build: <strong>and</strong>, <strong>Source User</strong>, <strong>equal</strong>, <code>chicago\escrooge</code>. Add, Apply, run it.</li>
+</ol>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( user.src eq 'chicago\escrooge' )</span></pre>
+<ol class="steps-list" start="4">
+<li>Clear the filter.</li>
+</ol>
+<div class="callout guideq"><p class="c-title">Q11: Is the log showing only high severity or greater?</p><p><strong>a. True.</strong></p></div>
+<div class="callout stuck"><p class="c-title">Typing the user filter yourself</p><p>The Filter Builder adds the quotes for you. If you type it, the backslash means you need straight single quotes, as above.</p></div>
+<p class="shot" id="shot-4"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 4</span> The Threat log filtered to severity high or greater.</span></p>
+<h3 class="task-head"><span class="tn">2.8</span>Applications in the Traffic log</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Monitor &gt; Logs &gt; Traffic"></span> and clear any filter.</li>
+<li>Add a filter: <strong>and</strong>, <strong>Source Zone</strong>, <strong>equal</strong>, <strong>Acquisition</strong>. Apply and run it.</li>
+</ol>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( zone.src eq Acquisition )</span></pre>
+<ol class="steps-list" start="3">
+<li>Open Add Log Filter again. Edit the existing clause to <code>Users_Net</code>, then add <strong>and</strong>, <strong>Application</strong>, <strong>equal</strong>, <strong>web-browsing</strong>. Apply and run.</li>
+</ol>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( zone.src eq Users_Net ) and ( app eq web-browsing )</span></pre>
+<div class="callout guideq"><p class="c-title">Q12: Is the log showing only Acquisition traffic?</p><p><strong>a. True.</strong></p></div>
+<div class="callout guideq"><p class="c-title">Q13: Is it showing only web-browsing from Users_Net?</p><p><strong>a. True.</strong></p></div>
+<div class="callout fix"><p class="c-title">The guide says "Threat log" here</p><p>Steps 5 and 11 say to apply the filter to the Threat log, and step 6 says it shows "threats." You're in the <strong>Traffic</strong> log, filtering sessions. One note also mentions a "dmz zone"; it means Acquisition.</p></div>
+<p class="shot" id="shot-5"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 5</span> The Traffic log filtered to web-browsing from Users_Net.</span></p>
+<h3 class="task-head"><span class="tn">2.9</span>App Scope Threat Monitor</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Monitor &gt; App Scope &gt; Threat Monitor"></span>.</li>
+<li>Click <strong>Last 7 days</strong>, then change <strong>Top 10</strong> to <strong>Top 25</strong>.</li>
+<li>Change <strong>Threat</strong> to <strong>Source User</strong>, choose <strong>Show all threat types</strong>, and hover over a bar to see the user and count.</li>
+</ol>
+<p class="shot" id="shot-6"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 6</span> The Threat Monitor showing the top 25 by source user over the last 7 days.</span></p>
+<h3 class="task-head"><span class="tn">2.10</span>Enable predefined reports</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Device &gt; Setup &gt; Management"></span> and click the gear on <strong>Logging and Reporting Settings</strong>.</li>
+<li>On the <strong>Pre-Defined Reports</strong> tab, click <strong>Select All</strong> and click OK. Commit.</li>
+</ol>
+<h3 class="task-head"><span class="tn">2.11</span>Read predefined reports</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Monitor &gt; Reports"></span>.</li>
+<li>In the report list on the right, expand <strong>Application Reports</strong> and click <strong>top-applications</strong>. It shows the previous day's top applications.</li>
+<li>Open <strong>Traffic Reports &gt; top-sources</strong> as well.</li>
+</ol>
+<div class="callout fix"><p class="c-title">Predefined, not Custom</p><p>The guide says to expand <strong>Custom Reports</strong> to find top-applications. top-applications and top-sources are <strong>predefined</strong> reports, listed by category in the right-hand panel.</p></div>
+<div class="callout stuck"><p class="c-title">Grey dates</p><p>Reports are generated daily, so a lab environment may only have data for some days. Click through the calendar dates until one shows data.</p></div>
+<p class="shot" id="shot-7"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 7</span> The top-applications predefined report with data.</span></p>
+<h3 class="task-head"><span class="tn">2.12</span>Build a custom report</h3>
+<ol class="steps-list" start="1">
+<li>Go to <span class="path" data-path="Monitor &gt; Manage Custom Reports"></span> and click <strong>Add</strong>.</li>
+<li>Name <code>Apps Used by Internal Zones</code>, Database <strong>Summary Databases &gt; Traffic</strong>, <strong>Scheduled</strong> checked, Time Frame <strong>Last 7 Days</strong>, Sort By <strong>Sessions</strong> and <strong>Top 100</strong>, Group By <strong>Source Zone</strong> and <strong>5 Groups</strong>. Selected Columns: <strong>Source Zone, Action, Application, Bytes</strong>.</li>
+<li>Click <strong>Filter Builder</strong>: <strong>and</strong>, <strong>Source Zone</strong>, <strong>not equal</strong>, <strong>Internet</strong>. Add, Apply, OK.</li>
+<li>Open the report and click <strong>Run Now</strong>. Read the results by zone.</li>
+</ol>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( zone.src neq Internet )</span></pre>
+<div class="callout tip"><p class="c-title">Ask why each zone appears</p><p>The filter excludes traffic from the internet, which leaves the internal zones. Notice which ones show up (the guide mentions Extranet and Acquisition) and think about why Users_Net might be small or missing in this data.</p></div>
+<p class="shot" id="shot-8"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 8</span> The Apps Used by Internal Zones report results grouped by source zone.</span></p>
+</section>
+
+<section class="unit" id="s-reference" data-section="reference" data-label="Reference" data-part="Understand">
+<header><span class="sec-n">04</span><h2>Monitoring reference</h2></header>
+<h4>Which tool for which question</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Question</th><th scope="col">Fastest tool</th></tr></thead><tbody><tr><td>What happened in the last hour?</td><td>Dashboard widgets</td></tr><tr><td>What's the big picture, and what's related to this value?</td><td>ACC with global filters</td></tr><tr><td>Exactly which sessions or events?</td><td>Logs with filters</td></tr><tr><td>How has this changed over days?</td><td>App Scope</td></tr><tr><td>What do I hand to someone else?</td><td>Predefined, custom, or PDF summary reports</td></tr><tr><td>Is this a pattern of compromise?</td><td>Correlated events (Module 14)</td></tr></tbody></table></div>
+<h4>Filters from this lab</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Purpose</th><th scope="col">Filter</th></tr></thead><tbody><tr><td>High or worse</td><td><code>( severity geq high )</code></td></tr><tr><td>One user</td><td><code>( user.src eq 'chicago\escrooge' )</code></td></tr><tr><td>One zone</td><td><code>( zone.src eq Acquisition )</code></td></tr><tr><td>Zone and app</td><td><code>( zone.src eq Users_Net ) and ( app eq web-browsing )</code></td></tr><tr><td>Exclude internet</td><td><code>( zone.src neq Internet )</code></td></tr></tbody></table></div>
+<h4>The CLI view of the same logs</h4>
+<p><code>direction equal backward</code> lists the newest entries first. The web interface is far easier for filtering; the CLI matters when you only have SSH.</p>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">show log threat direction equal backward</span>
+<span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">show log traffic direction equal backward</span></pre>
+</section>
+
+<section class="unit" id="s-stuck" data-section="stuck" data-label="Where people get stuck" data-part="Understand">
+<header><span class="sec-n">05</span><h2>Where people get stuck</h2></header>
+<div class="table-wrap"><table class="stuck-table"><thead><tr><th scope="col">Symptom</th><th scope="col">Likely cause</th><th scope="col">Fix</th></tr></thead><tbody><tr><td>Widgets or ACC empty</td><td>Script not finished, or wrong time range</td><td>Wait, refresh, check the Time setting.</td></tr><tr><td>ACC numbers oddly small</td><td>A global filter is still applied</td><td>Clear all under Global Filters.</td></tr><tr><td>A log shows nothing</td><td>Leftover filter from an earlier task</td><td>Clear the filter first, every time.</td></tr><tr><td>User filter error</td><td>Missing quotes around chicago\escrooge</td><td>Use straight single quotes, or the Filter Builder.</td></tr><tr><td>Report has no data</td><td>Selected date has none</td><td>Pick another date; reports are daily.</td></tr><tr><td>Can't find top-applications under Custom Reports</td><td>It's a predefined report</td><td>Look under Application Reports.</td></tr></tbody></table></div>
+</section>
+
+<section class="unit" id="s-production" data-section="production" data-label="In production" data-part="Understand">
+<header><span class="sec-n">06</span><h2>How this looks on a real firewall</h2></header>
+<ul><li><strong>Forward logs off the firewall.</strong> Firewalls keep limited history. Production deployments forward logs to Panorama, Strata Logging Service, or a SIEM through log forwarding profiles (Module 14).</li><li><strong>Schedule the reports people need.</strong> Weekly top threats and high-risk applications, emailed as a PDF summary, is a common deliverable for managers and auditors.</li><li><strong>Build saved filters.</strong> Analysts keep a library of filters for recurring questions: a user, a server, denied traffic to a sensitive zone.</li><li><strong>Correlate.</strong> Single events rarely tell the story. Correlation objects and SIEM rules connect a spyware hit, a sinkholed lookup, and odd traffic from the same host.</li><li><strong>Other vendors:</strong> FortiView and FortiAnalyzer, Cisco FMC dashboards, and Check Point SmartView play the ACC and reporting roles.</li></ul>
+</section>
+
+<section class="unit" id="s-selfcheck" data-section="selfcheck" data-label="Check yourself" data-part="Wrap up">
+<header><span class="sec-n">07</span><h2>Check yourself</h2></header>
+<details class="qa"><summary>You want every widget in the ACC to show only one source user. What do you do?</summary><div class="qa-a"><p>Promote that user to a global filter.</p></div></details>
+<details class="qa"><summary>The ACC shows a spike in a threat. Where do you go for the individual events?</summary><div class="qa-a"><p>The Threat log, using Jump to Logs or a filter on that threat.</p></div></details>
+<details class="qa"><summary>Write a Threat log filter for critical threats from the Acquisition zone.</summary><div class="qa-a"><p><code>( severity eq critical ) and ( zone.src eq Acquisition )</code></p></div></details>
+<details class="qa"><summary>Why might a predefined report show no data for today?</summary><div class="qa-a"><p>Predefined reports are generated daily from the previous day's data.</p></div></details>
+<details class="qa"><summary>What does the custom report's filter <code>( zone.src neq Internet )</code> leave out, and why?</summary><div class="qa-a"><p>Traffic that starts on the internet, so the report focuses on what internal zones are using.</p></div></details>
+</section>
+
+<section class="unit" id="s-evidence" data-section="evidence" data-label="What to submit" data-part="Wrap up">
+<header><span class="sec-n">08</span><h2>Screenshots to capture</h2></header>
+<p>Take each screenshot at its marker. Name the files by lab and number (for example <code>lab13-shot8.png</code>) and submit them in Canvas as your instructor directs.</p>
+<ul class="checklist evidence" data-save="lab13-evidence"><li><input type="checkbox" id="ev13-0"><div><label for="ev13-0">Screenshot 1: The Dashboard showing the Threat Logs and URL Filtering Logs widgets with entries.</label><a class="ev-where" href="#shot-1">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev13-1"><div><label for="ev13-1">Screenshot 2: The ACC with high severity applied as a global filter.</label><a class="ev-where" href="#shot-2">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev13-2"><div><label for="ev13-2">Screenshot 3: The Traffic log opened from Jump to Logs, showing the filter it applied.</label><a class="ev-where" href="#shot-3">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev13-3"><div><label for="ev13-3">Screenshot 4: The Threat log filtered to severity high or greater.</label><a class="ev-where" href="#shot-4">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev13-4"><div><label for="ev13-4">Screenshot 5: The Traffic log filtered to web-browsing from Users_Net.</label><a class="ev-where" href="#shot-5">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev13-5"><div><label for="ev13-5">Screenshot 6: The Threat Monitor showing the top 25 by source user over the last 7 days.</label><a class="ev-where" href="#shot-6">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev13-6"><div><label for="ev13-6">Screenshot 7: The top-applications predefined report with data.</label><a class="ev-where" href="#shot-7">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev13-7"><div><label for="ev13-7">Screenshot 8: The Apps Used by Internal Zones report results grouped by source zone.</label><a class="ev-where" href="#shot-8">Find it in the walkthrough</a></div></li></ul>
+<p class="box-note">Checkmarks are saved in this browser only. They help you keep track; the screenshots themselves go to Canvas.</p>
+</section>
+
+<section class="unit" id="s-cheat" data-section="cheat" data-label="Cheat sheet" data-part="Wrap up">
+<header><span class="sec-n">09</span><h2>Cheat sheet</h2></header>
+<div class="cheat">
+<h4>Where things live</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Tool</th><th scope="col">Path</th></tr></thead><tbody><tr><td>Widgets</td><td>Dashboard &gt; Widgets</td></tr><tr><td>ACC</td><td>ACC tab (Threat Activity, Network Activity; Global Filters on the left)</td></tr><tr><td>Logs</td><td><span class="path" data-path="Monitor &gt; Logs"></span></td></tr><tr><td>Trends</td><td><span class="path" data-path="Monitor &gt; App Scope &gt; Threat Monitor"></span></td></tr><tr><td>Enable reports</td><td><span class="path" data-path="Device &gt; Setup &gt; Management"></span>, Logging and Reporting Settings</td></tr><tr><td>Read reports</td><td><span class="path" data-path="Monitor &gt; Reports"></span></td></tr><tr><td>Custom reports</td><td><span class="path" data-path="Monitor &gt; Manage Custom Reports"></span></td></tr></tbody></table></div>
+<h4>Custom report</h4>
+<div class="table-wrap"><table><thead><tr><th scope="col">Setting</th><th scope="col">Value</th></tr></thead><tbody><tr><td>Name</td><td>Apps Used by Internal Zones</td></tr><tr><td>Database</td><td>Summary: Traffic</td></tr><tr><td>Time, sort, group</td><td>Last 7 Days; Sessions, Top 100; Source Zone, 5 groups</td></tr><tr><td>Columns</td><td>Source Zone, Action, Application, Bytes</td></tr><tr><td>Filter</td><td><code>( zone.src neq Internet )</code></td></tr></tbody></table></div>
+<h4>Remember</h4>
+<ul><li>Let the script finish. Clear filters before every task.</li></ul>
+</div>
+<p><button type="button" class="btn" data-print="cheat">Print only this cheat sheet</button></p>
+</section>
+<nav class="pager" id="pager" aria-label="Lab navigation"></nav>
+</article>
+</div>
+</main>
+
+<footer id="site-footer"></footer>
+<script src="../assets/js/course.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/activities.js"></script>
+</body>
+</html>
