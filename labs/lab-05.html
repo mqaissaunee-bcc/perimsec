@@ -34,6 +34,34 @@ html[data-present="on"] .pm-dock{position:fixed;left:0;right:0;bottom:0;z-index:
 .pm-dock .pm-where{flex:1 1 auto;text-align:center;min-width:0;font-size:.78rem;color:var(--ink-2)}
 .pm-dock .pm-where b{color:var(--ink);display:block;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media print{.pm-dock,.pm-toggle{display:none!important}}
+</style><style id="mb-css">
+/* Machine bands: which VM / session each run of steps happens on. Page-local; uses site.css colour tokens. */
+.mrun{--mb:var(--accent);--mb-soft:var(--accent-soft);border-left:4px solid var(--mb);margin:1rem 0 1.2rem;padding:0 0 .2rem .9rem}
+.mrun.mr-client{--mb:var(--ok);--mb-soft:var(--ok-soft)}
+.mrun.mr-webui{--mb:var(--accent);--mb-soft:var(--accent-soft)}
+.mrun.mr-fwcli{--mb:var(--warn);--mb-soft:var(--warn-soft)}
+.mrun.mr-extranet{--mb:var(--focus);--mb-soft:var(--surface-2)}
+.mband{display:flex;flex-wrap:wrap;align-items:baseline;gap:.2rem .6rem;margin:0 0 .6rem -.9rem;padding:.4rem .8rem;
+  background:var(--mb-soft);border-radius:0 var(--radius-m) var(--radius-m) 0;font-weight:700;font-size:var(--step--1)}
+.mband .mb-ic{font-size:1.05rem}
+.mband .mb-sub{font-weight:400;color:var(--ink-2);font-size:.85em}
+.mlabel{display:inline-block;margin-right:.35rem;padding:0 .45rem;border-radius:var(--radius-s);font-weight:700;font-size:.85em;
+  border-left:3px solid var(--accent);background:var(--surface-2)}
+.mlabel.ml-client{border-left-color:var(--ok)}.mlabel.ml-webui{border-left-color:var(--accent)}
+.mlabel.ml-fwcli{border-left-color:var(--warn)}.mlabel.ml-extranet{border-left-color:var(--focus)}
+.mrun .shot{margin-left:.6rem}
+.topo{width:100%;max-width:760px;height:auto;display:block;margin:.4rem 0 .3rem}
+.topo .bx{fill:var(--surface);stroke:var(--rule);stroke-width:1.5}
+.topo .fw{fill:var(--accent-soft);stroke:var(--accent);stroke-width:2}
+.topo .ln{stroke:var(--ink-2);stroke-width:2;fill:none}
+.topo .ln.mg{stroke-dasharray:5 4}
+.topo .dim{opacity:.45}
+.topo text{fill:var(--ink);font-family:var(--font-body);font-size:13px}
+.topo .h{font-weight:700;font-size:14px}
+.topo .m{font-family:var(--font-mono);font-size:12px}
+.topo .s{fill:var(--ink-2);font-size:12px}
+.diverge{border-left-color:var(--warn)}
+@media print{.mrun{border-left-color:#666}.mband{background:#eee}}
 </style></head>
 <body data-root=".." data-lab="5" data-page="labs/index.html">
 <a class="skip-link" href="#main">Skip to main content</a>
@@ -67,108 +95,174 @@ html[data-present="on"] .pm-dock{position:fixed;left:0;right:0;bottom:0;z-index:
 <section class="unit" id="s-setup" data-section="setup" data-label="Before you begin" data-part="Prepare">
 <header><span class="sec-n">02</span><h2>Before you begin</h2></header>
 <p>You'll use the web interface, the client's <strong>Terminal Emulator</strong> for ping, and Firefox's <strong>Extranet</strong> bookmark.</p>
+<h4>Lab Settings (from the NDG guide)</h4>
 <div class="table-wrap"><table>
-<caption class="visually-hidden">Hosts in the lab network</caption>
-<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th><th scope="col">Sign-in</th></tr></thead>
+<caption class="visually-hidden">Lab Settings: virtual machines, addresses, and sign-ins</caption>
+<thead><tr><th scope="col">Virtual Machine</th><th scope="col">IP Address</th><th scope="col">Account</th><th scope="col">Password</th></tr></thead>
 <tbody>
-<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td><td><code>lab-user / Pal0Alt0!</code></td></tr>
-<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td><td><code>admin / Pal0Alt0!</code></td></tr>
-<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td><td><code>root / Pal0Alt0</code></td></tr>
-<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td><td>—</td></tr>
-<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td><td>—</td></tr>
-<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td><td>—</td></tr>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td><code>lab-user</code></td><td><code>Pal0Alt0!</code></td></tr>
+<tr><td>DMZ</td><td><code>192.168.50.10</code></td><td><code>root</code></td><td><code>Pal0Alt0!</code></td></tr>
+<tr><td>Firewall</td><td><code>192.168.1.254</code></td><td><code>admin</code></td><td><code>Pal0Alt0!</code></td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td><code>root</code></td><td><code>Pal0Alt0</code></td></tr>
 </tbody></table></div>
-<p class="box-note">Sign-in credentials are shown above (the fixed NETLAB+ pod logins, case-sensitive). </p>
+<p class="box-note">Passwords are case-sensitive and use zeros, not the letter O. The vRouter password has no exclamation point.</p>
+<p class="box-note"><strong>Currency note:</strong> these labs run PAN-OS 11.0, which reached end-of-life on November 17, 2024 and no longer receives security fixes. Everything here still works in the lab; on a real firewall you would run a supported release (11.1, 11.2, or 12.1), where most screens are the same.</p>
+<h4>Pod topology</h4>
+<svg class="topo" viewBox="0 0 760 360" role="img" aria-labelledby="topo-t topo-d">
+<title id="topo-t">Pod topology</title>
+<desc id="topo-d">The firewall firewall-a sits between the Internet zone (ethernet1/1, 203.0.113.20/24, next hop 203.0.113.1), the Users_Net zone (ethernet1/2, 192.168.1.1/24, with the Client at 192.168.1.20, the vRouter at 192.168.1.10, and the firewall management port at 192.168.1.254), and the Extranet zone (ethernet1/3, 192.168.50.1/24, servers including web 192.168.50.80, DNS 192.168.50.53 and DMZ 192.168.50.10).</desc>
+<g><rect class="bx" x="250" y="8" width="260" height="74" rx="8"/>
+<text class="h" x="266" y="32">Internet zone</text>
+<text class="m" x="266" y="54">ISP router 203.0.113.1</text>
+<text class="s" x="266" y="72">8.8.8.8 and real websites beyond</text>
+<path class="ln" d="M380 82V128"/><text class="m" x="388" y="110">ethernet1/1 203.0.113.20/24</text></g>
+<rect class="fw" x="20" y="128" width="720" height="56" rx="8"/>
+<text class="h" x="36" y="152">firewall-a (PA-VM)</text>
+<text class="m" x="36" y="172">MGT 192.168.1.254 · default gateway 192.168.1.10 (vRouter)</text>
+<path class="ln mg" d="M70 184V240"/>
+<g><path class="ln" d="M190 184V240"/><text class="m" x="198" y="224">e1/2 192.168.1.1</text></g>
+<rect class="bx" x="20" y="240" width="236" height="112" rx="8"/>
+<text class="h" x="34" y="264">Users_Net zone</text>
+<text class="m" x="34" y="284">192.168.1.0/24</text>
+<text class="m" x="34" y="306">Client 192.168.1.20</text>
+<text class="m" x="34" y="326">vRouter 192.168.1.10</text>
+<text class="s" x="34" y="344">MGT port is on this subnet</text>
+<g><rect class="bx" x="272" y="240" width="238" height="112" rx="8"/>
+<text class="h" x="286" y="264">Extranet zone</text>
+<text class="m" x="286" y="284">192.168.50.0/24</text>
+<text class="m" x="286" y="306">Web .80 · DNS .53 · DMZ .10</text>
+<text class="s" x="286" y="326">Other lab servers on .50.x</text>
+<path class="ln" d="M390 184V240"/><text class="m" x="398" y="224">e1/3 192.168.50.1</text></g>
+
+</svg>
+<p class="box-note">Data interfaces, VR-1 and zones as built in Lab 4 and loaded by this lab’s snapshot.</p>
+<h4>Addresses you’ll use</h4>
+<div class="table-wrap"><table>
+<caption class="visually-hidden">Addresses in the lab network</caption>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td></tr>
+</tbody></table></div>
+
 <h4>What's already in the baseline</h4>
 <p>Lab 4's interfaces, VR-1, and zones (Internet, Users_Net, Extranet). The Security policy holds only the two predefined rules: <strong>intrazone-default</strong> (allow) and <strong>interzone-default</strong> (deny).</p>
 </section>
 
 <section class="unit" id="s-walkthrough" data-section="walkthrough" data-label="Walkthrough" data-part="Do the lab">
 <header><span class="sec-n">03</span><h2>Walkthrough of the detailed steps</h2></header>
-<h3 class="task-head"><span class="tn">2.1</span>Load the lab configuration</h3>
+<div class="callout tip"><p class="c-title">Reading the machine bands</p><p>Each coloured band says where the steps under it happen, and it stays in force until the next band:
+<span class="mlabel ml-client">🖥️ Client</span> <span class="mlabel ml-webui">🧱 Firewall web interface</span> <span class="mlabel ml-fwcli">⌨️ Firewall CLI</span> <span class="mlabel ml-extranet">🗄️ Server-Extranet</span>.
+When a single step switches machines, it carries an inline label instead. Step numbers match the guide’s Detailed Lab Steps exactly.</p></div>
+<h3 class="task-head"><span class="tn">2.1</span>Apply a baseline configuration to the firewall</h3>
 <p class="task-intro">Every lab starts from a known baseline, so your firewall matches the guide no matter what you did last time.</p>
-<ol class="steps-list" start="1"><li>On the client desktop, log in as <code>lab-user</code>, open Firefox, and browse to <code>https://192.168.1.254</code>. Log in as <code>admin</code> with the password from Lab Settings. If the login page does not appear, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li>Go to <span class="path" data-path="Device > Setup > Operations"></span> and click <strong>Load named configuration snapshot</strong>. Choose <code>edu-210-11.0a-05.xml</code> and click OK, then Close.</li><li>Open <strong>Tasks</strong> (lower right) and confirm the Load task shows completed.</li><li>Click <strong>Commit</strong> (upper right), then <strong>Commit</strong> in the dialog, and wait for it to finish.</li></ol>
-<div class="callout stuck"><p class="c-title">Loading is not committing</p><p>A loaded snapshot replaces only the candidate configuration. Until you commit, the firewall is still running whatever was there before, and nothing in the lab will match the guide.</p></div>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>Click the <strong>Client</strong> tab in NETLAB+ to access the Client PC.</li><li>On the <em>Zorin</em> desktop, click <strong>lab-user</strong>.</li><li>For the lab-user password, enter <code>Pal0Alt0!</code> and press <strong>Enter</strong>.</li><li>Double-click the <strong>Firefox Web Browser</strong> icon on the Desktop.</li><li>In the Firefox address field, type <code>https://192.168.1.254</code> and press <strong>Enter</strong>.</li></ol>
+</div>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="6"><li>Log in to the firewall web interface as username <code>admin</code>, password <code>Pal0Alt0!</code>. If the login page does not appear, wait an additional 1 to 3 minutes for the firewall to initialize and refresh the page.</li><li>Navigate to <span class="path" data-path="Device &gt; Setup &gt; Operations"></span> and click <strong>Load named configuration snapshot</strong> in the <em>Configuration Management</em> section.</li><li>In the <em>Load Named Configuration</em> window, select <code>edu-210-11.0a-05.xml</code> from the <strong>Name</strong> drop-down and click <strong>OK</strong>.</li><li>The <em>Loading Configuration</em> window says the configuration is being loaded and to check the Task Manager. Click <strong>Close</strong>.</li><li>Click the <strong>Tasks</strong> icon at the bottom-right of the web interface.</li><li>In <em>Task Manager – All Tasks</em>, verify the <strong>Load</strong> task shows <strong>Completed</strong>. Click <strong>Close</strong>.</li><li>Click the <strong>Commit</strong> link at the top-right of the web interface.</li><li>In the <em>Commit</em> window, click <strong>Commit</strong>.</li><li>When the commit operation completes, click <strong>Close</strong>.</li><li>Leave the Palo Alto Networks Firewall open and continue to the next task.</li></ol>
+<div class="callout stuck"><p class="c-title">Loading is not committing</p><p>A loaded snapshot replaces only the candidate configuration. Until you commit (steps 12 to 14), the firewall is still running whatever was there before, and nothing in the lab will match the guide.</p></div>
+</div>
 <h3 class="task-head"><span class="tn">2.2</span>Create a Security policy rule</h3>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Policies &gt; Security"></span> and click <strong>Add</strong>.</li>
-<li><strong>General:</strong> name <code>Users_to_Extranet</code>, description <code>Allows hosts in Users_Net zone to access servers in Extranet zone</code>.</li>
-<li><strong>Source:</strong> add source zone <strong>Users_Net</strong>.</li>
-<li><strong>Destination:</strong> add destination zone <strong>Extranet</strong>.</li>
-<li><strong>Application:</strong> leave <strong>Any</strong>.</li>
-<li><strong>Service/URL Category:</strong> leave Service <strong>application-default</strong> and URL Category <strong>Any</strong>.</li>
-<li><strong>Actions:</strong> leave Action <strong>Allow</strong>. Click OK.</li>
-<li>Confirm the rule sits above intrazone-default and interzone-default, then commit.</li>
-</ol>
-<div class="callout why"><p class="c-title">application-default</p><p>It allows each application only on its standard ports: web-browsing on TCP 80, ssl on TCP 443. An application on an unusual port won't match. That's tighter than Service <strong>any</strong>.</p></div>
+<p class="task-intro">Employees in Users_Net need the business applications in Extranet. You write the rule that allows it.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Policies &gt; Security"></span>. Click <strong>Add</strong>.</li></ol>
+<ol class="steps-list" start="2"><li>In the <em>Security Policy Rule</em> window, on the <strong>General</strong> tab, type <code>Users_to_Extranet</code> for the Name. For Description, enter <code>Allows hosts in Users_Net zone to access servers in Extranet zone.</code>.</li><li>Select the <strong>Source</strong> tab. Under <strong>Source Zone</strong>, click <strong>Add</strong> and select <strong>Users_Net</strong>.</li><li>Select the <strong>Destination</strong> tab. Under <strong>Destination Zone</strong>, click <strong>Add</strong> and select <strong>Extranet</strong>.</li><li>Select the <strong>Application</strong> tab. Verify <strong>Any</strong> is selected for Applications.</li><li>Select the <strong>Service/URL Category</strong> tab. Verify <strong>application-default</strong> is selected for Service and <strong>Any</strong> for URL Category.</li><li>Select the <strong>Actions</strong> tab. Don’t change anything, but notice the Action is <strong>Allow</strong> by default. Click <strong>OK</strong>.</li></ol>
+<ol class="steps-list" start="8"><li>Verify Users_to_Extranet appears in the Security policy list, above the two predefined rules <strong>intrazone-default</strong> and <strong>interzone-default</strong>, which always stay at the bottom.</li><li>Click the <strong>Commit</strong> button at the upper right of the web interface.</li><li>In the <em>Commit</em> window, click <strong>Commit</strong>.</li><li>Wait until the commit process is complete. Click <strong>Close</strong>.</li><li>Leave the web interface open and continue to the next task.</li></ol>
+<div class="callout why"><p class="c-title">application-default</p><p>It allows each application only on its standard ports: web-browsing on TCP 80, ssl on TCP 443. An application on an unusual port won’t match. That’s tighter than Service <strong>any</strong>.</p></div>
 <div class="callout stuck"><p class="c-title">New rules default to Allow</p><p>Every new rule starts as Allow. When you build a block rule, change the action on the Actions tab before you click OK.</p></div>
 <p class="shot" id="shot-1"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 1</span> The Security policy showing Users_to_Extranet above the two default rules.</span></p>
+</div>
 <h3 class="task-head"><span class="tn">2.3</span>Modify Security policy table columns</h3>
-<ol class="steps-list" start="1">
-<li>Hover over the <strong>Name</strong> column header, open its drop-down, and choose <strong>Columns</strong>.</li>
-<li>Uncheck <strong>Type</strong>, <strong>Source Device</strong>, <strong>Destination Device</strong>, and <strong>Options</strong>.</li>
-<li>Open the drop-down again and choose <strong>Adjust Columns</strong>.</li>
-</ol>
-<div class="callout tip"><p class="c-title">Optional, but worth it</p><p>Hiding columns you never use makes Hit Count and the rule details easier to see. The same menu works in every table on the firewall.</p></div>
-<h3 class="task-head"><span class="tn">2.4</span>Test the new rule</h3>
-<ol class="steps-list" start="1">
-<li>Minimize Firefox and open the <strong>Terminal Emulator</strong> on the client.</li>
-<li>Ping the extranet web server for a few seconds, then press Ctrl+C. You should get replies.</li>
-</ol>
+<p class="task-intro">Optional, but it makes Hit Count and the rule details easier to see. The same menu works in every table.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>In the Security Policy window, click the small drop-down icon next to the <strong>Name</strong> column header. You may need to hover for it to appear.</li><li>Choose <strong>Columns</strong> and note the columns you can show or hide.</li><li>Uncheck <strong>Type</strong>, <strong>Source Device</strong>, <strong>Destination Device</strong>, and <strong>Options</strong>.</li><li>At the top of the Name column, open the drop-down again and choose <strong>Adjust Columns</strong>.</li><li>The displayed columns resize to best fit the browser window.</li><li>Minimize the firewall’s Firefox window and continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.4</span>Test new Security policy rule</h3>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>Open the <strong>Terminal Emulator</strong> on the client desktop.</li><li>Issue the following command to check that your rule works.</li></ol>
 <pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">lab-user@client-a:~/Desktop/Lab-Files$</span> <span class="cmd">ping 192.168.50.80</span></pre>
-<ol class="steps-list" start="3">
-<li>Open a new Firefox window and choose the bookmark <strong>Extranet &gt; Extranet</strong>. You should see <strong>Hello World !</strong></li>
-</ol>
+<ol class="steps-list" start="3"><li>Wait a few seconds and press <strong>Ctrl+C</strong>. Replies from 192.168.50.80 mean the rule is correct. If not, review 2.2 and try again.</li><li>On the client desktop, open a <strong>new</strong> Firefox Web Browser window.</li><li>From the Bookmarks bar, select <strong>Extranet &gt; Extranet</strong>.</li><li>The server displays a page. If you see <strong>Hello World !</strong>, the policy is configured properly.</li></ol>
 <p class="shot" id="shot-2"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 2</span> The terminal showing replies from 192.168.50.80 and the Hello World page.</span></p>
+<ol class="steps-list" start="7"><li>Close that Firefox window with the close icon at its upper right.</li><li>Re-open the firewall web interface by clicking the <strong>firewall-a – Mozilla Firefox</strong> icon in the taskbar.</li><li>Leave the Terminal and the firewall web interface open and continue to the next task.</li></ol>
+</div>
 <h3 class="task-head"><span class="tn">2.5</span>Examine and reset the rule hit count</h3>
-<ol class="steps-list" start="1">
-<li>Back in <span class="path" data-path="Policies &gt; Security"></span>, scroll right to <strong>Hit Count</strong> and note the number on Users_to_Extranet.</li>
-<li>Ping 192.168.50.80 again, then click <strong>Refresh</strong> (upper right). The count rises.</li>
-<li>Select (don't open) Users_to_Extranet, then click <strong>Reset Rule Hit Counter &gt; Selected rules</strong>. It drops to 0.</li>
-</ol>
-<div class="callout why"><p class="c-title">Why reset before a test</p><p>Starting from zero proves that <strong>your</strong> test, and nothing else, is hitting the rule. It's the quickest way to answer "is my rule being used?"</p></div>
-<h3 class="task-head"><span class="tn">2.6</span>Examine the Traffic log and make denies visible</h3>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Monitor &gt; Logs &gt; Traffic"></span>. From the Receive Time column drop-down, open <strong>Columns</strong> and hide Type, Source Dynamic Address Group, Destination Dynamic Address Group, and Dynamic User Group.</li>
-<li>In the terminal, ping 8.8.8.8 for a few seconds. It fails. Press Ctrl+C.</li>
-<li>Apply this filter in the Traffic log. Nothing appears.</li>
-</ol>
+<p class="task-intro">Hit counts tell you whether a rule is being used at all, which makes them a first stop for troubleshooting.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Policies &gt; Security"></span>.</li><li>Scroll right to the <strong>Hit Count</strong> column and note the number on Users_to_Extranet. (The guide saw 1263; yours will differ.)</li></ol>
+</div>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="3"><li>Return to the terminal window from the taskbar.</li><li>Ping the panw.lab server again. It succeeds. Wait a few seconds and press <strong>Ctrl+C</strong>.</li></ol>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">lab-user@client-a:~/Desktop/Lab-Files$</span> <span class="cmd">ping 192.168.50.80</span></pre>
+</div>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="5"><li>Return to the firewall and click the <strong>Refresh</strong> button at the upper right. The Hit Count on Users_to_Extranet has increased.</li><li>Highlight the Users_to_Extranet rule, but do not open it.</li><li>At the bottom of the window, select <strong>Reset Rule Hit Counter &gt; Selected rules</strong>.</li><li>The Hit Count for Users_to_Extranet is reset to 0.</li><li>Leave the firewall open and continue to the next task.</li></ol>
+<div class="callout why"><p class="c-title">Why reset before a test</p><p>Starting from zero proves that <strong>your</strong> test, and nothing else, is hitting the rule. It’s the quickest way to answer “is my rule being used?”</p></div>
+</div>
+<h3 class="task-head"><span class="tn">2.6</span>Examine the Traffic log</h3>
+<p class="task-intro">You look for sessions between zones, discover that denied traffic is invisible by default, and fix that.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Monitor &gt; Logs &gt; Traffic"></span>.</li><li>Click the drop-down icon next to <strong>Receive Time</strong> and choose <strong>Columns</strong>.</li><li>Uncheck <strong>Type</strong>, <strong>Source Dynamic Address Group</strong>, <strong>Destination Dynamic Address Group</strong>, and <strong>Dynamic User Group</strong>. (Optional; no lab uses them.)</li></ol>
+</div>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="4"><li>Return to the terminal window from the taskbar.</li><li>Ping an address on the internet.</li></ol>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">lab-user@client-a:~/Desktop/Lab-Files$</span> <span class="cmd">ping 8.8.8.8</span></pre>
+<ol class="steps-list" start="6"><li>After a few seconds, press <strong>Ctrl+C</strong>; it will not succeed.</li><li>Minimize the Terminal window; you repeat this test later.</li></ol>
+</div>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="8"><li>In the Traffic log, enter the filter below and click <strong>Apply Filter</strong> (upper right). Filters are case sensitive, and note the space after the opening and before the closing parenthesis.</li></ol>
 <pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( addr.dst eq 8.8.8.8 ) and ( zone.src eq Users_Net )</span></pre>
-<ol class="steps-list" start="4">
-<li>Go to <span class="path" data-path="Policies &gt; Security"></span>, select (don't open) <strong>interzone-default</strong>, and click <strong>Override</strong>.</li>
-<li>On the <strong>Actions</strong> tab, check <strong>Log at Session End</strong>. Click OK and commit.</li>
-<li>Ping 8.8.8.8 again, then reapply the filter. Now the denied sessions appear, matched to interzone-default.</li>
-</ol>
-<div class="callout guideq"><p class="c-title">Q1: Have any entries been recorded?</p><p><strong>No.</strong> The ping matched interzone-default, which denies it and, until you override it, doesn't log. The Why box below explains both reasons.</p></div>
-<div class="callout why"><p class="c-title">Why the first search was empty</p><p>Two reasons. No rule allows Users_Net to Internet, so the ping matches interzone-default. And interzone-default doesn't log by default. Denied traffic you can't see is the hardest kind to troubleshoot.</p></div>
-<div class="callout stuck"><p class="c-title">Filters are exact</p><p>Field names and zone names are case sensitive, and the spaces inside the parentheses matter. Copy the filter with the button rather than retyping it.</p></div>
+<div class="callout guideq"><p class="c-title">Guide question Q1</p><p>Have any entries been recorded in the Traffic log for the filter <code>( addr.dst eq 8.8.8.8 ) and ( zone.src eq Users_Net )</code>? a. Yes  b. No</p><p><strong>Answer:</strong> <strong>b. No.</strong> No rule allows Users_Net to Internet, so the ping matches interzone-default, which denies it. And interzone-default doesn’t log by default. You fix the second problem next.</p></div>
+<div class="callout stuck"><p class="c-title">Filters are exact</p><p>Field names and zone names are case sensitive, and the spaces inside the parentheses matter. Use the Copy button rather than retyping.</p></div>
+<ol class="steps-list" start="9"><li>To see these denies, enable logging on interzone-default. Navigate to <span class="path" data-path="Policies &gt; Security"></span>. Highlight the <strong>interzone-default</strong> rule but do not open it.</li><li>Click the <strong>Override</strong> button at the bottom of the window.</li><li>In the <em>Security Policy Rule – predefined</em> window, click the <strong>Actions</strong> tab. Select <strong>Log at Session End</strong> and click <strong>OK</strong>.</li><li>Click the <strong>Commit</strong> button at the upper right of the web interface.</li><li>In the <em>Commit</em> window, click <strong>Commit</strong>.</li><li>Wait until the commit process is complete. Click <strong>Close</strong>.</li></ol>
+</div>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="15"><li>Return to the terminal window from the taskbar.</li><li>Ping an address on the internet again.</li></ol>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">lab-user@client-a:~/Desktop/Lab-Files$</span> <span class="cmd">ping 8.8.8.8</span></pre>
+<ol class="steps-list" start="17"><li>After a few seconds, press <strong>Ctrl+C</strong>; it will not succeed.</li><li>Minimize the Terminal window; you repeat this test later.</li></ol>
+</div>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="19"><li>Navigate to <span class="path" data-path="Monitor &gt; Logs &gt; Traffic"></span>, enter the same filter, and click <strong>Apply Filter</strong>. The firewall is now logging entries matching your filter, dated today.</li></ol>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( addr.dst eq 8.8.8.8 ) and ( zone.src eq Users_Net )</span></pre>
 <p class="shot" id="shot-3"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 3</span> The Traffic log showing denied 8.8.8.8 sessions matched by interzone-default.</span></p>
+<ol class="steps-list" start="20"><li>Leave the web interface open and continue to the next task.</li></ol>
+</div>
 <h3 class="task-head">Added from the high-level steps: block known-bad addresses</h3>
-<p class="task-intro">The detailed steps skip these two rules, but the high-level steps (Task 1.12) include them, the in-module briefing lists them, and the baselines for later labs already contain them. Build them here so your rulebase matches.</p>
-<ol class="steps-list" start="1">
-<li>Add a rule named <code>Block-to-Known-Bad-Addresses</code>, description <code>Blocks traffic from Users and Extranet to known bad IP addresses</code>. Source zones <strong>Users_Net</strong> and <strong>Extranet</strong>. Destination zone <strong>Internet</strong>. Destination addresses: <strong>Palo Alto Networks - Bulletproof IP addresses</strong>, <strong>Palo Alto Networks - High risk IP addresses</strong>, and <strong>Palo Alto Networks - Known malicious IP addresses</strong>. Application <strong>any</strong>, Service <strong>any</strong>. Action <strong>Deny</strong>.</li>
-<li>Add <code>Block-from-Known-Bad-Addresses</code>, description <code>Blocks traffic from known bad IP addresses to Users and Extranet</code>. Source zone <strong>Internet</strong> with the same three lists as source addresses. Destination zones <strong>Users_Net</strong> and <strong>Extranet</strong>. Application <strong>any</strong>, Service <strong>any</strong>. Action <strong>Deny</strong>.</li>
-<li>Move both rules to the top of the rulebase: Block-to first, then Block-from.</li>
-</ol>
-<div class="callout fix"><p class="c-title">The detailed steps leave these out</p><p>Task 2 jumps from the Traffic log straight to the internet rules. Follow only Task 2 and your finished rulebase won't match the high-level steps or what you'll see at the top of the Lab 7 baseline.</p></div>
+<div class="callout fix diverge"><p class="c-title">Deliberate addition: not in the Detailed Lab Steps</p><p>This block has no 2.x number because the detailed steps don’t include it. The high-level steps (Task 1.12) do, the in-module briefing lists these rules, and later baselines already contain them. Build them here so your rulebase matches. Follow only Task 2 and your finished rulebase won’t match the high-level steps or the top of the Lab 7 baseline.</p></div>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" type="a"><li>Add a rule named <code>Block-to-Known-Bad-Addresses</code>, description <code>Blocks traffic from Users and Extranet to known bad IP addresses</code>. Source zones <strong>Users_Net</strong> and <strong>Extranet</strong>. Destination zone <strong>Internet</strong>. Destination addresses: <strong>Palo Alto Networks - Bulletproof IP addresses</strong>, <strong>Palo Alto Networks - High risk IP addresses</strong>, and <strong>Palo Alto Networks - Known malicious IP addresses</strong>. Application <strong>any</strong>, Service <strong>any</strong>. Action <strong>Deny</strong>.</li><li>Add <code>Block-from-Known-Bad-Addresses</code>, description <code>Blocks traffic from known bad IP addresses to Users and Extranet</code>. Source zone <strong>Internet</strong> with the same three lists as source addresses. Destination zones <strong>Users_Net</strong> and <strong>Extranet</strong>. Application <strong>any</strong>, Service <strong>any</strong>. Action <strong>Deny</strong>.</li><li>Move both rules to the top of the rulebase: Block-to first, then Block-from.</li></ol>
 <div class="callout why"><p class="c-title">Service any, not application-default</p><p>A block rule should catch the bad address on any port. application-default would let an application on an unusual port slip past the block.</p></div>
-<div class="callout tip"><p class="c-title">Where the lists come from</p><p>These predefined external dynamic lists are maintained by Palo Alto Networks and refresh with content updates. You'll find them in the address picker under External Dynamic Lists.</p></div>
+<div class="callout tip"><p class="c-title">Where the lists come from</p><p>These predefined external dynamic lists are maintained by Palo Alto Networks and refresh with content updates. You’ll find them in the address picker under External Dynamic Lists.</p></div>
 <p class="shot" id="shot-4"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 4</span> The rulebase with both block rules at the top, above Users_to_Extranet.</span></p>
+</div>
 <h3 class="task-head"><span class="tn">2.7</span>Create Security rules for internet access</h3>
-<ol class="steps-list" start="1">
-<li>Add <code>Users_to_Internet</code>, description <code>Allows hosts in Users_Net zone to access Internet zone</code>. Source zone <strong>Users_Net</strong>, destination zone <strong>Internet</strong>, Application <strong>Any</strong>, Service <strong>application-default</strong>, Action <strong>Allow</strong>.</li>
-<li>Add <code>Extranet_to_Internet</code>, description <code>Allows hosts in Extranet zone to access Internet zone</code>. Source zone <strong>Extranet</strong>, destination zone <strong>Internet</strong>, same settings.</li>
-<li>Confirm both block rules are still above these allow rules, then commit.</li>
-</ol>
-<div class="callout stuck"><p class="c-title">Block rules belong on top</p><p>If Users_to_Internet sits above Block-to-Known-Bad-Addresses, the block rule is shadowed and never matches. The commit's Rule Shadow tab will warn you.</p></div>
-<h3 class="task-head"><span class="tn">2.8</span>Ping an internet host from the client</h3>
-<ol class="steps-list" start="1">
-<li>In the terminal, ping 8.8.8.8 again. It <strong>still</strong> fails. Press Ctrl+C.</li>
-<li>In the Traffic log, apply the filter below. Wait a minute and refresh if needed. The sessions are now <strong>allowed</strong> by Users_to_Internet.</li>
-</ol>
+<p class="task-intro">One rule lets Users_Net reach the Internet; another lets Extranet reach the Internet.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Navigate to <span class="path" data-path="Policies &gt; Security"></span>. Click <strong>Add</strong> at the bottom of the window.</li></ol>
+<ol class="steps-list" start="2"><li>In the <em>Security Policy Rule</em> window, on the <strong>General</strong> tab, type <code>Users_to_Internet</code> for the Name. For Description, enter <code>Allows hosts in Users_Net zone to access Internet zone.</code>.</li><li>Select the <strong>Source</strong> tab. Under <strong>Source Zone</strong>, click <strong>Add</strong> and select <strong>Users_Net</strong>.</li><li>Select the <strong>Destination</strong> tab. Under <strong>Destination Zone</strong>, click <strong>Add</strong> and select <strong>Internet</strong>.</li><li>Select the <strong>Application</strong> tab. Verify <strong>Any</strong> is selected for Applications.</li><li>Select the <strong>Service/URL Category</strong> tab. Verify <strong>application-default</strong> is selected for Service and <strong>Any</strong> for URL Category.</li><li>Select the <strong>Actions</strong> tab. Don’t change anything, but notice the Action is <strong>Allow</strong> by default. Click <strong>OK</strong>.</li></ol>
+<ol class="steps-list" start="8"><li>Verify Users_to_Internet appears in the Security policy list.</li><li>Click <strong>Add</strong> at the bottom of the window.</li></ol>
+<ol class="steps-list" start="10"><li>In the <em>Security Policy Rule</em> window, on the <strong>General</strong> tab, type <code>Extranet_to_Internet</code> for the Name. For Description, enter <code>Allows hosts in Extranet zone to access Internet zone.</code>.</li><li>Select the <strong>Source</strong> tab. Under <strong>Source Zone</strong>, click <strong>Add</strong> and select <strong>Extranet</strong>.</li><li>Select the <strong>Destination</strong> tab. Under <strong>Destination Zone</strong>, click <strong>Add</strong> and select <strong>Internet</strong>.</li><li>Select the <strong>Application</strong> tab. Verify <strong>Any</strong> is selected for Applications.</li><li>Select the <strong>Service/URL Category</strong> tab. Verify <strong>application-default</strong> is selected for Service and <strong>Any</strong> for URL Category.</li><li>Select the <strong>Actions</strong> tab. Don’t change anything, but notice the Action is <strong>Allow</strong> by default. Click <strong>OK</strong>.</li></ol>
+<ol class="steps-list" start="16"><li>Verify Extranet_to_Internet appears in the Security policy list.</li><li>Click the <strong>Commit</strong> button at the upper right of the web interface.</li><li>In the <em>Commit</em> window, click <strong>Commit</strong>.</li><li>Wait until the commit process is complete. Click <strong>Close</strong>.</li><li>Minimize the Firefox browser and continue to the next task.</li></ol>
+<div class="callout stuck"><p class="c-title">Block rules belong on top</p><p>If Users_to_Internet sits above Block-to-Known-Bad-Addresses, the block rule is shadowed and never matches. The commit’s Rule Shadow tab will warn you.</p></div>
+</div>
+<h3 class="task-head"><span class="tn">2.8</span>Ping internet host from client</h3>
+<p class="task-intro">The rule now allows the ping. Watch what happens anyway.</p>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>Return to the terminal window from the taskbar.</li><li>Ping an address on the internet.</li></ol>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">lab-user@client-a:~/Desktop/Lab-Files$</span> <span class="cmd">ping 8.8.8.8</span></pre>
+<ol class="steps-list" start="3"><li>After a few seconds, press <strong>Ctrl+C</strong>. It still does not succeed.</li><li>Minimize the Terminal window.</li></ol>
+</div>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="5"><li>Re-open the firewall interface if you minimized it. Navigate to <span class="path" data-path="Monitor &gt; Logs &gt; Traffic"></span>, enter the filter below, and click <strong>Apply Filter</strong>. The firewall now logs these sessions hitting <strong>Users_to_Internet</strong>. Refresh every minute or two if needed.</li></ol>
 <pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( addr.dst eq 8.8.8.8 ) and ( app eq ping )</span></pre>
-<div class="callout why"><p class="c-title">Allowed, but no reply</p><p>The client's address, 192.168.1.20, is private. The packet leaves the firewall with that source, and nothing on the internet can route a reply back to it. Lab 6 adds the source NAT that fixes this.</p></div>
+<div class="callout why"><p class="c-title">Allowed, but no reply</p><p>The client’s address, 192.168.1.20, is private. The packet leaves the firewall with that source, and nothing on the internet can route a reply back to it. Lab 6 adds the source NAT that fixes this.</p></div>
 <p class="shot" id="shot-5"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 5</span> The Traffic log showing the 8.8.8.8 ping allowed by Users_to_Internet.</span></p>
+<ol class="steps-list" start="6"><li>The lab is now complete; you may end your reservation.</li></ol>
+</div>
 </section>
 
 <section class="unit" id="s-reference" data-section="reference" data-label="Reference" data-part="Understand">

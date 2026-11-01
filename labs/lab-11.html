@@ -34,6 +34,34 @@ html[data-present="on"] .pm-dock{position:fixed;left:0;right:0;bottom:0;z-index:
 .pm-dock .pm-where{flex:1 1 auto;text-align:center;min-width:0;font-size:.78rem;color:var(--ink-2)}
 .pm-dock .pm-where b{color:var(--ink);display:block;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media print{.pm-dock,.pm-toggle{display:none!important}}
+</style><style id="mb-css">
+/* Machine bands: which VM / session each run of steps happens on. Page-local; uses site.css colour tokens. */
+.mrun{--mb:var(--accent);--mb-soft:var(--accent-soft);border-left:4px solid var(--mb);margin:1rem 0 1.2rem;padding:0 0 .2rem .9rem}
+.mrun.mr-client{--mb:var(--ok);--mb-soft:var(--ok-soft)}
+.mrun.mr-webui{--mb:var(--accent);--mb-soft:var(--accent-soft)}
+.mrun.mr-fwcli{--mb:var(--warn);--mb-soft:var(--warn-soft)}
+.mrun.mr-extranet{--mb:var(--focus);--mb-soft:var(--surface-2)}
+.mband{display:flex;flex-wrap:wrap;align-items:baseline;gap:.2rem .6rem;margin:0 0 .6rem -.9rem;padding:.4rem .8rem;
+  background:var(--mb-soft);border-radius:0 var(--radius-m) var(--radius-m) 0;font-weight:700;font-size:var(--step--1)}
+.mband .mb-ic{font-size:1.05rem}
+.mband .mb-sub{font-weight:400;color:var(--ink-2);font-size:.85em}
+.mlabel{display:inline-block;margin-right:.35rem;padding:0 .45rem;border-radius:var(--radius-s);font-weight:700;font-size:.85em;
+  border-left:3px solid var(--accent);background:var(--surface-2)}
+.mlabel.ml-client{border-left-color:var(--ok)}.mlabel.ml-webui{border-left-color:var(--accent)}
+.mlabel.ml-fwcli{border-left-color:var(--warn)}.mlabel.ml-extranet{border-left-color:var(--focus)}
+.mrun .shot{margin-left:.6rem}
+.topo{width:100%;max-width:760px;height:auto;display:block;margin:.4rem 0 .3rem}
+.topo .bx{fill:var(--surface);stroke:var(--rule);stroke-width:1.5}
+.topo .fw{fill:var(--accent-soft);stroke:var(--accent);stroke-width:2}
+.topo .ln{stroke:var(--ink-2);stroke-width:2;fill:none}
+.topo .ln.mg{stroke-dasharray:5 4}
+.topo .dim{opacity:.45}
+.topo text{fill:var(--ink);font-family:var(--font-body);font-size:13px}
+.topo .h{font-weight:700;font-size:14px}
+.topo .m{font-family:var(--font-mono);font-size:12px}
+.topo .s{fill:var(--ink-2);font-size:12px}
+.diverge{border-left-color:var(--warn)}
+@media print{.mrun{border-left-color:#666}.mband{background:#eee}}
 </style></head>
 <body data-root=".." data-lab="11" data-page="labs/index.html">
 <a class="skip-link" href="#main">Skip to main content</a>
@@ -67,108 +95,186 @@ html[data-present="on"] .pm-dock{position:fixed;left:0;right:0;bottom:0;z-index:
 <section class="unit" id="s-setup" data-section="setup" data-label="Before you begin" data-part="Prepare">
 <header><span class="sec-n">02</span><h2>Before you begin</h2></header>
 <p>You'll use the web interface, <strong>Remmina</strong> (Server-Extranet to run the traffic script, Firewall-A for the CLI), and Firefox.</p>
+<h4>Lab Settings (from the NDG guide)</h4>
 <div class="table-wrap"><table>
-<caption class="visually-hidden">Hosts in the lab network</caption>
-<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th><th scope="col">Sign-in</th></tr></thead>
+<caption class="visually-hidden">Lab Settings: virtual machines, addresses, and sign-ins</caption>
+<thead><tr><th scope="col">Virtual Machine</th><th scope="col">IP Address</th><th scope="col">Account</th><th scope="col">Password</th></tr></thead>
 <tbody>
-<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td><td><code>lab-user / Pal0Alt0!</code></td></tr>
-<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td><td><code>admin / Pal0Alt0!</code></td></tr>
-<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td><td><code>root / Pal0Alt0</code></td></tr>
-<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td><td>—</td></tr>
-<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td><td>—</td></tr>
-<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td><td>—</td></tr>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td><code>lab-user</code></td><td><code>Pal0Alt0!</code></td></tr>
+<tr><td>DMZ</td><td><code>192.168.50.10</code></td><td><code>root</code></td><td><code>Pal0Alt0!</code></td></tr>
+<tr><td>Firewall</td><td><code>192.168.1.254</code></td><td><code>admin</code></td><td><code>Pal0Alt0!</code></td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td><code>root</code></td><td><code>Pal0Alt0</code></td></tr>
 </tbody></table></div>
-<p class="box-note">Sign-in credentials are shown above (the fixed NETLAB+ pod logins, case-sensitive). </p>
+<p class="box-note">Passwords are case-sensitive and use zeros, not the letter O. The vRouter password has no exclamation point.</p>
+<p class="box-note"><strong>Currency note:</strong> these labs run PAN-OS 11.0, which reached end-of-life on November 17, 2024 and no longer receives security fixes. Everything here still works in the lab; on a real firewall you would run a supported release (11.1, 11.2, or 12.1), where most screens are the same.</p>
+<p class="box-note">This lab also opens an SSH session to <strong>Server-Extranet</strong> from Remmina. Remmina is pre-configured with that login (user <code>paloalto42</code>), so you don’t type a password; the guide’s Lab Settings table doesn’t list it.</p><h4>Pod topology</h4>
+<svg class="topo" viewBox="0 0 760 360" role="img" aria-labelledby="topo-t topo-d">
+<title id="topo-t">Pod topology</title>
+<desc id="topo-d">The firewall firewall-a sits between the Internet zone (ethernet1/1, 203.0.113.20/24, next hop 203.0.113.1), the Users_Net zone (ethernet1/2, 192.168.1.1/24, with the Client at 192.168.1.20, the vRouter at 192.168.1.10, and the firewall management port at 192.168.1.254), and the Extranet zone (ethernet1/3, 192.168.50.1/24, servers including web 192.168.50.80, DNS 192.168.50.53 and DMZ 192.168.50.10) plus a virtual wire on ethernet1/4 and 1/5 for the Acquisition zone.</desc>
+<g><rect class="bx" x="250" y="8" width="260" height="74" rx="8"/>
+<text class="h" x="266" y="32">Internet zone</text>
+<text class="m" x="266" y="54">ISP router 203.0.113.1</text>
+<text class="s" x="266" y="72">8.8.8.8 and real websites beyond</text>
+<path class="ln" d="M380 82V128"/><text class="m" x="388" y="110">ethernet1/1 203.0.113.20/24</text></g>
+<rect class="fw" x="20" y="128" width="720" height="56" rx="8"/>
+<text class="h" x="36" y="152">firewall-a (PA-VM)</text>
+<text class="m" x="36" y="172">MGT 192.168.1.254 · default gateway 192.168.1.10 (vRouter)</text>
+<path class="ln mg" d="M70 184V240"/>
+<g><path class="ln" d="M190 184V240"/><text class="m" x="198" y="224">e1/2 192.168.1.1</text></g>
+<rect class="bx" x="20" y="240" width="236" height="112" rx="8"/>
+<text class="h" x="34" y="264">Users_Net zone</text>
+<text class="m" x="34" y="284">192.168.1.0/24</text>
+<text class="m" x="34" y="306">Client 192.168.1.20</text>
+<text class="m" x="34" y="326">vRouter 192.168.1.10</text>
+<text class="s" x="34" y="344">MGT port is on this subnet</text>
+<g><rect class="bx" x="272" y="240" width="238" height="112" rx="8"/>
+<text class="h" x="286" y="264">Extranet zone</text>
+<text class="m" x="286" y="284">192.168.50.0/24</text>
+<text class="m" x="286" y="306">Web .80 · DNS .53 · DMZ .10</text>
+<text class="s" x="286" y="326">Other lab servers on .50.x</text>
+<path class="ln" d="M390 184V240"/><text class="m" x="398" y="224">e1/3 192.168.50.1</text></g>
+<g><rect class="bx" x="526" y="240" width="214" height="112" rx="8"/><text class="h" x="540" y="264">Acquisition zone (vWire)</text><text class="m" x="540" y="288">ethernet1/4 ⇄ ethernet1/5</text><text class="s" x="540" y="310">Layer 2 pass-through, no IP</text><path class="ln" d="M632 184V240"/></g>
+</svg>
+<p class="box-note">Data interfaces, VR-1 and zones as built in Lab 4 and loaded by this lab’s snapshot. This lab’s snapshot also contains the Acquisition virtual wire on ethernet1/4 and 1/5.</p>
+<h4>Addresses you’ll use</h4>
+<div class="table-wrap"><table>
+<caption class="visually-hidden">Addresses in the lab network</caption>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td></tr>
+</tbody></table></div>
+
 <h4>What's already in the baseline</h4>
 <p>Everything through Lab 7, plus an <strong>Acquisition</strong> zone, a rule named <strong>Acquisition-Allow-All</strong>, two application groups (<strong>Allowed-Corp-Apps</strong> and <strong>Allowed-Mktg-Apps</strong>), and a User-ID configuration that reads groups from the lab's LDAP directory. The <code>Appgenerator-2.sh</code> script on the extranet server simulates Acquisition users signing in and using applications.</p>
 </section>
 
 <section class="unit" id="s-walkthrough" data-section="walkthrough" data-label="Walkthrough" data-part="Do the lab">
 <header><span class="sec-n">03</span><h2>Walkthrough of the detailed steps</h2></header>
-<h3 class="task-head"><span class="tn">2.1</span>Load the lab configuration</h3>
+<div class="callout tip"><p class="c-title">Reading the machine bands</p><p>Each coloured band says where the steps under it happen, and it stays in force until the next band:
+<span class="mlabel ml-client">🖥️ Client</span> <span class="mlabel ml-webui">🧱 Firewall web interface</span> <span class="mlabel ml-fwcli">⌨️ Firewall CLI</span> <span class="mlabel ml-extranet">🗄️ Server-Extranet</span>.
+When a single step switches machines, it carries an inline label instead. Step numbers match the guide’s Detailed Lab Steps exactly.</p></div>
+<h3 class="task-head"><span class="tn">2.1</span>Apply a baseline configuration to the firewall</h3>
 <p class="task-intro">Every lab starts from a known baseline, so your firewall matches the guide no matter what you did last time.</p>
-<ol class="steps-list" start="1"><li>On the client desktop, log in as <code>lab-user</code>, open Firefox, and browse to <code>https://192.168.1.254</code>. Log in as <code>admin</code> with the password from Lab Settings. If the login page does not appear, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li>Go to <span class="path" data-path="Device > Setup > Operations"></span> and click <strong>Load named configuration snapshot</strong>. Choose <code>edu-210-11.0a-11.xml</code> and click OK, then Close.</li><li>Open <strong>Tasks</strong> (lower right) and confirm the Load task shows completed.</li><li>Click <strong>Commit</strong> (upper right), then <strong>Commit</strong> in the dialog, and wait for it to finish.</li></ol>
-<div class="callout stuck"><p class="c-title">Loading is not committing</p><p>A loaded snapshot replaces only the candidate configuration. Until you commit, the firewall is still running whatever was there before, and nothing in the lab will match the guide.</p></div>
-<h3 class="task-head"><span class="tn">2.2</span>Examine the firewall configuration</h3>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Policies &gt; Security"></span> and open <strong>Acquisition-Allow-All</strong>. Note: source zone Acquisition, destination zone <strong>any</strong>, application <strong>any</strong>, action Allow. Click OK.</li>
-<li>Click <strong>Reset Rule Hit Counter &gt; All rules</strong> and confirm.</li>
-<li>Go to <span class="path" data-path="Objects &gt; Application Groups"></span> and look at <strong>Allowed-Corp-Apps</strong> and <strong>Allowed-Mktg-Apps</strong>.</li>
-</ol>
-<div class="callout why"><p class="c-title">Why "any to any" is the problem</p><p>That rule lets every acquired user reach every zone with every application, including your users' network. It's common after a merger, and it's exactly what User-ID and App-ID together are meant to replace.</p></div>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>Click the <strong>Client</strong> tab in NETLAB+ to access the Client PC.</li><li>On the <em>Zorin</em> desktop, click <strong>lab-user</strong>.</li><li>For the lab-user password, enter <code>Pal0Alt0!</code> and press <strong>Enter</strong>.</li><li>Double-click the <strong>Firefox Web Browser</strong> icon on the Desktop.</li><li>In the Firefox address field, type <code>https://192.168.1.254</code> and press <strong>Enter</strong>.</li></ol>
+</div>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="6"><li>Log in to the firewall web interface as username <code>admin</code>, password <code>Pal0Alt0!</code>. If the login page does not appear, wait an additional 1 to 3 minutes for the firewall to initialize and refresh the page.</li><li>Navigate to <span class="path" data-path="Device &gt; Setup &gt; Operations"></span> and click <strong>Load named configuration snapshot</strong> in the <em>Configuration Management</em> section.</li><li>In the <em>Load Named Configuration</em> window, select <code>edu-210-11.0a-11.xml</code> from the <strong>Name</strong> drop-down and click <strong>OK</strong>.</li><li>The <em>Loading Configuration</em> window says the configuration is being loaded and to check the Task Manager. Click <strong>Close</strong>.</li><li>Click the <strong>Tasks</strong> icon at the bottom-right of the web interface.</li><li>In <em>Task Manager – All Tasks</em>, verify the <strong>Load</strong> task shows <strong>Completed</strong>. Click <strong>Close</strong>.</li><li>Click the <strong>Commit</strong> link at the top-right of the web interface.</li><li>In the <em>Commit</em> window, click <strong>Commit</strong>.</li><li>When the commit operation completes, click <strong>Close</strong>.</li><li>Leave the Palo Alto Networks Firewall open and continue to the next task.</li></ol>
+<div class="callout stuck"><p class="c-title">Loading is not committing</p><p>A loaded snapshot replaces only the candidate configuration. Until you commit (steps 12 to 14), the firewall is still running whatever was there before, and nothing in the lab will match the guide.</p></div>
+</div>
+<h3 class="task-head"><span class="tn">2.2</span>Examine firewall configuration</h3>
+<p class="task-intro">Another administrator left an any-to-any rule for the acquired company and two new application groups. Look before you change anything.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Policies &gt; Security"></span>. Scroll down and click <strong>Acquisition-Allow-All</strong>.</li><li>Select the <strong>Source</strong> tab. The Source Zone is <strong>Acquisition</strong>.</li><li>Select the <strong>Destination</strong> tab. The Destination Zone is <strong>any</strong>.</li><li>Select the <strong>Application</strong> tab. The Application is <strong>Any</strong>.</li><li>Select the <strong>Actions</strong> tab. The Action is <strong>Allow</strong>. Click <strong>OK</strong>. This rule lets any Acquisition host reach any application anywhere.</li><li>Clear the counters for all rules: click <strong>Reset Rule Hit Counter &gt; All rules</strong> at the bottom of the window.</li><li>In the <em>Reset</em> window, click <strong>Yes</strong>.</li><li>Select <span class="path" data-path="Objects &gt; Application Groups"></span> and note the two new groups: <strong>Allowed-Corp-Apps</strong> (for all Acquisition users) and <strong>Allowed-Mktg-Apps</strong> (Marketing only).</li><li>Minimize the firewall’s Firefox window and continue to the next task.</li></ol>
+<div class="callout why"><p class="c-title">Why “any to any” is the problem</p><p>That rule lets every acquired user reach every zone with every application, including your users’ network. It’s common after a merger, and it’s exactly what User-ID and App-ID together are meant to replace.</p></div>
+</div>
 <h3 class="task-head"><span class="tn">2.3</span>Generate traffic from the Acquisition zone</h3>
-<ol class="steps-list" start="1">
-<li>Open <strong>Remmina</strong> and double-click <strong>Server-Extranet</strong>.</li>
-<li>Change to the scripts folder and run the generator. Let it finish.</li>
-</ol>
-<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">paloalto42@extranet1:~$</span> <span class="cmd">cd /home/paloalto42/pcaps92019/app.pcaps/</span>
-<span class="prompt">paloalto42@extranet1:~$</span> <span class="cmd">./Appgenerator-2.sh</span></pre>
-<ol class="steps-list" start="3">
-<li>In <span class="path" data-path="Monitor &gt; Logs &gt; Traffic"></span>, clear filters. Almost everything hits <strong>Acquisition-Allow-All</strong>. Allow 3 to 6 minutes for logs to appear.</li>
-<li>Add the <strong>Source User</strong> column and drag it between Receive Time and Source.</li>
-</ol>
+<p class="task-intro">A script on the extranet server plays traffic as if it came from Acquisition users.</p>
 <div class="callout fix"><p class="c-title">The guide describes a different task</p><p>The introduction to 2.3 talks about a data-plane packet capture for a custom application signature. Nothing like that happens: you just run the traffic script.</p></div>
-<div class="callout tip"><p class="c-title">Source User is empty for now</p><p>That's expected. The zone doesn't have User-ID turned on yet.</p></div>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>On the client desktop, open the <strong>Remmina</strong> application.</li><li>Double-click the entry for <strong>Server-Extranet</strong>.</li></ol>
+</div>
+<div class="mrun mr-extranet"><p class="mband"><span class="mb-ic" aria-hidden="true">🗄️</span><span>On Server-Extranet</span><span class="mb-sub">SSH to the extranet server from Remmina on the Client. Prompt: paloalto42@extranet1:~$</span></p>
+<ol class="steps-list" start="3"><li>Change to the app.pcaps folder.</li></ol>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">paloalto42@extranet1:~$</span> <span class="cmd">cd /home/paloalto42/pcaps92019/app.pcaps/</span></pre>
+<ol class="steps-list" start="4"><li>Run the traffic generator. The prompt now shows the app.pcaps folder.</li></ol>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">paloalto42@extranet1:~/pcaps92019/app.pcaps$</span> <span class="cmd">./Appgenerator-2.sh</span></pre>
+<ol class="steps-list" start="5"><li>Verify the Appgenerator-2 script is running. Let it complete before you continue.</li></ol>
+</div>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="6"><li>Re-open the firewall web interface with the <strong>Firefox</strong> icon in the task bar.</li></ol>
+</div>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="7"><li>Select <span class="path" data-path="Monitor &gt; Logs &gt; Traffic"></span>. Clear any filters. Almost all traffic is hitting <strong>Acquisition-Allow-All</strong>. Allow the firewall 3 to 6 minutes for the Traffic log to update.</li></ol>
+<div class="callout tip"><p class="c-title">Source User is empty for now</p><p>That’s expected. The zone doesn’t have User-ID turned on yet.</p></div>
 <p class="shot" id="shot-1"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 1</span> The Traffic log showing Acquisition traffic hitting Acquisition-Allow-All, with an empty Source User column.</span></p>
+<ol class="steps-list" start="8"><li>If it isn’t shown, add the <strong>Source User</strong> column: click the small triangle in any header and choose <strong>Columns &gt; Source User</strong>.</li><li>Drag and drop the Source User column between <strong>Receive Time</strong> and <strong>Source</strong>.</li><li>Leave the firewall open and continue to the next task.</li></ol>
+</div>
 <h3 class="task-head"><span class="tn">2.4</span>Enable User-ID on the Acquisition zone</h3>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Network &gt; Zones"></span> and open <strong>Acquisition</strong>.</li>
-<li>Check <strong>Enable User Identification</strong> and click OK.</li>
-</ol>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Network &gt; Zones"></span>. Click <strong>Acquisition</strong>.</li><li>Check <strong>Enable User Identification</strong>. Click <strong>OK</strong>.</li><li>Leave the firewall open and continue to the next task.</li></ol>
 <div class="callout stuck"><p class="c-title">The high-level steps skip this</p><p>It appears only here in the detailed steps. Without it, the firewall never maps users in this zone, the Source User column stays empty, and the marketing rule can never match.</p></div>
 <p class="shot" id="shot-2"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 2</span> The Acquisition zone with Enable User Identification checked.</span></p>
-<h3 class="task-head"><span class="tn">2.5</span>Turn Acquisition-Allow-All into an approved-apps rule</h3>
-<ol class="steps-list" start="1">
-<li>Open <strong>Acquisition-Allow-All</strong> in <span class="path" data-path="Policies &gt; Security"></span>.</li>
-<li><strong>General:</strong> rename it <code>Allow-Corp-Apps</code>, description <code>Allows only approved apps for Acquisition users</code>.</li>
-<li><strong>Application:</strong> uncheck Any and add the <strong>Allowed-Corp-Apps</strong> group. Click OK.</li>
-</ol>
-<h3 class="task-head"><span class="tn">2.6</span>Create the marketing apps rule</h3>
-<ol class="steps-list" start="1">
-<li>Click <strong>Add</strong>. <strong>General:</strong> name <code>Allow-Mktg-Apps</code>, description <code>Allows only users of marketing group to access Mktg apps</code>.</li>
-<li><strong>Source:</strong> zone <strong>Acquisition</strong>. Under <strong>Source User</strong>, click <strong>Add</strong> and enter <code>marketing</code>.</li>
-<li><strong>Destination:</strong> set the zone drop-down to <strong>any</strong>.</li>
-<li><strong>Application:</strong> uncheck Any, add <strong>Allowed-Mktg-Apps</strong>, then check <strong>Depends On</strong> and click <strong>Add to Current Rule</strong>.</li>
-<li><strong>Actions:</strong> confirm Allow. Click OK.</li>
-</ol>
+</div>
+<h3 class="task-head"><span class="tn">2.5</span>Modify the Acquisition-Allow-All rule</h3>
+<p class="task-intro">You narrow the existing rule to the approved application group.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Policies &gt; Security"></span>. Scroll down and click <strong>Acquisition-Allow-All</strong>.</li><li>On the <strong>General</strong> tab, rename the rule to <code>Allow-Corp-Apps</code>. For Description, type <code>Allows only approved apps for Acquisition users.</code></li><li>On the <strong>Application</strong> tab, uncheck <strong>Any</strong>. Click <strong>Add</strong>, type the first few letters of <strong>Allowed-Corp-Apps</strong>, and select it. Click <strong>OK</strong>.</li><li>Leave the firewall open and continue to the next task.</li></ol>
+<div class="callout fix"><p class="c-title">Heading and name wrap in the guide</p><p>The guide’s heading reads “Modify the Acquisition-Allow-All- Zone”; it’s a rule, not a zone. The new name prints as “AllowCorp-Apps” across a line break; the name is <code>Allow-Corp-Apps</code>, which is what the guide’s questions use.</p></div>
+</div>
+<h3 class="task-head"><span class="tn">2.6</span>Create Marketing apps rule</h3>
+<p class="task-intro">Only members of the marketing group get the Allowed-Mktg-Apps applications.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Policies &gt; Security"></span>. Click <strong>Add</strong>.</li><li><strong>General</strong> tab: Name <code>Allow-Mktg-Apps</code>. Description <code>Allows only users of marketing group to access Mktg apps.</code></li><li><strong>Source</strong> tab: under Source Zone, click <strong>Add</strong> and select <strong>Acquisition</strong>. Under Source User, click <strong>Add</strong> and enter <code>marketing</code>.</li><li><strong>Destination</strong> tab: use the drop-down at the top to select <strong>any</strong> for Destination Zone.</li><li><strong>Application</strong> tab: uncheck <strong>Any</strong>. Click <strong>Add</strong>, type the first few letters of <strong>Allowed-Mktg-Apps</strong>, and select it. On the right, check the box beside <strong>DEPENDS ON</strong> and click <strong>Add to Current Rule</strong>. (Your dependency list may differ.)</li><li>The applications are now in the Applications list.</li><li><strong>Actions</strong> tab: verify the Action is <strong>Allow</strong>. Click <strong>OK</strong>.</li><li>Leave the firewall open and continue to the next task.</li></ol>
 <div class="callout why"><p class="c-title">A group, not a list of people</p><p>Source user <code>marketing</code> is a directory group. When someone joins marketing in the directory, they get access with no firewall change.</p></div>
 <p class="shot" id="shot-3"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 3</span> Allow-Mktg-Apps showing source zone Acquisition and source user marketing.</span></p>
-<h3 class="task-head"><span class="tn">2.7</span>Create the deny rule</h3>
-<ol class="steps-list" start="1">
-<li>Click <strong>Add</strong>. Name <code>Deny-All-Others</code>, description <code>Denies non-approved applications for users in Acquisition zone</code>.</li>
-<li><strong>Source:</strong> zone <strong>Acquisition</strong>, source user <strong>any</strong>. <strong>Destination:</strong> zone <strong>any</strong>. <strong>Application:</strong> Any.</li>
-<li><strong>Actions:</strong> change Action to <strong>Deny</strong>. Click OK.</li>
-<li>Make sure it sits at the bottom, just above intrazone-default. Commit.</li>
-</ol>
+</div>
+<h3 class="task-head"><span class="tn">2.7</span>Create Deny rule</h3>
+<p class="task-intro">Everything else from Acquisition is denied.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Policies &gt; Security"></span>. Click <strong>Add</strong>.</li><li><strong>General</strong> tab: Name <code>Deny-All-Others</code>. Description <code>Denies non-approved applications for users in Acquisition zone.</code></li><li><strong>Source</strong> tab: click <strong>Add</strong> and select <strong>Acquisition</strong>. Leave Source User at <strong>any</strong>, so the rule applies to every user.</li><li><strong>Destination</strong> tab: use the drop-down at the top to select <strong>any</strong>.</li><li><strong>Application</strong> tab: verify <strong>Any</strong> is checked.</li><li><strong>Actions</strong> tab: change the Action to <strong>Deny</strong>. Click <strong>OK</strong>.</li><li>Verify Deny-All-Others is at the bottom of your rules, just above <strong>intrazone-default</strong>. If not, use <strong>Move Down</strong>.</li><li>Click the <strong>Commit</strong> link at the top-right of the web interface.</li><li>In the <em>Commit</em> window, click <strong>Commit</strong>.</li><li>When the commit completes, click <strong>Close</strong>.</li><li>Minimize the firewall’s Firefox window and continue to the next task.</li></ol>
 <div class="callout why"><p class="c-title">Why deny explicitly if interzone-default already does?</p><p>Deny-All-Others states the intent, logs by default, and, because its destination zone is any, also catches Acquisition-to-Acquisition traffic that intrazone-default would otherwise allow.</p></div>
 <div class="callout stuck"><p class="c-title">Order matters</p><p>Above Allow-Mktg-Apps, the deny would shadow it. Last is the only correct place.</p></div>
 <p class="shot" id="shot-4"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 4</span> The rulebase with Allow-Corp-Apps, Allow-Mktg-Apps, and Deny-All-Others in that order.</span></p>
-<h3 class="task-head"><span class="tn">2.8</span>Generate traffic again</h3>
-<ol class="steps-list" start="1">
-<li>Back in the Server-Extranet Remmina window, run the script again from the same folder and let it finish. Then close the window.</li>
-</ol>
-<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">paloalto42@extranet1:~$</span> <span class="cmd">./Appgenerator-2.sh</span></pre>
-<h3 class="task-head"><span class="tn">2.9</span>Examine User-ID mappings</h3>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Monitor &gt; Logs &gt; User-ID"></span>. You should see username-to-IP mappings. If not, run the script again.</li>
-<li>In Remmina, open <strong>Firewall-A</strong> and show the mappings from the CLI. Then close it.</li>
-</ol>
+</div>
+<h3 class="task-head"><span class="tn">2.8</span>Generate traffic from the Acquisition zone</h3>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>Open Remmina by clicking the <strong>Server-Extranet</strong> tab in the task bar.</li></ol>
+</div>
+<div class="mrun mr-extranet"><p class="mband"><span class="mb-ic" aria-hidden="true">🗄️</span><span>On Server-Extranet</span><span class="mb-sub">SSH to the extranet server from Remmina on the Client. Prompt: paloalto42@extranet1:~$</span></p>
+<ol class="steps-list" start="2"><li>Make sure you are still in the app.pcaps directory (the prompt shows it), then run the generator again.</li></ol>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">paloalto42@extranet1:~/pcaps92019/app.pcaps$</span> <span class="cmd">./Appgenerator-2.sh</span></pre>
+<ol class="steps-list" start="3"><li>Verify the script is running and let it complete before you continue.</li></ol>
+</div>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="4"><li>Close the Server-Extranet connection with its <strong>X</strong>.</li><li>Re-open the firewall web interface with the <strong>Firefox</strong> icon in the task bar.</li><li>Leave the firewall open and continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.9</span>Examine User-ID logs</h3>
+<p class="task-intro">User-ID mappings are visible in the web interface and in the CLI.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Monitor &gt; Logs &gt; User-ID"></span>. You see many username-to-IP-address mappings. If none show, repeat task 2.8.</li><li>Minimize the firewall’s Firefox window.</li></ol>
+</div>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="3"><li>On the client desktop task bar, re-open the <strong>Remmina</strong> application.</li><li>Double-click <strong>Firewall-A</strong>. It is pre-configured with the login (a lab convenience only).</li></ol>
+</div>
+<div class="mrun mr-fwcli"><p class="mband"><span class="mb-ic" aria-hidden="true">⌨️</span><span>On Firewall CLI</span><span class="mb-sub">SSH to firewall-a (192.168.1.254) from Remmina on the Client. Prompt: admin@firewall-a&gt;</span></p>
+<ol class="steps-list" start="5"><li>Display the User-ID entries and examine them.</li></ol>
 <pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">show user ip-user-mapping all</span></pre>
 <p class="shot" id="shot-5"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 5</span> The User-ID log or the CLI output showing chicago\ usernames mapped to addresses.</span></p>
-<h3 class="task-head"><span class="tn">2.10</span>Examine the Traffic log</h3>
-<p>Apply each filter and read the <strong>Rule</strong> and <strong>Source User</strong> columns.</p>
-<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( app eq youtube-base )</span>
-<span class="cmd">( app eq dns )</span>
-<span class="cmd">( app eq facebook-base )</span>
-<span class="cmd">( app eq facebook-base ) and ( action eq allow )</span>
-<span class="cmd">( app eq instagram-base ) and ( user.src eq 'chicago\sholmes' )</span>
-<span class="cmd">( app eq instagram-base ) and ( user.src eq 'chicago\bbart' )</span></pre>
-<div class="callout fix"><p class="c-title">Curly quotes break the filter</p><p>The guide prints the user filters with curly quotes (‘chicago\sholmes’). The filter parser needs straight single quotes, as above. Use the Copy button.</p></div>
-<div class="callout guideq"><p class="c-title">Q1: Which rule handles youtube-base?</p><p>Read the Rule column. The answer depends on which group youtube-base is in. If it's in Allowed-Corp-Apps, you'll see Allow-Corp-Apps; if only in Allowed-Mktg-Apps, you'll see Allow-Mktg-Apps for marketing users and <strong>Deny-All-Others</strong> for everyone else. Open the two groups in Objects &gt; Application Groups to confirm.</p></div>
-<div class="callout guideq"><p class="c-title">Q2: Which rule handles dns?</p><p>You'll likely see two: <strong>Allow-Corp-Apps</strong> for Acquisition users and <strong>Users_to_Internet</strong> for the client's own lookups. Check the Source Zone column to tell them apart.</p></div>
-<div class="callout guideq"><p class="c-title">Q3: Which rules handle facebook-base?</p><p><strong>c and d: Allow-Mktg-Apps and Deny-All-Others.</strong> Marketing users are allowed; everyone else in Acquisition is denied.</p></div>
-<div class="callout guideq"><p class="c-title">Q4 to Q6: Which users get facebook-base and instagram-base?</p><p>The answers are whoever is in the marketing group in the lab directory. The allowed filter (Q4) lists them in Source User. For sholmes and bbart, an allowed entry means <strong>Yes</strong>; only denied entries (Deny-All-Others) means <strong>No</strong>.</p></div>
+</div>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="6"><li>Close the Firewall-A window with its close icon.</li><li>Re-open the firewall web interface with the <strong>firewall-a – Mozilla Firefox</strong> icon in the task bar and continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.10</span>Examine firewall Traffic log</h3>
+<p class="task-intro">Filter by application and user to see which rule handled what, and for whom.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Monitor &gt; Logs &gt; Traffic"></span>. In the filter builder, type the filter below. Click <strong>Apply Filter</strong>.</li></ol>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( app eq youtube-base )</span></pre>
+<div class="callout guideq"><p class="c-title">Guide question Q1</p><p>Which security policy does the firewall use for youtube-base traffic? a. Allow-Corp-Apps  b. Allow-PANW-Apps  c. Block-from-Known Sources  d. Deny-All-Others</p><p><strong>Answer:</strong> Read the Rule column. It depends on which group youtube-base is in. If it’s in Allowed-Corp-Apps, you’ll see Allow-Corp-Apps; if only in Allowed-Mktg-Apps, you’ll see Allow-Mktg-Apps for marketing users and <strong>Deny-All-Others</strong> for everyone else. Open the two groups in Objects &gt; Application Groups to confirm.</p></div>
+<ol class="steps-list" start="2"><li>Clear the filter and apply the next one.</li></ol>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( app eq dns )</span></pre>
+<div class="callout guideq"><p class="c-title">Guide question Q2</p><p>Which security policy does the firewall use for dns traffic? a. Allow-Corp-Apps  b. Users_to_Internet  c. Block-from-Known Sources  d. Deny-All-Others</p><p><strong>Answer:</strong> You’ll likely see two: <strong>Allow-Corp-Apps</strong> for Acquisition users and <strong>Users_to_Internet</strong> for the client’s own lookups. Check the Source Zone column to tell them apart.</p></div>
+<ol class="steps-list" start="3"><li>Clear the filter and apply the next one.</li></ol>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( app eq facebook-base )</span></pre>
+<div class="callout guideq"><p class="c-title">Guide question Q3</p><p>Which security policy does the firewall use for facebook-base traffic? Choose all that apply.</p><p><strong>Answer:</strong> <strong>c and d: Allow-Mktg-Apps and Deny-All-Others.</strong> Marketing users are allowed; everyone else in Acquisition is denied.</p></div>
+<ol class="steps-list" start="4"><li>Apply this combined filter.</li></ol>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( app eq facebook-base ) and ( action eq allow )</span></pre>
+<div class="callout guideq"><p class="c-title">Guide question Q4</p><p>Which users are allowed access to facebook-base? a. none  b. chicago\hpoirot  c. chicago\sholmes  d. chicago\vhelsing</p><p><strong>Answer:</strong> Whoever is in the marketing group in the lab directory: read them from the Source User column of this filtered view.</p></div>
 <p class="shot" id="shot-6"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 6</span> The Traffic log filtered to facebook-base showing both Allow-Mktg-Apps and Deny-All-Others entries with their users.</span></p>
+<ol class="steps-list" start="5"><li>Clear the filter and apply the next one.</li></ol>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( app eq instagram-base ) and ( user.src eq 'chicago\sholmes' )</span></pre>
+<div class="callout guideq"><p class="c-title">Guide question Q5</p><p>Is the user sholmes allowed to access instagram-base?</p><p><strong>Answer:</strong> An allowed entry (Allow-Mktg-Apps) means <strong>Yes</strong>; only denied entries (Deny-All-Others) means <strong>No</strong>.</p></div>
+<ol class="steps-list" start="6"><li>Clear the filter and apply the next one.</li></ol>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( app eq instagram-base ) and ( user.src eq 'chicago\bbart' )</span></pre>
+<div class="callout guideq"><p class="c-title">Guide question Q6</p><p>Is the user bbart allowed to access instagram-base?</p><p><strong>Answer:</strong> Same test as Q5: allowed entries mean <strong>Yes</strong>, only Deny-All-Others entries mean <strong>No</strong>.</p></div>
+<div class="callout fix"><p class="c-title">Curly quotes break the filter</p><p>The guide prints the user filters with curly quotes (‘chicago\sholmes’). The filter parser needs straight single quotes, as shown above. Use the Copy button.</p></div>
+<ol class="steps-list" start="7"><li>The lab is now complete; you may end your reservation.</li></ol>
+</div>
 </section>
 
 <section class="unit" id="s-reference" data-section="reference" data-label="Reference" data-part="Understand">

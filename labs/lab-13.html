@@ -34,6 +34,34 @@ html[data-present="on"] .pm-dock{position:fixed;left:0;right:0;bottom:0;z-index:
 .pm-dock .pm-where{flex:1 1 auto;text-align:center;min-width:0;font-size:.78rem;color:var(--ink-2)}
 .pm-dock .pm-where b{color:var(--ink);display:block;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media print{.pm-dock,.pm-toggle{display:none!important}}
+</style><style id="mb-css">
+/* Machine bands: which VM / session each run of steps happens on. Page-local; uses site.css colour tokens. */
+.mrun{--mb:var(--accent);--mb-soft:var(--accent-soft);border-left:4px solid var(--mb);margin:1rem 0 1.2rem;padding:0 0 .2rem .9rem}
+.mrun.mr-client{--mb:var(--ok);--mb-soft:var(--ok-soft)}
+.mrun.mr-webui{--mb:var(--accent);--mb-soft:var(--accent-soft)}
+.mrun.mr-fwcli{--mb:var(--warn);--mb-soft:var(--warn-soft)}
+.mrun.mr-extranet{--mb:var(--focus);--mb-soft:var(--surface-2)}
+.mband{display:flex;flex-wrap:wrap;align-items:baseline;gap:.2rem .6rem;margin:0 0 .6rem -.9rem;padding:.4rem .8rem;
+  background:var(--mb-soft);border-radius:0 var(--radius-m) var(--radius-m) 0;font-weight:700;font-size:var(--step--1)}
+.mband .mb-ic{font-size:1.05rem}
+.mband .mb-sub{font-weight:400;color:var(--ink-2);font-size:.85em}
+.mlabel{display:inline-block;margin-right:.35rem;padding:0 .45rem;border-radius:var(--radius-s);font-weight:700;font-size:.85em;
+  border-left:3px solid var(--accent);background:var(--surface-2)}
+.mlabel.ml-client{border-left-color:var(--ok)}.mlabel.ml-webui{border-left-color:var(--accent)}
+.mlabel.ml-fwcli{border-left-color:var(--warn)}.mlabel.ml-extranet{border-left-color:var(--focus)}
+.mrun .shot{margin-left:.6rem}
+.topo{width:100%;max-width:760px;height:auto;display:block;margin:.4rem 0 .3rem}
+.topo .bx{fill:var(--surface);stroke:var(--rule);stroke-width:1.5}
+.topo .fw{fill:var(--accent-soft);stroke:var(--accent);stroke-width:2}
+.topo .ln{stroke:var(--ink-2);stroke-width:2;fill:none}
+.topo .ln.mg{stroke-dasharray:5 4}
+.topo .dim{opacity:.45}
+.topo text{fill:var(--ink);font-family:var(--font-body);font-size:13px}
+.topo .h{font-weight:700;font-size:14px}
+.topo .m{font-family:var(--font-mono);font-size:12px}
+.topo .s{fill:var(--ink-2);font-size:12px}
+.diverge{border-left-color:var(--warn)}
+@media print{.mrun{border-left-color:#666}.mband{background:#eee}}
 </style></head>
 <body data-root=".." data-lab="13" data-page="labs/index.html">
 <a class="skip-link" href="#main">Skip to main content</a>
@@ -67,18 +95,60 @@ html[data-present="on"] .pm-dock{position:fixed;left:0;right:0;bottom:0;z-index:
 <section class="unit" id="s-setup" data-section="setup" data-label="Before you begin" data-part="Prepare">
 <header><span class="sec-n">02</span><h2>Before you begin</h2></header>
 <p>You'll use the web interface throughout, after running one script on the extranet server.</p>
+<h4>Lab Settings (from the NDG guide)</h4>
 <div class="table-wrap"><table>
-<caption class="visually-hidden">Hosts in the lab network</caption>
-<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th><th scope="col">Sign-in</th></tr></thead>
+<caption class="visually-hidden">Lab Settings: virtual machines, addresses, and sign-ins</caption>
+<thead><tr><th scope="col">Virtual Machine</th><th scope="col">IP Address</th><th scope="col">Account</th><th scope="col">Password</th></tr></thead>
 <tbody>
-<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td><td><code>lab-user / Pal0Alt0!</code></td></tr>
-<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td><td><code>admin / Pal0Alt0!</code></td></tr>
-<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td><td><code>root / Pal0Alt0</code></td></tr>
-<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td><td>—</td></tr>
-<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td><td>—</td></tr>
-<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td><td>—</td></tr>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td><code>lab-user</code></td><td><code>Pal0Alt0!</code></td></tr>
+<tr><td>DMZ</td><td><code>192.168.50.10</code></td><td><code>root</code></td><td><code>Pal0Alt0!</code></td></tr>
+<tr><td>Firewall</td><td><code>192.168.1.254</code></td><td><code>admin</code></td><td><code>Pal0Alt0!</code></td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td><code>root</code></td><td><code>Pal0Alt0</code></td></tr>
 </tbody></table></div>
-<p class="box-note">Sign-in credentials are shown above (the fixed NETLAB+ pod logins, case-sensitive). </p>
+<p class="box-note">Passwords are case-sensitive and use zeros, not the letter O. The vRouter password has no exclamation point.</p>
+<p class="box-note"><strong>Currency note:</strong> these labs run PAN-OS 11.0, which reached end-of-life on November 17, 2024 and no longer receives security fixes. Everything here still works in the lab; on a real firewall you would run a supported release (11.1, 11.2, or 12.1), where most screens are the same.</p>
+<p class="box-note">This lab also opens an SSH session to <strong>Server-Extranet</strong> from Remmina. Remmina is pre-configured with that login (user <code>paloalto42</code>), so you don’t type a password; the guide’s Lab Settings table doesn’t list it.</p><h4>Pod topology</h4>
+<svg class="topo" viewBox="0 0 760 360" role="img" aria-labelledby="topo-t topo-d">
+<title id="topo-t">Pod topology</title>
+<desc id="topo-d">The firewall firewall-a sits between the Internet zone (ethernet1/1, 203.0.113.20/24, next hop 203.0.113.1), the Users_Net zone (ethernet1/2, 192.168.1.1/24, with the Client at 192.168.1.20, the vRouter at 192.168.1.10, and the firewall management port at 192.168.1.254), and the Extranet zone (ethernet1/3, 192.168.50.1/24, servers including web 192.168.50.80, DNS 192.168.50.53 and DMZ 192.168.50.10) plus a virtual wire on ethernet1/4 and 1/5 for the Acquisition zone.</desc>
+<g><rect class="bx" x="250" y="8" width="260" height="74" rx="8"/>
+<text class="h" x="266" y="32">Internet zone</text>
+<text class="m" x="266" y="54">ISP router 203.0.113.1</text>
+<text class="s" x="266" y="72">8.8.8.8 and real websites beyond</text>
+<path class="ln" d="M380 82V128"/><text class="m" x="388" y="110">ethernet1/1 203.0.113.20/24</text></g>
+<rect class="fw" x="20" y="128" width="720" height="56" rx="8"/>
+<text class="h" x="36" y="152">firewall-a (PA-VM)</text>
+<text class="m" x="36" y="172">MGT 192.168.1.254 · default gateway 192.168.1.10 (vRouter)</text>
+<path class="ln mg" d="M70 184V240"/>
+<g><path class="ln" d="M190 184V240"/><text class="m" x="198" y="224">e1/2 192.168.1.1</text></g>
+<rect class="bx" x="20" y="240" width="236" height="112" rx="8"/>
+<text class="h" x="34" y="264">Users_Net zone</text>
+<text class="m" x="34" y="284">192.168.1.0/24</text>
+<text class="m" x="34" y="306">Client 192.168.1.20</text>
+<text class="m" x="34" y="326">vRouter 192.168.1.10</text>
+<text class="s" x="34" y="344">MGT port is on this subnet</text>
+<g><rect class="bx" x="272" y="240" width="238" height="112" rx="8"/>
+<text class="h" x="286" y="264">Extranet zone</text>
+<text class="m" x="286" y="284">192.168.50.0/24</text>
+<text class="m" x="286" y="306">Web .80 · DNS .53 · DMZ .10</text>
+<text class="s" x="286" y="326">Other lab servers on .50.x</text>
+<path class="ln" d="M390 184V240"/><text class="m" x="398" y="224">e1/3 192.168.50.1</text></g>
+<g><rect class="bx" x="526" y="240" width="214" height="112" rx="8"/><text class="h" x="540" y="264">Acquisition zone (vWire)</text><text class="m" x="540" y="288">ethernet1/4 ⇄ ethernet1/5</text><text class="s" x="540" y="310">Layer 2 pass-through, no IP</text><path class="ln" d="M632 184V240"/></g>
+</svg>
+<p class="box-note">Data interfaces, VR-1 and zones as built in Lab 4 and loaded by this lab’s snapshot. This lab’s snapshot also contains the Acquisition virtual wire on ethernet1/4 and 1/5.</p>
+<h4>Addresses you’ll use</h4>
+<div class="table-wrap"><table>
+<caption class="visually-hidden">Addresses in the lab network</caption>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td></tr>
+</tbody></table></div>
+
 <h4>What's already in the baseline</h4>
 <p>A complete configuration from the earlier labs, including the Acquisition zone and its users, Security Profiles, and URL Filtering. The <code>UsingLogs-V1.sh</code> script replays attacks, browsing, and application traffic so every log has data.</p>
 <h4>This lab is mostly reading</h4>
@@ -87,120 +157,132 @@ html[data-present="on"] .pm-dock{position:fixed;left:0;right:0;bottom:0;z-index:
 
 <section class="unit" id="s-walkthrough" data-section="walkthrough" data-label="Walkthrough" data-part="Do the lab">
 <header><span class="sec-n">03</span><h2>Walkthrough of the detailed steps</h2></header>
-<h3 class="task-head"><span class="tn">2.1</span>Load the lab configuration</h3>
+<div class="callout tip"><p class="c-title">Reading the machine bands</p><p>Each coloured band says where the steps under it happen, and it stays in force until the next band:
+<span class="mlabel ml-client">🖥️ Client</span> <span class="mlabel ml-webui">🧱 Firewall web interface</span> <span class="mlabel ml-fwcli">⌨️ Firewall CLI</span> <span class="mlabel ml-extranet">🗄️ Server-Extranet</span>.
+When a single step switches machines, it carries an inline label instead. Step numbers match the guide’s Detailed Lab Steps exactly.</p></div>
+<h3 class="task-head"><span class="tn">2.1</span>Apply a baseline configuration to the firewall</h3>
 <p class="task-intro">Every lab starts from a known baseline, so your firewall matches the guide no matter what you did last time.</p>
-<ol class="steps-list" start="1"><li>On the client desktop, log in as <code>lab-user</code>, open Firefox, and browse to <code>https://192.168.1.254</code>. Log in as <code>admin</code> with the password from Lab Settings. If the login page does not appear, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li>Go to <span class="path" data-path="Device > Setup > Operations"></span> and click <strong>Load named configuration snapshot</strong>. Choose <code>edu-210-11.0a-13.xml</code> and click OK, then Close.</li><li>Open <strong>Tasks</strong> (lower right) and confirm the Load task shows completed.</li><li>Click <strong>Commit</strong> (upper right), then <strong>Commit</strong> in the dialog, and wait for it to finish.</li></ol>
-<div class="callout stuck"><p class="c-title">Loading is not committing</p><p>A loaded snapshot replaces only the candidate configuration. Until you commit, the firewall is still running whatever was there before, and nothing in the lab will match the guide.</p></div>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>Click the <strong>Client</strong> tab in NETLAB+ to access the Client PC.</li><li>On the <em>Zorin</em> desktop, click <strong>lab-user</strong>.</li><li>For the lab-user password, enter <code>Pal0Alt0!</code> and press <strong>Enter</strong>.</li><li>Double-click the <strong>Firefox Web Browser</strong> icon on the Desktop.</li><li>In the Firefox address field, type <code>https://192.168.1.254</code> and press <strong>Enter</strong>.</li></ol>
+</div>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="6"><li>Log in to the firewall web interface as username <code>admin</code>, password <code>Pal0Alt0!</code>. If the login page does not appear, wait an additional 1 to 3 minutes for the firewall to initialize and refresh the page.</li><li>Navigate to <span class="path" data-path="Device &gt; Setup &gt; Operations"></span> and click <strong>Load named configuration snapshot</strong> in the <em>Configuration Management</em> section.</li><li>In the <em>Load Named Configuration</em> window, select <code>edu-210-11.0a-13.xml</code> from the <strong>Name</strong> drop-down and click <strong>OK</strong>.</li><li>The <em>Loading Configuration</em> window says the configuration is being loaded and to check the Task Manager. Click <strong>Close</strong>.</li><li>Click the <strong>Tasks</strong> icon at the bottom-right of the web interface.</li><li>In <em>Task Manager – All Tasks</em>, verify the <strong>Load</strong> task shows <strong>Completed</strong>. Click <strong>Close</strong>.</li><li>Click the <strong>Commit</strong> link at the top-right of the web interface.</li><li>In the <em>Commit</em> window, click <strong>Commit</strong>.</li><li>When the commit operation completes, click <strong>Close</strong>.</li><li>Leave the Palo Alto Networks Firewall window open and continue to the next task.</li></ol>
+<div class="callout stuck"><p class="c-title">Loading is not committing</p><p>A loaded snapshot replaces only the candidate configuration. Until you commit (steps 12 to 14), the firewall is still running whatever was there before, and nothing in the lab will match the guide.</p></div>
+</div>
 <h3 class="task-head"><span class="tn">2.2</span>Generate traffic</h3>
-<ol class="steps-list" start="1">
-<li>Open <strong>Remmina</strong> and double-click <strong>Server-Extranet</strong>.</li>
-<li>Run the script and press Enter to start it. Let it run 5 to 7 minutes, uninterrupted.</li>
-</ol>
+<p class="task-intro">A script on the extranet server generates attacks, web browsing, and application traffic to fill the logs.</p>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>On the client taskbar, open the <strong>Remmina</strong> application.</li><li>Double-click <strong>Server-Extranet</strong>. It opens an SSH session and logs you in automatically.</li></ol>
+</div>
+<div class="mrun mr-extranet"><p class="mband"><span class="mb-ic" aria-hidden="true">🗄️</span><span>On Server-Extranet</span><span class="mb-sub">SSH to the extranet server from Remmina on the Client. Prompt: paloalto42@extranet1:~$</span></p>
+<ol class="steps-list" start="3"><li>Enter the following command to generate traffic for logging. (No <code>cd</code> is needed; the script is in the home folder.)</li></ol>
 <pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">paloalto42@extranet1:~$</span> <span class="cmd">./UsingLogs-V1.sh</span></pre>
-<ol class="steps-list" start="3">
-<li>When it finishes, close the session and Remmina.</li>
-</ol>
-<div class="callout stuck"><p class="c-title">Don't start early</p><p>Widgets, the ACC, and App Scope summarize what's in the logs. Before the script finishes, they're thin or empty.</p></div>
-<h3 class="task-head"><span class="tn">2.3</span>Recent threats on the Dashboard</h3>
-<ol class="steps-list" start="1">
-<li>On the <strong>Dashboard</strong>, click <strong>Widgets &gt; Logs &gt; Threat Logs</strong>. (Greyed out means it's already shown.)</li>
-<li>Add <strong>Widgets &gt; Logs &gt; URL Filtering Logs</strong> and <strong>Logs &gt; Data Filtering Logs</strong>.</li>
-</ol>
-<div class="callout guideq"><p class="c-title">Q1: Any threats in the Threat Logs widget?</p><p><strong>a. Yes</strong>, once the script has run. It shows the 10 most recent threats from the last hour.</p></div>
-<div class="callout guideq"><p class="c-title">Q2: Any URLs in the URL Filtering Logs widget?</p><p><strong>a. Yes.</strong> The script's browsing generates URL entries.</p></div>
-<div class="callout guideq"><p class="c-title">Q3: Any files in the Data Filtering Logs widget?</p><p>It <strong>may be b. No.</strong> The guide says so too: the widget only shows the last hour, and the script may not produce data filtering events in that window.</p></div>
+<ol class="steps-list" start="4"><li>Press <strong>Enter</strong> to start the UsingLogs-V1.sh script.</li><li>Allow 5 to 7 minutes for the script to run uninterrupted. Do not continue until it completes.</li></ol>
+<div class="callout stuck"><p class="c-title">Don’t start early</p><p>Widgets, the ACC, and App Scope summarize what’s in the logs. Before the script finishes, they’re thin or empty.</p></div>
+</div>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="6"><li>Once it completes, close the Server-Extranet window.</li><li>Close the Remmina Remote Desktop Client window and continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.3</span>Display recent threat information in the Dashboard</h3>
+<p class="task-intro">Dashboard log widgets show the 10 most recent entries from the last hour, drawn from the Threat, URL Filtering, and Data Filtering logs.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Click the <strong>Dashboard</strong> tab. Click <strong>Widgets</strong> and select <strong>Logs &gt; Threat Logs</strong>. (If it’s greyed out, the widget is already on the Dashboard.)</li><li>The Threat Logs widget shows the 10 most recent threats from the last hour.</li></ol>
+<div class="callout guideq"><p class="c-title">Guide question Q1</p><p>Are any threats displayed in the Threat Logs widget?</p><p><strong>Answer:</strong> <strong>a. Yes</strong>, once the script has run. It shows the 10 most recent threats from the last hour.</p></div>
+<ol class="steps-list" start="3"><li>Click <strong>Widgets</strong> and select <strong>Logs &gt; URL Filtering Logs</strong>.</li><li>The URL Filtering Logs widget shows the 10 most recent entries from the last hour.</li></ol>
+<div class="callout guideq"><p class="c-title">Guide question Q2</p><p>Are any URLs displayed in the URL Filtering Logs widget?</p><p><strong>Answer:</strong> <strong>a. Yes.</strong> The script’s browsing generates URL entries.</p></div>
 <p class="shot" id="shot-1"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 1</span> The Dashboard showing the Threat Logs and URL Filtering Logs widgets with entries.</span></p>
-<h3 class="task-head"><span class="tn">2.4</span>Recent applications on the Dashboard</h3>
-<ol class="steps-list" start="1">
-<li>Add <strong>Widgets &gt; Application &gt; Top Applications</strong>, then <strong>Application &gt; Top High Risk Applications</strong>.</li>
-<li>Risk 4 applications show in orange, risk 5 in red. Allow 3 to 5 minutes if they're empty.</li>
-</ol>
-<h3 class="task-head"><span class="tn">2.5</span>Threats in the ACC</h3>
-<ol class="steps-list" start="1">
-<li>Click the <strong>ACC</strong> tab. Under <strong>Global Filters</strong>, click <strong>Clear all</strong> if anything's there. Set <strong>Time</strong> to <strong>Last Hour</strong> and choose the <strong>Threat Activity</strong> tab.</li>
-<li>In the Threat Activity table, hover over a <strong>high</strong> severity item and click the small arrow to promote it to a global filter.</li>
-<li>Find it under Global Filters, note how every widget changes, then click <strong>Clear all</strong>.</li>
-</ol>
-<div class="callout guideq"><p class="c-title">Q4: Do you see threats in the Threat Activity widget?</p><p><strong>b. Yes, multiple threats are listed</strong>: some mix of flood, scan, spyware, packet, vulnerability, and virus.</p></div>
-<div class="callout guideq"><p class="c-title">Q5: Did the table change to show only high severity?</p><p><strong>a. Yes.</strong> Promoting a value makes it a global filter for every widget.</p></div>
-<div class="callout guideq"><p class="c-title">Q6: Is high severity listed in the Global Filters box?</p><p><strong>b. Yes, the high severity is listed.</strong></p></div>
-<div class="callout guideq"><p class="c-title">Q7: Which widgets show hosts that visited or resolved malicious domains?</p><p><strong>a and d: Hosts Visiting Malicious URLs and Hosts Resolving Malicious Domains.</strong></p></div>
-<div class="callout fix"><p class="c-title">"Last seven days" versus Last Hour</p><p>The guide's notes mention counts "in the last seven days," but step 1 sets the time to Last Hour. Whatever range you pick is the range the widgets show.</p></div>
+<ol class="steps-list" start="5"><li>Click <strong>Widgets</strong> and select <strong>Logs &gt; Data Filtering Logs</strong> if it isn’t already shown.</li></ol>
+<div class="callout guideq"><p class="c-title">Guide question Q3</p><p>Are any files displayed in the Data Filtering Logs widget?</p><p><strong>Answer:</strong> It <strong>may be b. No.</strong> The guide says so too: the widget only shows the last hour, and the script may not produce data filtering events in that window.</p></div>
+<ol class="steps-list" start="6"><li>The Data Filtering Logs widget shows the 10 most recent entries from the last hour; you may or may not see any.</li><li>Leave the firewall open and continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.4</span>Display recent application information in the Dashboard</h3>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Still on the <strong>Dashboard</strong> tab, click <strong>Widgets</strong> and select <strong>Application &gt; Top Applications</strong>.</li><li>Look at the Top Applications widget: the applications seen in the last hour. Some “housekeeping” traffic nearly always appears.</li><li>Click <strong>Widgets</strong> and select <strong>Application &gt; Top High Risk Applications</strong>.</li><li>Look at the high-risk applications seen in the last hour. Risk 4 is orange; risk 5 is red. If the widgets haven’t updated, allow 3 to 5 minutes.</li><li>Leave the firewall open and continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.5</span>View threat information in the ACC</h3>
+<p class="task-intro">The ACC’s Threat Activity tab, and how one click turns a value into a global filter for every widget.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Click the <strong>ACC</strong> tab. On the left, check <strong>Global Filters</strong>; if any are set, click <strong>Clear all</strong>. Change the <strong>Time</strong> to <strong>Last Hour</strong> and select the <strong>Threat Activity</strong> tab.</li></ol>
+<div class="callout guideq"><p class="c-title">Guide question Q4</p><p>Do you see any threats listed in the Threat Activity widget?</p><p><strong>Answer:</strong> <strong>b. Yes, multiple threats are listed</strong>: some mix of flood, scan, spyware, packet, vulnerability, and virus.</p></div>
+<div class="callout fix"><p class="c-title">“Last seven days” versus Last Hour</p><p>The guide’s notes mention counts “in the last seven days,” but step 1 sets the time to Last Hour. Whatever range you pick is the range the widgets show.</p></div>
+<ol class="steps-list" start="2"><li>In the table under the Threat Activity graph, hover over a <strong>high</strong> severity item until a small arrow appears, and click it. If there are no high-severity items, run UsingLogs-V1.sh again.</li></ol>
+<div class="callout guideq"><p class="c-title">Guide question Q5</p><p>Did the widget’s table change to display only high-severity threats?</p><p><strong>Answer:</strong> <strong>a. Yes.</strong> Promoting a value makes it a global filter for every widget.</p></div>
+<ol class="steps-list" start="3"><li>Find the global filter on the left side of the ACC.</li></ol>
+<div class="callout guideq"><p class="c-title">Guide question Q6</p><p>Is the high severity listed in the Global Filter box?</p><p><strong>Answer:</strong> <strong>b. Yes, the high severity is listed.</strong></p></div>
 <p class="shot" id="shot-2"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 2</span> The ACC with high severity applied as a global filter.</span></p>
-<h3 class="task-head"><span class="tn">2.6</span>Applications in the ACC</h3>
-<ol class="steps-list" start="1">
-<li>In the ACC, open <strong>Network Activity</strong>. Collapse the sidebar with its small arrow for more room.</li>
-<li>In <strong>Application Usage</strong>, choose the <strong>sessions</strong> radio button and hover over <strong>web-browsing</strong> in the chart.</li>
-<li>In the table below, hover over web-browsing and click the left arrow to make it a global filter. Reopen the sidebar to see it.</li>
-<li>Scroll to <strong>Rule Usage</strong>, choose <strong>bytes</strong>, and set the time to Last Hour.</li>
-<li>Click <strong>Jump to Logs</strong> in that widget and choose the <strong>Traffic log</strong>.</li>
-<li>Clear the log filter, return to the ACC, and click <strong>Clear all</strong> under Global Filters.</li>
-</ol>
-<div class="callout guideq"><p class="c-title">Q8: Which rules allowed web-browsing?</p><p>Read the Rule Usage widget. In this baseline, expect <strong>Users_to_Internet</strong> and <strong>Users_to_Extranet</strong> (b and d). Allow-Corp-Apps also appears if web-browsing is one of Acquisition's approved apps.</p></div>
-<div class="callout guideq"><p class="c-title">Q9: Which log opens?</p><p><strong>a. Traffic.</strong></p></div>
-<div class="callout guideq"><p class="c-title">Q10: Which filters were applied automatically?</p><p><strong>a and b: a time range filter and the application filter</strong> you promoted. Check the filter text in the log to confirm.</p></div>
+<ol class="steps-list" start="4"><li>The Threat Activity graph and table now show only high-severity items.</li><li>In <strong>Global Filters</strong>, click <strong>Clear all</strong>. All widgets refresh to include every threat in the time range.</li></ol>
+<div class="callout guideq"><p class="c-title">Guide question Q7</p><p>Which widgets would show hosts that visited or resolved a malicious DNS domain? Choose all that apply.</p><p><strong>Answer:</strong> <strong>a and d: Hosts Visiting Malicious URLs and Hosts Resolving Malicious Domains.</strong></p></div>
+<ol class="steps-list" start="6"><li>Leave the firewall open and continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.6</span>View application information in the ACC</h3>
+<p class="task-intro">Two widgets on the Network Activity tab: Application Usage and Rule Usage.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Click the <strong>ACC</strong> tab, then <strong>Network Activity</strong>. Hide the sidebar with the very small arrow to make room.</li><li>The top of the <strong>Application Usage</strong> widget is a graph of how much traffic each application represents (a square pie chart). Select the <strong>sessions</strong> radio button.</li><li>Hover over the <strong>web-browsing</strong> section to see a summary of that application.</li><li>In the table below the graph, hover over <strong>web-browsing</strong> until the global-filter left arrow appears, then click it to promote web-browsing to a global filter.</li><li>Unhide the sidebar with the tiny arrow. The Application Usage chart now shows only web-browsing.</li><li>Scroll down to the <strong>Rule Usage</strong> widget. Select the <strong>bytes</strong> radio button. Make sure <strong>Last Hour</strong> is selected for Time.</li></ol>
+<div class="callout guideq"><p class="c-title">Guide question Q8</p><p>Which Security policy rules have allowed web-browsing traffic? a. Allow-Corp-Apps  b. Users_to_Internet  c. Users_to_DMZ  d. Users_to_Extranet</p><p><strong>Answer:</strong> Read the Rule Usage widget. In this baseline, expect <strong>Users_to_Internet</strong> and <strong>Users_to_Extranet</strong> (b and d). Allow-Corp-Apps also appears if web-browsing is one of Acquisition’s approved apps.</p></div>
+<ol class="steps-list" start="7"><li>In the upper-right corner of the Rule Usage widget, click <strong>Jump to Logs</strong> and select the <strong>Traffic Log</strong> icon.</li><li>Note which log you’re taken to on the Monitor tab. Its entries match the filter it applied.</li></ol>
+<div class="callout guideq"><p class="c-title">Guide question Q9</p><p>Which log is displayed in the web interface?</p><p><strong>Answer:</strong> <strong>a. Traffic.</strong></p></div>
+<div class="callout guideq"><p class="c-title">Guide question Q10</p><p>Which log filters were applied automatically? Choose all that apply.</p><p><strong>Answer:</strong> <strong>a and b: a time range filter and the application filter</strong> you promoted. Check the filter text in the log to confirm.</p></div>
 <p class="shot" id="shot-3"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 3</span> The Traffic log opened from Jump to Logs, showing the filter it applied.</span></p>
-<h3 class="task-head"><span class="tn">2.7</span>Threats in the Threat log</h3>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Monitor &gt; Logs &gt; Threat"></span> and clear any filter.</li>
-<li>Click <strong>+</strong> (Add Log Filter): <strong>and</strong>, <strong>Severity</strong>, <strong>greater than or equal</strong>, <strong>high</strong>. Add, Apply, then click the arrow to run it.</li>
-</ol>
+<ol class="steps-list" start="9"><li>Clear the filter in the Traffic log.</li><li>Click the <strong>ACC</strong> tab. In <strong>Global Filters</strong>, click <strong>Clear all</strong>.</li><li>Leave the firewall open and continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.7</span>View threat information in the Threat log</h3>
+<p class="task-intro">You check whether high and critical threats are blocked, then look at threats from a single user.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Monitor &gt; Logs &gt; Threat"></span>. At the upper right, click the <strong>X</strong> in the filter area to remove any filter.</li></ol>
+<ol class="steps-list" start="2"><li>Click the <strong>+</strong> icon in the filter area to open the <em>Add Log Filter</em> window.</li><li>Select Connector <strong>and</strong>, Attribute <strong>Severity</strong>, Operator <strong>greater than or equal</strong>, Value <strong>high</strong>. Click <strong>Add</strong>.</li><li>In the <em>Add Log Filter</em> window, click <strong>Apply</strong>. (Once you know the syntax, you can type filters straight into the field.)</li><li>With the filter string in the filter box, click the right-arrow (Apply Filter) icon to apply it.</li></ol>
 <pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( severity geq high )</span></pre>
-<ol class="steps-list" start="3">
-<li>Clear it, then build: <strong>and</strong>, <strong>Source User</strong>, <strong>equal</strong>, <code>chicago\escrooge</code>. Add, Apply, run it.</li>
-</ol>
-<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( user.src eq 'chicago\escrooge' )</span></pre>
-<ol class="steps-list" start="4">
-<li>Clear the filter.</li>
-</ol>
-<div class="callout guideq"><p class="c-title">Q11: Is the log showing only high severity or greater?</p><p><strong>a. True.</strong></p></div>
-<div class="callout stuck"><p class="c-title">Typing the user filter yourself</p><p>The Filter Builder adds the quotes for you. If you type it, the backslash means you need straight single quotes, as above.</p></div>
+<div class="callout guideq"><p class="c-title">Guide question Q11</p><p>Is the Threat log filtered to display only threats of high severity or greater?</p><p><strong>Answer:</strong> <strong>a. True.</strong></p></div>
 <p class="shot" id="shot-4"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 4</span> The Threat log filtered to severity high or greater.</span></p>
-<h3 class="task-head"><span class="tn">2.8</span>Applications in the Traffic log</h3>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Monitor &gt; Logs &gt; Traffic"></span> and clear any filter.</li>
-<li>Add a filter: <strong>and</strong>, <strong>Source Zone</strong>, <strong>equal</strong>, <strong>Acquisition</strong>. Apply and run it.</li>
-</ol>
+<ol class="steps-list" start="6"><li>The Threat log shows only threats of high severity or greater.</li><li>Click the <strong>X</strong> in the filter area to remove the filter.</li></ol>
+<ol class="steps-list" start="8"><li>Click the <strong>+</strong> icon in the filter area to open the <em>Add Log Filter</em> window.</li><li>Select Connector <strong>and</strong>, Attribute <strong>Source User</strong>, Operator <strong>equal</strong>, Value <strong>chicago\escrooge</strong>. Click <strong>Add</strong>.</li><li>In the <em>Add Log Filter</em> window, click <strong>Apply</strong>. (Once you know the syntax, you can type filters straight into the field.)</li><li>With the filter string in the filter box, click the right-arrow (Apply Filter) icon to apply it.</li></ol>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( user.src eq 'chicago\escrooge' )</span></pre>
+<div class="callout stuck"><p class="c-title">Typing the user filter yourself</p><p>The Filter Builder adds the quotes for you. If you type it, the backslash means you need straight single quotes, as above.</p></div>
+<ol class="steps-list" start="12"><li>The Threat log shows only threats from Source User chicago\escrooge.</li><li>Click the <strong>X</strong> to clear the filter. (URL Filtering, WildFire Submissions, and Data Filtering logs take the same kind of filters.)</li><li>Leave the firewall open and continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.8</span>View application information in the Traffic log</h3>
+<p class="task-intro">Which applications appear in a given zone? That answer drives Security policy design.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Monitor &gt; Logs &gt; Traffic"></span>. Click the <strong>X</strong> in the filter area to remove any filter.</li></ol>
+<ol class="steps-list" start="2"><li>Click the <strong>+</strong> icon in the filter area to open the <em>Add Log Filter</em> window.</li><li>Select Connector <strong>and</strong>, Attribute <strong>Source Zone</strong>, Operator <strong>equal</strong>, Value <strong>Acquisition</strong>. Click <strong>Add</strong>.</li><li>In the <em>Add Log Filter</em> window, click <strong>Apply</strong>. (Once you know the syntax, you can type filters straight into the field.)</li><li>With the filter string in the filter box, click the right-arrow (Apply Filter) icon to apply it.</li></ol>
 <pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( zone.src eq Acquisition )</span></pre>
-<ol class="steps-list" start="3">
-<li>Open Add Log Filter again. Edit the existing clause to <code>Users_Net</code>, then add <strong>and</strong>, <strong>Application</strong>, <strong>equal</strong>, <strong>web-browsing</strong>. Apply and run.</li>
-</ol>
+<div class="callout guideq"><p class="c-title">Guide question Q12</p><p>Has the Traffic log been filtered to display only traffic sourced from the Acquisition zone?</p><p><strong>Answer:</strong> <strong>a. True.</strong></p></div>
+<ol class="steps-list" start="6"><li>The Traffic log shows only traffic from the Acquisition zone.</li><li>Click the <strong>+</strong> icon to open the <em>Add Log Filter</em> window again. The Acquisition filter still appears in it.</li><li>In the top pane, edit the existing source zone filter to use <strong>Users_Net</strong> instead of Acquisition. It should read <code>(zone.src eq Users_Net)</code>.</li><li>Select Connector <strong>and</strong>, Attribute <strong>Application</strong>, Operator <strong>equal</strong>, Value <strong>web-browsing</strong>. Click <strong>Add</strong>; the second clause is added.</li><li>In the <em>Add Log Filter</em> window, click <strong>Apply</strong>.</li><li>With the filter in the filter box, click the right-arrow (Apply Filter) icon.</li></ol>
 <pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( zone.src eq Users_Net ) and ( app eq web-browsing )</span></pre>
-<div class="callout guideq"><p class="c-title">Q12: Is the log showing only Acquisition traffic?</p><p><strong>a. True.</strong></p></div>
-<div class="callout guideq"><p class="c-title">Q13: Is it showing only web-browsing from Users_Net?</p><p><strong>a. True.</strong></p></div>
-<div class="callout fix"><p class="c-title">The guide says "Threat log" here</p><p>Steps 5 and 11 say to apply the filter to the Threat log, and step 6 says it shows "threats." You're in the <strong>Traffic</strong> log, filtering sessions. One note also mentions a "dmz zone"; it means Acquisition.</p></div>
+<div class="callout guideq"><p class="c-title">Guide question Q13</p><p>Has the Traffic log been filtered to display only web-browsing traffic sourced from Users_Net?</p><p><strong>Answer:</strong> <strong>a. True.</strong></p></div>
+<div class="callout fix"><p class="c-title">The guide says “Threat log” here</p><p>Steps 5 and 11 say to apply the filter to the Threat log, and steps 6 and 12 say it shows “threats.” You’re in the <strong>Traffic</strong> log, filtering sessions. One note also mentions a “dmz zone”; it means Acquisition.</p></div>
 <p class="shot" id="shot-5"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 5</span> The Traffic log filtered to web-browsing from Users_Net.</span></p>
-<h3 class="task-head"><span class="tn">2.9</span>App Scope Threat Monitor</h3>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Monitor &gt; App Scope &gt; Threat Monitor"></span>.</li>
-<li>Click <strong>Last 7 days</strong>, then change <strong>Top 10</strong> to <strong>Top 25</strong>.</li>
-<li>Change <strong>Threat</strong> to <strong>Source User</strong>, choose <strong>Show all threat types</strong>, and hover over a bar to see the user and count.</li>
-</ol>
+<ol class="steps-list" start="12"><li>The Traffic log shows only web-browsing from Users_Net.</li><li>Leave the firewall open and continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.9</span>View threats using App Scope reports</h3>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Monitor &gt; App Scope &gt; Threat Monitor"></span>.</li><li>At the bottom of the window, click <strong>Last 7 days</strong>.</li><li>The window shows the top 10 threats of the last seven days. At the top, click <strong>Top 10</strong> and select <strong>Top 25</strong>.</li><li>At the top of the window, click <strong>Threat</strong> and choose <strong>Source User</strong>.</li><li>Hover over each <strong>Filter</strong> icon at the top to see how to show specific threat types.</li><li>Select <strong>Show all threat types</strong>.</li><li>Hover over the top of any bar to see a pop-up with the source user name and number of detections.</li></ol>
 <p class="shot" id="shot-6"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 6</span> The Threat Monitor showing the top 25 by source user over the last 7 days.</span></p>
-<h3 class="task-head"><span class="tn">2.10</span>Enable predefined reports</h3>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Device &gt; Setup &gt; Management"></span> and click the gear on <strong>Logging and Reporting Settings</strong>.</li>
-<li>On the <strong>Pre-Defined Reports</strong> tab, click <strong>Select All</strong> and click OK. Commit.</li>
-</ol>
-<h3 class="task-head"><span class="tn">2.11</span>Read predefined reports</h3>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Monitor &gt; Reports"></span>.</li>
-<li>In the report list on the right, expand <strong>Application Reports</strong> and click <strong>top-applications</strong>. It shows the previous day's top applications.</li>
-<li>Open <strong>Traffic Reports &gt; top-sources</strong> as well.</li>
-</ol>
+<ol class="steps-list" start="8"><li>Leave the firewall open and continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.10</span>View threat information using reports</h3>
+<p class="task-intro">You enable the firewall’s predefined reports (more than 40 of them) so they generate.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Navigate to <span class="path" data-path="Device &gt; Setup &gt; Management"></span>. Scroll to <strong>Logging and Reporting Settings</strong> and click its gear icon.</li><li>On the <strong>Pre-Defined Reports</strong> tab, click <strong>Select All</strong> to enable every predefined report, and click <strong>OK</strong>. (In production, enable only the ones you need.)</li><li>Click the <strong>Commit</strong> link at the top-right of the web interface.</li><li>In the <em>Commit</em> window, click <strong>Commit</strong>.</li><li>When the commit operation successfully completes, click <strong>Close</strong>.</li><li>Leave the firewall open and continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.11</span>View application information using predefined reports</h3>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Navigate to <span class="path" data-path="Monitor &gt; Reports"></span>.</li><li>In the reports panel on the right, expand the list of application reports. Scroll and click <strong>top-applications</strong>.</li><li>The top-applications report shows the top applications the firewall detected the previous day. Your data will differ.</li></ol>
 <div class="callout fix"><p class="c-title">Predefined, not Custom</p><p>The guide says to expand <strong>Custom Reports</strong> to find top-applications. top-applications and top-sources are <strong>predefined</strong> reports, listed by category in the right-hand panel.</p></div>
+<div class="callout fix"><p class="c-title">The guide skips step 4</p><p>The guide’s numbering in this task goes 1, 2, 3, 5, 6, 7. Nothing is missing; this page keeps the guide’s numbers so you can follow along side by side.</p></div>
 <div class="callout stuck"><p class="c-title">Grey dates</p><p>Reports are generated daily, so a lab environment may only have data for some days. Click through the calendar dates until one shows data.</p></div>
 <p class="shot" id="shot-7"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 7</span> The top-applications predefined report with data.</span></p>
-<h3 class="task-head"><span class="tn">2.12</span>Build a custom report</h3>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Monitor &gt; Manage Custom Reports"></span> and click <strong>Add</strong>.</li>
-<li>Name <code>Apps Used by Internal Zones</code>, Database <strong>Summary Databases &gt; Traffic</strong>, <strong>Scheduled</strong> checked, Time Frame <strong>Last 7 Days</strong>, Sort By <strong>Sessions</strong> and <strong>Top 100</strong>, Group By <strong>Source Zone</strong> and <strong>5 Groups</strong>. Selected Columns: <strong>Source Zone, Action, Application, Bytes</strong>.</li>
-<li>Click <strong>Filter Builder</strong>: <strong>and</strong>, <strong>Source Zone</strong>, <strong>not equal</strong>, <strong>Internet</strong>. Add, Apply, OK.</li>
-<li>Open the report and click <strong>Run Now</strong>. Read the results by zone.</li>
-</ol>
+<ol class="steps-list" start="5"><li>At the far right of the report window, expand the list of reports again. Scroll and click <strong>top-sources</strong>.</li><li>The Sources report shows which source IP addresses the firewall detected the previous day.</li><li>Leave the firewall open and continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.12</span>View threat and application information using custom reports</h3>
+<p class="task-intro">A custom report listing the applications seen in each internal zone.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Monitor &gt; Manage Custom Reports"></span>. Click <strong>Add</strong>.</li><li>In the <em>Custom Report</em> window, configure: Name <code>Apps Used by Internal Zones</code>; Database <strong>Summary Databases &gt; Traffic</strong>; <strong>Scheduled</strong> checked; Time Frame <strong>Last 7 Days</strong>; Sort By <strong>Sessions</strong> and <strong>Top 100</strong>; Group By <strong>Source Zone</strong> and <strong>5 Groups</strong>; Selected Columns <strong>Source Zone</strong>, <strong>Action</strong>, <strong>Application</strong>, and <strong>Bytes</strong>.</li><li>In the bottom-right corner of the Custom Report window, click the <strong>Filter Builder</strong> link.</li><li>In the <em>Add Log Filter</em> window, select Connector <strong>and</strong>, Attribute <strong>Source Zone</strong>, Operator <strong>not equal</strong>, Value <strong>Internet</strong>. Click <strong>Add</strong>.</li><li>Click <strong>Apply</strong>.</li></ol>
 <pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( zone.src neq Internet )</span></pre>
+<ol class="steps-list" start="6"><li>Click <strong>OK</strong> to close the Custom Report window.</li><li>The new report appears in the list of custom reports.</li><li>Click <strong>Apps Used by Internal Zones</strong> to open it.</li><li>Click <strong>Run Now</strong>. The results open in a new tab in the Custom Report window.</li><li>Scroll through the results: information about the Extranet and Acquisition zones and the applications the firewall processed in each.</li></ol>
 <div class="callout tip"><p class="c-title">Ask why each zone appears</p><p>The filter excludes traffic from the internet, which leaves the internal zones. Notice which ones show up (the guide mentions Extranet and Acquisition) and think about why Users_Net might be small or missing in this data.</p></div>
 <p class="shot" id="shot-8"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 8</span> The Apps Used by Internal Zones report results grouped by source zone.</span></p>
+<ol class="steps-list" start="11"><li>The lab is now complete; you may end your reservation.</li></ol>
+</div>
 </section>
 
 <section class="unit" id="s-reference" data-section="reference" data-label="Reference" data-part="Understand">

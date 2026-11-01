@@ -34,6 +34,34 @@ html[data-present="on"] .pm-dock{position:fixed;left:0;right:0;bottom:0;z-index:
 .pm-dock .pm-where{flex:1 1 auto;text-align:center;min-width:0;font-size:.78rem;color:var(--ink-2)}
 .pm-dock .pm-where b{color:var(--ink);display:block;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media print{.pm-dock,.pm-toggle{display:none!important}}
+</style><style id="mb-css">
+/* Machine bands: which VM / session each run of steps happens on. Page-local; uses site.css colour tokens. */
+.mrun{--mb:var(--accent);--mb-soft:var(--accent-soft);border-left:4px solid var(--mb);margin:1rem 0 1.2rem;padding:0 0 .2rem .9rem}
+.mrun.mr-client{--mb:var(--ok);--mb-soft:var(--ok-soft)}
+.mrun.mr-webui{--mb:var(--accent);--mb-soft:var(--accent-soft)}
+.mrun.mr-fwcli{--mb:var(--warn);--mb-soft:var(--warn-soft)}
+.mrun.mr-extranet{--mb:var(--focus);--mb-soft:var(--surface-2)}
+.mband{display:flex;flex-wrap:wrap;align-items:baseline;gap:.2rem .6rem;margin:0 0 .6rem -.9rem;padding:.4rem .8rem;
+  background:var(--mb-soft);border-radius:0 var(--radius-m) var(--radius-m) 0;font-weight:700;font-size:var(--step--1)}
+.mband .mb-ic{font-size:1.05rem}
+.mband .mb-sub{font-weight:400;color:var(--ink-2);font-size:.85em}
+.mlabel{display:inline-block;margin-right:.35rem;padding:0 .45rem;border-radius:var(--radius-s);font-weight:700;font-size:.85em;
+  border-left:3px solid var(--accent);background:var(--surface-2)}
+.mlabel.ml-client{border-left-color:var(--ok)}.mlabel.ml-webui{border-left-color:var(--accent)}
+.mlabel.ml-fwcli{border-left-color:var(--warn)}.mlabel.ml-extranet{border-left-color:var(--focus)}
+.mrun .shot{margin-left:.6rem}
+.topo{width:100%;max-width:760px;height:auto;display:block;margin:.4rem 0 .3rem}
+.topo .bx{fill:var(--surface);stroke:var(--rule);stroke-width:1.5}
+.topo .fw{fill:var(--accent-soft);stroke:var(--accent);stroke-width:2}
+.topo .ln{stroke:var(--ink-2);stroke-width:2;fill:none}
+.topo .ln.mg{stroke-dasharray:5 4}
+.topo .dim{opacity:.45}
+.topo text{fill:var(--ink);font-family:var(--font-body);font-size:13px}
+.topo .h{font-weight:700;font-size:14px}
+.topo .m{font-family:var(--font-mono);font-size:12px}
+.topo .s{fill:var(--ink-2);font-size:12px}
+.diverge{border-left-color:var(--warn)}
+@media print{.mrun{border-left-color:#666}.mband{background:#eee}}
 </style></head>
 <body data-root=".." data-lab="9" data-page="labs/index.html">
 <a class="skip-link" href="#main">Skip to main content</a>
@@ -68,18 +96,60 @@ html[data-present="on"] .pm-dock{position:fixed;left:0;right:0;bottom:0;z-index:
 <section class="unit" id="s-setup" data-section="setup" data-label="Before you begin" data-part="Prepare">
 <header><span class="sec-n">02</span><h2>Before you begin</h2></header>
 <p>You'll use the web interface and Firefox private windows. The desktop also has a <strong>Clear Logs Firewall-A</strong> icon.</p>
+<h4>Lab Settings (from the NDG guide)</h4>
 <div class="table-wrap"><table>
-<caption class="visually-hidden">Hosts in the lab network</caption>
-<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th><th scope="col">Sign-in</th></tr></thead>
+<caption class="visually-hidden">Lab Settings: virtual machines, addresses, and sign-ins</caption>
+<thead><tr><th scope="col">Virtual Machine</th><th scope="col">IP Address</th><th scope="col">Account</th><th scope="col">Password</th></tr></thead>
 <tbody>
-<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td><td><code>lab-user / Pal0Alt0!</code></td></tr>
-<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td><td><code>admin / Pal0Alt0!</code></td></tr>
-<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td><td><code>root / Pal0Alt0</code></td></tr>
-<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td><td>—</td></tr>
-<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td><td>—</td></tr>
-<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td><td>—</td></tr>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td><code>lab-user</code></td><td><code>Pal0Alt0!</code></td></tr>
+<tr><td>DMZ</td><td><code>192.168.50.10</code></td><td><code>root</code></td><td><code>Pal0Alt0!</code></td></tr>
+<tr><td>Firewall</td><td><code>192.168.1.254</code></td><td><code>admin</code></td><td><code>Pal0Alt0!</code></td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td><code>root</code></td><td><code>Pal0Alt0</code></td></tr>
 </tbody></table></div>
-<p class="box-note">Sign-in credentials are shown above (the fixed NETLAB+ pod logins, case-sensitive). </p>
+<p class="box-note">Passwords are case-sensitive and use zeros, not the letter O. The vRouter password has no exclamation point.</p>
+<p class="box-note"><strong>Currency note:</strong> these labs run PAN-OS 11.0, which reached end-of-life on November 17, 2024 and no longer receives security fixes. Everything here still works in the lab; on a real firewall you would run a supported release (11.1, 11.2, or 12.1), where most screens are the same.</p>
+<h4>Pod topology</h4>
+<svg class="topo" viewBox="0 0 760 360" role="img" aria-labelledby="topo-t topo-d">
+<title id="topo-t">Pod topology</title>
+<desc id="topo-d">The firewall firewall-a sits between the Internet zone (ethernet1/1, 203.0.113.20/24, next hop 203.0.113.1), the Users_Net zone (ethernet1/2, 192.168.1.1/24, with the Client at 192.168.1.20, the vRouter at 192.168.1.10, and the firewall management port at 192.168.1.254), and the Extranet zone (ethernet1/3, 192.168.50.1/24, servers including web 192.168.50.80, DNS 192.168.50.53 and DMZ 192.168.50.10).</desc>
+<g><rect class="bx" x="250" y="8" width="260" height="74" rx="8"/>
+<text class="h" x="266" y="32">Internet zone</text>
+<text class="m" x="266" y="54">ISP router 203.0.113.1</text>
+<text class="s" x="266" y="72">8.8.8.8 and real websites beyond</text>
+<path class="ln" d="M380 82V128"/><text class="m" x="388" y="110">ethernet1/1 203.0.113.20/24</text></g>
+<rect class="fw" x="20" y="128" width="720" height="56" rx="8"/>
+<text class="h" x="36" y="152">firewall-a (PA-VM)</text>
+<text class="m" x="36" y="172">MGT 192.168.1.254 · default gateway 192.168.1.10 (vRouter)</text>
+<path class="ln mg" d="M70 184V240"/>
+<g><path class="ln" d="M190 184V240"/><text class="m" x="198" y="224">e1/2 192.168.1.1</text></g>
+<rect class="bx" x="20" y="240" width="236" height="112" rx="8"/>
+<text class="h" x="34" y="264">Users_Net zone</text>
+<text class="m" x="34" y="284">192.168.1.0/24</text>
+<text class="m" x="34" y="306">Client 192.168.1.20</text>
+<text class="m" x="34" y="326">vRouter 192.168.1.10</text>
+<text class="s" x="34" y="344">MGT port is on this subnet</text>
+<g><rect class="bx" x="272" y="240" width="238" height="112" rx="8"/>
+<text class="h" x="286" y="264">Extranet zone</text>
+<text class="m" x="286" y="284">192.168.50.0/24</text>
+<text class="m" x="286" y="306">Web .80 · DNS .53 · DMZ .10</text>
+<text class="s" x="286" y="326">Other lab servers on .50.x</text>
+<path class="ln" d="M390 184V240"/><text class="m" x="398" y="224">e1/3 192.168.50.1</text></g>
+
+</svg>
+<p class="box-note">Data interfaces, VR-1 and zones as built in Lab 4 and loaded by this lab’s snapshot.</p>
+<h4>Addresses you’ll use</h4>
+<div class="table-wrap"><table>
+<caption class="visually-hidden">Addresses in the lab network</caption>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td></tr>
+</tbody></table></div>
+
 <h4>What's already in the baseline</h4>
 <p>Everything through Lab 8, including Corp-Profiles-Group on the allow rules (with URL Filtering still set to None).</p>
 <h4>Keep track of Block-Bad-URLs</h4>
@@ -89,100 +159,111 @@ html[data-present="on"] .pm-dock{position:fixed;left:0;right:0;bottom:0;z-index:
 
 <section class="unit" id="s-walkthrough" data-section="walkthrough" data-label="Walkthrough" data-part="Do the lab">
 <header><span class="sec-n">03</span><h2>Walkthrough of the detailed steps</h2></header>
-<h3 class="task-head"><span class="tn">2.1</span>Load the lab configuration</h3>
+<div class="callout tip"><p class="c-title">Reading the machine bands</p><p>Each coloured band says where the steps under it happen, and it stays in force until the next band:
+<span class="mlabel ml-client">🖥️ Client</span> <span class="mlabel ml-webui">🧱 Firewall web interface</span> <span class="mlabel ml-fwcli">⌨️ Firewall CLI</span> <span class="mlabel ml-extranet">🗄️ Server-Extranet</span>.
+When a single step switches machines, it carries an inline label instead. Step numbers match the guide’s Detailed Lab Steps exactly.</p></div>
+<h3 class="task-head"><span class="tn">2.1</span>Apply a baseline configuration to the firewall</h3>
 <p class="task-intro">Every lab starts from a known baseline, so your firewall matches the guide no matter what you did last time.</p>
-<ol class="steps-list" start="1"><li>On the client desktop, log in as <code>lab-user</code>, open Firefox, and browse to <code>https://192.168.1.254</code>. Log in as <code>admin</code> with the password from Lab Settings. If the login page does not appear, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li>Go to <span class="path" data-path="Device > Setup > Operations"></span> and click <strong>Load named configuration snapshot</strong>. Choose <code>edu-210-11.0a-09.xml</code> and click OK, then Close.</li><li>Open <strong>Tasks</strong> (lower right) and confirm the Load task shows completed.</li><li>Click <strong>Commit</strong> (upper right), then <strong>Commit</strong> in the dialog, and wait for it to finish.</li></ol>
-<div class="callout stuck"><p class="c-title">Loading is not committing</p><p>A loaded snapshot replaces only the candidate configuration. Until you commit, the firewall is still running whatever was there before, and nothing in the lab will match the guide.</p></div>
-<h3 class="task-head"><span class="tn">2.2</span>Clear logs and test two sites</h3>
-<ol class="steps-list" start="1">
-<li>Double-click <strong>Clear Logs Firewall-A</strong> on the desktop, confirm the logs cleared, and press Enter.</li>
-<li>In Firefox, open <code>http://www.hacker9.com</code> (category hacking). It loads.</li>
-<li>Open <code>http://www.hidester.com/proxy</code> (category proxy-avoidance-and-anonymizers). It loads, redirecting to vpncentral.com. Close Firefox.</li>
-</ol>
-<div class="callout fix"><p class="c-title">Wrong task title</p><p>The guide calls this "Generate Traffic Without Security Profiles." It actually clears the logs and confirms two sites aren't blocked yet.</p></div>
-<h3 class="task-head"><span class="tn">2.3</span>Create a Security rule that blocks categories</h3>
-<ol class="steps-list" start="1">
-<li>In <span class="path" data-path="Policies &gt; Security"></span>, show the <strong>URL Category</strong> column if it's hidden (any column drop-down &gt; Columns).</li>
-<li>Click <strong>Add</strong>. Name <code>Block-Bad-URLs</code>, description <code>Blocks bad URLs based on categories</code>.</li>
-<li>Source zone <strong>Users_Net</strong>; destination zone <strong>Internet</strong>; Application <strong>Any</strong>.</li>
-<li><strong>Service/URL Category:</strong> Service <strong>application-default</strong>. Add these categories: adult, command-and-control, extremism, hacking, high-risk, malware, nudity, parked, peer-to-peer, phishing, proxy-avoidance-and-anonymizers, questionable.</li>
-<li><strong>Actions:</strong> <strong>Deny</strong>, Log at Session End checked. Click OK.</li>
-<li>Select the rule and choose <strong>Move &gt; Move Top</strong>. Commit.</li>
-</ol>
-<div class="callout fix"><p class="c-title">Name drift</p><p>Step 9 calls the rule "block-known-bad-urls." It's Block-Bad-URLs.</p></div>
-<div class="callout stuck"><p class="c-title">Move Top puts it above the known-bad address rules</p><p>That's fine for this lab. What matters is that it's above Users_to_Internet; below it, the deny would be shadowed.</p></div>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>Click the <strong>Client</strong> tab in NETLAB+ to access the Client PC.</li><li>On the <em>Zorin</em> desktop, click <strong>lab-user</strong>.</li><li>For the lab-user password, enter <code>Pal0Alt0!</code> and press <strong>Enter</strong>.</li><li>Double-click the <strong>Firefox Web Browser</strong> icon on the Desktop.</li><li>In the Firefox address field, type <code>https://192.168.1.254</code> and press <strong>Enter</strong>.</li></ol>
+</div>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="6"><li>Log in to the firewall web interface as username <code>admin</code>, password <code>Pal0Alt0!</code>. If the login page does not appear, wait an additional 1 to 3 minutes for the firewall to initialize and refresh the page.</li><li>Navigate to <span class="path" data-path="Device &gt; Setup &gt; Operations"></span> and click <strong>Load named configuration snapshot</strong> in the <em>Configuration Management</em> section.</li><li>In the <em>Load Named Configuration</em> window, select <code>edu-210-11.0a-09.xml</code> from the <strong>Name</strong> drop-down and click <strong>OK</strong>.</li><li>The <em>Loading Configuration</em> window says the configuration is being loaded and to check the Task Manager. Click <strong>Close</strong>.</li><li>Click the <strong>Tasks</strong> icon at the bottom-right of the web interface.</li><li>In <em>Task Manager – All Tasks</em>, verify the <strong>Load</strong> task shows <strong>Completed</strong>. Click <strong>Close</strong>.</li><li>Click the <strong>Commit</strong> link at the top-right of the web interface.</li><li>In the <em>Commit</em> window, click <strong>Commit</strong>.</li><li>When the commit operation completes, click <strong>Close</strong>.</li><li>Leave the Palo Alto Networks Firewall open and continue to the next task.</li></ol>
+<div class="callout stuck"><p class="c-title">Loading is not committing</p><p>A loaded snapshot replaces only the candidate configuration. Until you commit (steps 12 to 14), the firewall is still running whatever was there before, and nothing in the lab will match the guide.</p></div>
+</div>
+<h3 class="task-head"><span class="tn">2.2</span>Generate traffic without Security Profiles</h3>
+<p class="task-intro">You clear the firewall’s logs (so new entries stand out) and confirm two sites are reachable before you block them.</p>
+<div class="callout fix"><p class="c-title">Wrong task title</p><p>The guide calls this “Generate Traffic Without Security Profiles.” It actually clears the logs and confirms two sites aren’t blocked yet.</p></div>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>On the client desktop, double-click the <strong>Clear Logs Firewall-A</strong> application.</li><li>Verify the Clear Logs script reports that it cleared the logs. Press <strong>Enter</strong>.</li><li>On the client desktop, open another <strong>Firefox</strong> window.</li><li>Type <code>http://www.hacker9.com</code> (URL category <em>hacking</em>). A valid page displays.</li><li>Type <code>http://www.hidester.com/proxy</code> (category <em>proxy-avoidance-and-anonymizers</em>). A valid page displays; notice the redirect to vpncentral.com.</li><li>Close that Firefox window.</li><li>Re-open the firewall web interface with the <strong>firewall-a – Mozilla Firefox</strong> icon in the task bar.</li></ol>
+</div>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="8"><li>Leave the firewall open and continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.3</span>Create a Security policy rule to block categories</h3>
+<p class="task-intro">URL categories can be a match condition in a Security rule. You build a deny rule on twelve of them.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Policies &gt; Security"></span>. If the <strong>URL Category</strong> column isn’t shown, hover over any column header, open its down-arrow menu, and select <strong>Columns &gt; URL Category</strong>.</li><li>Click <strong>Add</strong>.</li><li><strong>General</strong> tab: Name <code>Block-Bad-URLs</code>. Description <code>Blocks bad URLs based on categories.</code></li><li><strong>Source</strong> tab: Source Zone <strong>Users_Net</strong>.</li><li><strong>Destination</strong> tab: Destination Zone <strong>Internet</strong>.</li><li><strong>Application</strong> tab: verify <strong>Any</strong> is selected.</li><li><strong>Service/URL Category</strong> tab: Service <strong>application-default</strong>. Under URL Category, add: <code>adult</code>, <code>command-and-control</code>, <code>extremism</code>, <code>hacking</code>, <code>high-risk</code>, <code>malware</code>, <code>nudity</code>, <code>parked</code>, <code>peer-to-peer</code>, <code>phishing</code>, <code>proxy-avoidance-and-anonymizers</code>, <code>questionable</code>. Type the first few letters of each to find it quickly.</li><li><strong>Actions</strong> tab: Action <strong>Deny</strong>. Verify <strong>Log at Session End</strong> is checked. Click <strong>OK</strong>.</li><li>Select, but do not open, Block-Bad-URLs. Select <strong>Move &gt; Move Top</strong>.</li><li>Click the <strong>Commit</strong> button at the upper right of the web interface.</li><li>In the <em>Commit</em> window, click <strong>Commit</strong>.</li><li>Wait until the commit process is complete. Click <strong>Close</strong>.</li><li>Minimize the firewall’s Firefox window and continue to the next task.</li></ol>
+<div class="callout fix"><p class="c-title">Name drift</p><p>Step 9 calls the rule “block-known-bad-urls.” It’s Block-Bad-URLs.</p></div>
+<div class="callout stuck"><p class="c-title">Move Top puts it above the known-bad address rules</p><p>That’s fine for this lab. What matters is that it’s above Users_to_Internet; below it, the deny would be shadowed.</p></div>
 <p class="shot" id="shot-1"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 1</span> The rulebase with Block-Bad-URLs at the top and its URL categories visible.</span></p>
-<h3 class="task-head"><span class="tn">2.4</span>Test the category deny rule</h3>
-<ol class="steps-list" start="1">
-<li>Open a <strong>private</strong> Firefox window. Browse to <code>http://www.hacker9.com</code>. You get a block page saying web-browsing was blocked.</li>
-<li>Browse to <code>http://www.hidester.com/proxy</code>. Same kind of page. Close Firefox.</li>
-<li>Go to <span class="path" data-path="Monitor &gt; Logs &gt; URL Filtering"></span> and find the blocked entries.</li>
-</ol>
-<div class="callout why"><p class="c-title">"Application web-browsing blocked"?</p><p>The page is the generic application block page, because a Security rule denied the session. The category is why the rule matched. A URL Filtering profile shows a different page that names the category, as you'll see in 2.10.</p></div>
+</div>
+<h3 class="task-head"><span class="tn">2.4</span>Test access to URLs blocked by the Security policy</h3>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>In the client taskbar, right-click the <strong>firewall-a – Mozilla Firefox</strong> application and select <strong>Open a New Private Window</strong>.</li><li>Type <code>http://www.hacker9.com</code>. The browser shows a block page, because category <em>hacking</em> is denied by the rule.</li></ol>
+<div class="callout why"><p class="c-title">“Application web-browsing blocked”?</p><p>The page is the generic application block page, because a Security rule denied the session. The category is why the rule matched. A URL Filtering profile shows a different page that names the category, as you’ll see in 2.10.</p></div>
 <p class="shot" id="shot-2"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 2</span> The block page for hacker9.com produced by the Block-Bad-URLs rule.</span></p>
+<ol class="steps-list" start="3"><li>Type <code>http://www.hidester.com/proxy</code>. The same kind of block page appears.</li><li>Close that Firefox window.</li><li>Re-open the firewall web interface with the <strong>firewall-a – Mozilla Firefox</strong> icon in the task bar.</li></ol>
+</div>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="6"><li>Select <span class="path" data-path="Monitor &gt; Logs &gt; URL Filtering"></span>.</li><li>You see multiple entries that were blocked. (The guide’s step 7 repeats the note about the block page wording; the entries are the point here.)</li><li>Leave the firewall open and continue to the next task.</li></ol>
 <p class="shot" id="shot-3"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 3</span> The URL Filtering log showing the blocked hacker9 and hidester entries.</span></p>
-<h3 class="task-head"><span class="tn">2.5</span>Create a URL Filtering profile</h3>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Objects &gt; Security Profiles &gt; URL Filtering"></span> and click <strong>Add</strong>. Name <code>Corp-URL-Profile</code>, description <code>Company URL Filtering profile</code>.</li>
-<li>Click the small triangle on the <strong>Site Access</strong> column header and choose <strong>Set All Actions &gt; alert</strong>.</li>
-<li>Set <strong>block</strong> for: adult, command-and-control, copyright-infringement, extremism, hacking, high-risk, malware, nudity, parked, peer-to-peer, phishing, proxy-avoidance-and-anonymizers, questionable, unknown. Click OK.</li>
-</ol>
-<div class="callout why"><p class="c-title">alert versus allow</p><p>Both let the user through. <strong>alert</strong> writes a URL Filtering log entry; <strong>allow</strong> doesn't. Setting everything to alert first is what makes the profile a record of all web activity.</p></div>
-<div class="callout tip"><p class="c-title">Two more categories than the rule</p><p>The profile adds copyright-infringement and unknown. The guide's screenshot only shows four categories set; set all fourteen.</p></div>
-<h3 class="task-head"><span class="tn">2.6</span>Add the profile to the group and disable the rule</h3>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Objects &gt; Security Profile Groups"></span>, open <strong>Corp-Profiles-Group</strong>, set <strong>URL Filtering Profile</strong> to <strong>Corp-URL-Profile</strong>, and click OK.</li>
-<li>In <span class="path" data-path="Policies &gt; Security"></span>, select Block-Bad-URLs and click <strong>Disable</strong>. It turns italic.</li>
-<li>Commit.</li>
-</ol>
-<div class="callout fix"><p class="c-title">Name drift</p><p>The guide's heading calls the profile "Corp-URL-Filtering." Select the Corp-URL-Profile you created.</p></div>
+</div>
+<h3 class="task-head"><span class="tn">2.5</span>Block access to inappropriate web content using a Security Profile</h3>
+<p class="task-intro">A URL Filtering profile can do what the rule did, and can also log every site visited, not just blocked ones.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Objects &gt; Security Profiles &gt; URL Filtering"></span>. Click <strong>Add</strong>.</li><li>Name <code>Corp-URL-Profile</code>. Description <code>Company URL Filtering profile.</code></li><li>In the <strong>Site Access</strong> column header, click the small triangle and choose <strong>Set All Actions &gt; alert</strong>.</li><li>On the <strong>Categories</strong> tab, scroll to each of these categories and set its Site Access to <strong>block</strong>: <code>adult</code>, <code>command-and-control</code>, <code>copyright-infringement</code>, <code>extremism</code>, <code>hacking</code>, <code>high-risk</code>, <code>malware</code>, <code>nudity</code>, <code>parked</code>, <code>peer-to-peer</code>, <code>phishing</code>, <code>proxy-avoidance-and-anonymizers</code>, <code>questionable</code>, <code>unknown</code>. Click <strong>OK</strong>.</li><li>Leave the firewall open and continue to the next task.</li></ol>
+<div class="callout why"><p class="c-title">alert versus allow</p><p>Both let the user through. <strong>alert</strong> writes a URL Filtering log entry; <strong>allow</strong> doesn’t. Setting everything to alert first is what makes the profile a record of all web activity.</p></div>
+<div class="callout tip"><p class="c-title">Two more categories than the rule</p><p>The profile adds copyright-infringement and unknown. The guide’s screenshot only shows four categories set; set all fourteen.</p></div>
+</div>
+<h3 class="task-head"><span class="tn">2.6</span>Add the URL profile to the Corp-Profiles-Group</h3>
+<p class="task-intro">You add the profile to the group and disable the category rule so it doesn’t get in the profile’s way.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Objects &gt; Security Profile Groups"></span>. Click <strong>Corp-Profiles-Group</strong> to edit it.</li><li>In the <strong>URL Filtering Profile</strong> drop-down, select <strong>Corp-URL-Profile</strong>. Click <strong>OK</strong>.</li></ol>
+<div class="callout fix"><p class="c-title">Name drift</p><p>The guide’s introduction calls the profile “Corp-URL-Filtering.” Select the Corp-URL-Profile you created.</p></div>
 <p class="shot" id="shot-4"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 4</span> Corp-Profiles-Group showing Corp-URL-Profile in the URL Filtering slot.</span></p>
+<ol class="steps-list" start="3"><li>Navigate to <span class="path" data-path="Policies &gt; Security"></span>. Highlight Block-Bad-URLs without opening it, and click <strong>Disable</strong>.</li><li>The entry changes to italics to show it is disabled.</li><li>Click the <strong>Commit</strong> button at the upper right of the web interface.</li><li>In the <em>Commit</em> window, click <strong>Commit</strong>.</li><li>Wait until the commit process is complete. Click <strong>Close</strong>.</li><li>Minimize the firewall’s Firefox window and continue to the next task.</li></ol>
+</div>
 <h3 class="task-head"><span class="tn">2.7</span>Create a custom URL category</h3>
-<ol class="steps-list" start="1">
-<li>In a private window, open <code>http://www.nbcnews.com</code>. It loads. Close Firefox.</li>
-<li>Go to <span class="path" data-path="Objects &gt; Custom Objects &gt; URL Category"></span> and click <strong>Add</strong>. Cancel the trailing-slash notice.</li>
-<li>Name <code>Block-Per-Company-Policy</code>, description <code>URLs that are blocked by company policy.</code>, Type <strong>URL List</strong>. Add <code>*.nbcnews.com</code> and <code>*.theguardian.com</code>. Click OK.</li>
-<li>Open <strong>Block-Bad-URLs</strong>, and on <strong>Service/URL Category</strong> add <strong>Block-Per-Company-Policy</strong>. Click OK.</li>
-<li>Select Block-Bad-URLs and click <strong>Enable</strong>. Commit.</li>
-</ol>
+<p class="task-intro">Block a few specific sites without blocking their whole category.</p>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>In the client taskbar, right-click the <strong>firewall-a – Mozilla Firefox</strong> application and select <strong>Open a New Private Window</strong>.</li><li>Type <code>http://www.nbcnews.com</code>. A valid page displays.</li><li>Close that Firefox window.</li><li>Re-open the firewall web interface with the <strong>firewall-a – Mozilla Firefox</strong> icon in the task bar.</li></ol>
+</div>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="5"><li>Select <span class="path" data-path="Objects &gt; Custom Objects &gt; URL Category"></span>. Click <strong>Add</strong>.</li><li>At the message about appending a trailing slash to entries, click <strong>Cancel</strong>.</li><li>In the <em>Custom URL Category</em> window: Name <code>Block-Per-Company-Policy</code>; Description <code>URLs that are blocked by company policy.</code>; Type <strong>URL List</strong>; Sites: add <code>*.nbcnews.com</code> and <code>*.theguardian.com</code>. Click <strong>OK</strong>.</li><li>Confirm Block-Per-Company-Policy appears in the URL Category list.</li><li>Add the custom category to a deny rule: select <span class="path" data-path="Policies &gt; Security"></span> and click <strong>Block-Bad-URLs</strong> to edit it.</li><li>On the <strong>Service/URL Category</strong> tab, click <strong>Add</strong> and add <strong>Block-Per-Company-Policy</strong>. Click <strong>OK</strong>.</li><li>Highlight Block-Bad-URLs without opening it and click <strong>Enable</strong> at the bottom.</li><li>Click the <strong>Commit</strong> button at the upper right of the web interface.</li><li>In the <em>Commit</em> window, click <strong>Commit</strong>.</li><li>Wait until the commit process is complete. Click <strong>Close</strong>.</li><li>Minimize the firewall’s Firefox window and continue to the next task.</li></ol>
 <div class="callout tip"><p class="c-title">Wildcard syntax</p><p><code>*.nbcnews.com</code> matches www.nbcnews.com and other subdomains. Enter the entries exactly as shown.</p></div>
-<h3 class="task-head"><span class="tn">2.8</span>Test the custom category in the Security rule</h3>
-<ol class="steps-list" start="1">
-<li>In a private window, browse to <code>www.nbcnews.com</code> and <code>www.theguardian.com</code>. Both show the application block page. Close Firefox.</li>
-<li>In <span class="path" data-path="Monitor &gt; Logs &gt; URL Filtering"></span>, apply the filter below.</li>
-</ol>
+</div>
+<h3 class="task-head"><span class="tn">2.8</span>Test access to custom URLs blocked by the Security policy</h3>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>In the client taskbar, right-click the <strong>firewall-a – Mozilla Firefox</strong> application and select <strong>Open a New Private Window</strong>.</li><li>Type <code>www.nbcnews.com</code>. You get an <strong>Application Blocked</strong> page: the custom category in the Security rule blocks it.</li><li>Type <code>www.theguardian.com</code>. The Application Blocked page appears again.</li><li>Close that Firefox window.</li><li>Re-open the firewall web interface with the <strong>firewall-a – Mozilla Firefox</strong> icon in the task bar.</li></ol>
+</div>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="6"><li>Navigate to <span class="path" data-path="Monitor &gt; Logs &gt; URL Filtering"></span>. Create and apply the filter below. You see multiple blocked sessions to www.nbcnews.com and www.theguardian.com.</li></ol>
 <pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( action eq block-url )</span></pre>
 <p class="shot" id="shot-5"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 5</span> The URL Filtering log showing nbcnews and theguardian blocked.</span></p>
-<h3 class="task-head"><span class="tn">2.9</span>Add the custom category to the profile</h3>
-<ol class="steps-list" start="1">
-<li>Open <strong>Corp-URL-Profile</strong>. Under <strong>Custom URL Categories</strong>, set Block-Per-Company-Policy's Site Access to <strong>block</strong>. Click OK.</li>
-<li>Select Block-Bad-URLs and click <strong>Disable</strong>. Commit.</li>
-</ol>
-<h3 class="task-head"><span class="tn">2.10</span>Test the custom category in the profile</h3>
-<ol class="steps-list" start="1">
-<li>In a private window, browse to <code>www.nbcnews.com</code> and <code>www.theguardian.com</code>. This time you get <strong>Web Page Blocked</strong>, the URL Filtering block page, which names the category.</li>
-<li>Close Firefox.</li>
-</ol>
+<ol class="steps-list" start="7"><li>Leave the firewall open and continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.9</span>Add custom URL category to URL Filtering profile</h3>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Objects &gt; Security Profiles &gt; URL Filtering"></span>. Click <strong>Corp-URL-Profile</strong>.</li><li>Under <strong>Custom URL Categories</strong>, set the Site Access for <strong>Block-Per-Company-Policy</strong> to <strong>block</strong>. Click <strong>OK</strong>.</li><li>Navigate to <span class="path" data-path="Policies &gt; Security"></span>. Highlight Block-Bad-URLs without opening it. Click <strong>Disable</strong> at the bottom.</li><li>Click the <strong>Commit</strong> button at the upper right of the web interface.</li><li>In the <em>Commit</em> window, click <strong>Commit</strong>.</li><li>Wait until the commit process is complete. Click <strong>Close</strong>.</li><li>Minimize the firewall’s Firefox window and continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.10</span>Test access to custom URLs blocked by the URL Filtering profile</h3>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>In the client taskbar, right-click the <strong>firewall-a – Mozilla Firefox</strong> application and select <strong>Open a New Private Window</strong>.</li><li>Type <code>www.nbcnews.com</code>. This time you get a <strong>Web Page Blocked</strong> page: the URL Filtering profile, not the rule, blocked it.</li></ol>
 <p class="shot" id="shot-6"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 6</span> The Web Page Blocked page from the URL Filtering profile, showing the category.</span></p>
-<h3 class="task-head"><span class="tn">2.11</span>Create an EDL of malicious URLs</h3>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Objects &gt; External Dynamic Lists"></span> and click <strong>Add</strong>. Cancel the notice.</li>
-<li>Name <code>malicious-urls-edl</code>, Type <strong>URL List</strong>, description <code>List of malicious URLs maintained on Extranet server</code>, Source <code>http://192.168.50.80/malicious-urls.txt</code>, Check for updates <strong>Every Five Minutes</strong>. Click OK.</li>
-<li>Reopen it, cancel the notice, and click <strong>Test Source URL</strong>. Close, then OK.</li>
-</ol>
-<div class="callout tip"><p class="c-title">What's on the list</p><p>One test URL: www.popurls.com.</p></div>
-<h3 class="task-head"><span class="tn">2.12</span>Block the EDL with the Security rule</h3>
-<ol class="steps-list" start="1">
-<li>Open <strong>Block-Bad-URLs</strong>. On <strong>Service/URL Category</strong>, add <strong>malicious-urls-edl</strong>. Click OK.</li>
-<li>Select the rule and click <strong>Enable</strong>. Commit.</li>
-</ol>
-<h3 class="task-head"><span class="tn">2.13</span>Test the EDL</h3>
-<ol class="steps-list" start="1">
-<li>In a private window, browse to <code>www.popurls.com</code>. You get the application block page. Close Firefox.</li>
-<li>In the URL Filtering log, clear filters and apply <code>( action eq block-url )</code>. You see the popurls entries.</li>
-</ol>
-<div class="callout why"><p class="c-title">Why an EDL beats editing the rule</p><p>The firewall rereads the list every five minutes. Add a URL to the file on the server and it's blocked soon after, with no commit.</p></div>
+<ol class="steps-list" start="3"><li>Type <code>www.theguardian.com</code>. Web Page Blocked again.</li><li>Close that Firefox window.</li><li>Re-open the firewall web interface with the <strong>firewall-a – Mozilla Firefox</strong> icon in the task bar. Continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.11</span>Create an External Dynamic List to block malicious URL access</h3>
+<p class="task-intro">Update the list on a web server and the firewall picks up the change without a commit.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Objects &gt; External Dynamic Lists"></span>. Click <strong>Add</strong>.</li><li>At the notice about a trailing slash for domain entries, read it and click <strong>Cancel</strong>.</li><li>Configure: Name <code>malicious-urls-edl</code>; Type <strong>URL List</strong>; Description <code>List of malicious URLs maintained on Extranet server</code>; Source <code>http://192.168.50.80/malicious-urls.txt</code>; Check for updates <strong>Every Five Minutes</strong>. Click <strong>OK</strong>.</li><li>Click <strong>malicious-urls-edl</strong>.</li><li>At the trailing-slash notice, click <strong>Cancel</strong>.</li><li>Click <strong>Test Source URL</strong>.</li><li>A message says the source URL is accessible. Click <strong>Close</strong>.</li><li>Click <strong>OK</strong> to close the External Dynamic Lists window.</li><li>Leave the firewall open and continue to the next task.</li></ol>
+<div class="callout tip"><p class="c-title">What’s on the list</p><p>One test URL: www.popurls.com.</p></div>
+</div>
+<h3 class="task-head"><span class="tn">2.12</span>Block access to the URL list with a Security policy rule</h3>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Policies &gt; Security"></span> and click <strong>Block-Bad-URLs</strong>.</li><li>On the <strong>Service/URL Category</strong> tab, add <strong>malicious-urls-edl</strong> to the URL Category list. Click <strong>OK</strong>. This EDL blocks www.popurls.com.</li><li>With Block-Bad-URLs highlighted, click <strong>Enable</strong> at the bottom.</li><li>Click the <strong>Commit</strong> button at the upper right of the web interface.</li><li>In the <em>Commit</em> window, click <strong>Commit</strong>.</li><li>Wait until the commit process is complete. Click <strong>Close</strong>.</li><li>Minimize the firewall’s Firefox window and continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.13</span>Test access to a URL in the EDL added to the Security policy rule</h3>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>In the client taskbar, right-click the <strong>firewall-a – Mozilla Firefox</strong> application and select <strong>Open a New Private Window</strong>.</li><li>Type <code>www.popurls.com</code>. You get an <strong>Application Blocked</strong> page: the EDL in the Security rule blocks it.</li><li>Close that Firefox window.</li><li>Re-open the firewall web interface with the <strong>firewall-a – Mozilla Firefox</strong> icon in the task bar.</li></ol>
+</div>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="5"><li>Navigate to <span class="path" data-path="Monitor &gt; Logs &gt; URL Filtering"></span> and clear any filters.</li><li>Create and apply the filter below. You see multiple blocked sessions to www.popurls.com.</li></ol>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( action eq block-url )</span></pre>
+<div class="callout why"><p class="c-title">Why an EDL beats editing the rule</p><p>The firewall rereads the list every five minutes. Add a URL to the file on the server and it’s blocked soon after, with no commit.</p></div>
 <p class="shot" id="shot-7"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 7</span> The URL Filtering log showing www.popurls.com blocked.</span></p>
+<ol class="steps-list" start="7"><li>The lab is now complete; you may end your reservation.</li></ol>
+</div>
 </section>
 
 <section class="unit" id="s-reference" data-section="reference" data-label="Reference" data-part="Understand">

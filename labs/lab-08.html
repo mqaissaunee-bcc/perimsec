@@ -34,6 +34,34 @@ html[data-present="on"] .pm-dock{position:fixed;left:0;right:0;bottom:0;z-index:
 .pm-dock .pm-where{flex:1 1 auto;text-align:center;min-width:0;font-size:.78rem;color:var(--ink-2)}
 .pm-dock .pm-where b{color:var(--ink);display:block;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media print{.pm-dock,.pm-toggle{display:none!important}}
+</style><style id="mb-css">
+/* Machine bands: which VM / session each run of steps happens on. Page-local; uses site.css colour tokens. */
+.mrun{--mb:var(--accent);--mb-soft:var(--accent-soft);border-left:4px solid var(--mb);margin:1rem 0 1.2rem;padding:0 0 .2rem .9rem}
+.mrun.mr-client{--mb:var(--ok);--mb-soft:var(--ok-soft)}
+.mrun.mr-webui{--mb:var(--accent);--mb-soft:var(--accent-soft)}
+.mrun.mr-fwcli{--mb:var(--warn);--mb-soft:var(--warn-soft)}
+.mrun.mr-extranet{--mb:var(--focus);--mb-soft:var(--surface-2)}
+.mband{display:flex;flex-wrap:wrap;align-items:baseline;gap:.2rem .6rem;margin:0 0 .6rem -.9rem;padding:.4rem .8rem;
+  background:var(--mb-soft);border-radius:0 var(--radius-m) var(--radius-m) 0;font-weight:700;font-size:var(--step--1)}
+.mband .mb-ic{font-size:1.05rem}
+.mband .mb-sub{font-weight:400;color:var(--ink-2);font-size:.85em}
+.mlabel{display:inline-block;margin-right:.35rem;padding:0 .45rem;border-radius:var(--radius-s);font-weight:700;font-size:.85em;
+  border-left:3px solid var(--accent);background:var(--surface-2)}
+.mlabel.ml-client{border-left-color:var(--ok)}.mlabel.ml-webui{border-left-color:var(--accent)}
+.mlabel.ml-fwcli{border-left-color:var(--warn)}.mlabel.ml-extranet{border-left-color:var(--focus)}
+.mrun .shot{margin-left:.6rem}
+.topo{width:100%;max-width:760px;height:auto;display:block;margin:.4rem 0 .3rem}
+.topo .bx{fill:var(--surface);stroke:var(--rule);stroke-width:1.5}
+.topo .fw{fill:var(--accent-soft);stroke:var(--accent);stroke-width:2}
+.topo .ln{stroke:var(--ink-2);stroke-width:2;fill:none}
+.topo .ln.mg{stroke-dasharray:5 4}
+.topo .dim{opacity:.45}
+.topo text{fill:var(--ink);font-family:var(--font-body);font-size:13px}
+.topo .h{font-weight:700;font-size:14px}
+.topo .m{font-family:var(--font-mono);font-size:12px}
+.topo .s{fill:var(--ink-2);font-size:12px}
+.diverge{border-left-color:var(--warn)}
+@media print{.mrun{border-left-color:#666}.mband{background:#eee}}
 </style></head>
 <body data-root=".." data-lab="8" data-page="labs/index.html">
 <a class="skip-link" href="#main">Skip to main content</a>
@@ -67,18 +95,60 @@ html[data-present="on"] .pm-dock{position:fixed;left:0;right:0;bottom:0;z-index:
 <section class="unit" id="s-setup" data-section="setup" data-label="Before you begin" data-part="Prepare">
 <header><span class="sec-n">02</span><h2>Before you begin</h2></header>
 <p>You'll use the web interface, <strong>Remmina</strong> (Server-Extranet runs a 6-minute attack script), Firefox, and the client terminal for <code>dig</code>.</p>
+<h4>Lab Settings (from the NDG guide)</h4>
 <div class="table-wrap"><table>
-<caption class="visually-hidden">Hosts in the lab network</caption>
-<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th><th scope="col">Sign-in</th></tr></thead>
+<caption class="visually-hidden">Lab Settings: virtual machines, addresses, and sign-ins</caption>
+<thead><tr><th scope="col">Virtual Machine</th><th scope="col">IP Address</th><th scope="col">Account</th><th scope="col">Password</th></tr></thead>
 <tbody>
-<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td><td><code>lab-user / Pal0Alt0!</code></td></tr>
-<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td><td><code>admin / Pal0Alt0!</code></td></tr>
-<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td><td><code>root / Pal0Alt0</code></td></tr>
-<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td><td>—</td></tr>
-<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td><td>—</td></tr>
-<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td><td>—</td></tr>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td><code>lab-user</code></td><td><code>Pal0Alt0!</code></td></tr>
+<tr><td>DMZ</td><td><code>192.168.50.10</code></td><td><code>root</code></td><td><code>Pal0Alt0!</code></td></tr>
+<tr><td>Firewall</td><td><code>192.168.1.254</code></td><td><code>admin</code></td><td><code>Pal0Alt0!</code></td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td><code>root</code></td><td><code>Pal0Alt0</code></td></tr>
 </tbody></table></div>
-<p class="box-note">Sign-in credentials are shown above (the fixed NETLAB+ pod logins, case-sensitive). </p>
+<p class="box-note">Passwords are case-sensitive and use zeros, not the letter O. The vRouter password has no exclamation point.</p>
+<p class="box-note"><strong>Currency note:</strong> these labs run PAN-OS 11.0, which reached end-of-life on November 17, 2024 and no longer receives security fixes. Everything here still works in the lab; on a real firewall you would run a supported release (11.1, 11.2, or 12.1), where most screens are the same.</p>
+<p class="box-note">This lab also opens an SSH session to <strong>Server-Extranet</strong> from Remmina. Remmina is pre-configured with that login (user <code>paloalto42</code>), so you don’t type a password; the guide’s Lab Settings table doesn’t list it.</p><h4>Pod topology</h4>
+<svg class="topo" viewBox="0 0 760 360" role="img" aria-labelledby="topo-t topo-d">
+<title id="topo-t">Pod topology</title>
+<desc id="topo-d">The firewall firewall-a sits between the Internet zone (ethernet1/1, 203.0.113.20/24, next hop 203.0.113.1), the Users_Net zone (ethernet1/2, 192.168.1.1/24, with the Client at 192.168.1.20, the vRouter at 192.168.1.10, and the firewall management port at 192.168.1.254), and the Extranet zone (ethernet1/3, 192.168.50.1/24, servers including web 192.168.50.80, DNS 192.168.50.53 and DMZ 192.168.50.10) plus a virtual wire on ethernet1/4 and 1/5 for the Acquisition zone.</desc>
+<g><rect class="bx" x="250" y="8" width="260" height="74" rx="8"/>
+<text class="h" x="266" y="32">Internet zone</text>
+<text class="m" x="266" y="54">ISP router 203.0.113.1</text>
+<text class="s" x="266" y="72">8.8.8.8 and real websites beyond</text>
+<path class="ln" d="M380 82V128"/><text class="m" x="388" y="110">ethernet1/1 203.0.113.20/24</text></g>
+<rect class="fw" x="20" y="128" width="720" height="56" rx="8"/>
+<text class="h" x="36" y="152">firewall-a (PA-VM)</text>
+<text class="m" x="36" y="172">MGT 192.168.1.254 · default gateway 192.168.1.10 (vRouter)</text>
+<path class="ln mg" d="M70 184V240"/>
+<g><path class="ln" d="M190 184V240"/><text class="m" x="198" y="224">e1/2 192.168.1.1</text></g>
+<rect class="bx" x="20" y="240" width="236" height="112" rx="8"/>
+<text class="h" x="34" y="264">Users_Net zone</text>
+<text class="m" x="34" y="284">192.168.1.0/24</text>
+<text class="m" x="34" y="306">Client 192.168.1.20</text>
+<text class="m" x="34" y="326">vRouter 192.168.1.10</text>
+<text class="s" x="34" y="344">MGT port is on this subnet</text>
+<g><rect class="bx" x="272" y="240" width="238" height="112" rx="8"/>
+<text class="h" x="286" y="264">Extranet zone</text>
+<text class="m" x="286" y="284">192.168.50.0/24</text>
+<text class="m" x="286" y="306">Web .80 · DNS .53 · DMZ .10</text>
+<text class="s" x="286" y="326">Other lab servers on .50.x</text>
+<path class="ln" d="M390 184V240"/><text class="m" x="398" y="224">e1/3 192.168.50.1</text></g>
+<g><rect class="bx" x="526" y="240" width="214" height="112" rx="8"/><text class="h" x="540" y="264">Acquisition zone (vWire)</text><text class="m" x="540" y="288">ethernet1/4 ⇄ ethernet1/5</text><text class="s" x="540" y="310">Layer 2 pass-through, no IP</text><path class="ln" d="M632 184V240"/></g>
+</svg>
+<p class="box-note">Data interfaces, VR-1 and zones as built in Lab 4 and loaded by this lab’s snapshot. This lab’s snapshot also contains the Acquisition virtual wire on ethernet1/4 and 1/5.</p>
+<h4>Addresses you’ll use</h4>
+<div class="table-wrap"><table>
+<caption class="visually-hidden">Addresses in the lab network</caption>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td></tr>
+</tbody></table></div>
+
 <h4>What's already in the baseline</h4>
 <p>All earlier work, including Lab 11's Acquisition rules, plus an <strong>Extranet_to_User_Net</strong> rule. Six rules allow traffic; none has a Security Profile yet.</p>
 <h4>The test files are safe</h4>
@@ -87,99 +157,121 @@ html[data-present="on"] .pm-dock{position:fixed;left:0;right:0;bottom:0;z-index:
 
 <section class="unit" id="s-walkthrough" data-section="walkthrough" data-label="Walkthrough" data-part="Do the lab">
 <header><span class="sec-n">03</span><h2>Walkthrough of the detailed steps</h2></header>
-<h3 class="task-head"><span class="tn">2.1</span>Load the lab configuration</h3>
+<div class="callout tip"><p class="c-title">Reading the machine bands</p><p>Each coloured band says where the steps under it happen, and it stays in force until the next band:
+<span class="mlabel ml-client">🖥️ Client</span> <span class="mlabel ml-webui">🧱 Firewall web interface</span> <span class="mlabel ml-fwcli">⌨️ Firewall CLI</span> <span class="mlabel ml-extranet">🗄️ Server-Extranet</span>.
+When a single step switches machines, it carries an inline label instead. Step numbers match the guide’s Detailed Lab Steps exactly.</p></div>
+<h3 class="task-head"><span class="tn">2.1</span>Apply a baseline configuration to the firewall</h3>
 <p class="task-intro">Every lab starts from a known baseline, so your firewall matches the guide no matter what you did last time.</p>
-<ol class="steps-list" start="1"><li>On the client desktop, log in as <code>lab-user</code>, open Firefox, and browse to <code>https://192.168.1.254</code>. Log in as <code>admin</code> with the password from Lab Settings. If the login page does not appear, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li>Go to <span class="path" data-path="Device > Setup > Operations"></span> and click <strong>Load named configuration snapshot</strong>. Choose <code>edu-210-11.0a-08.xml</code> and click OK, then Close.</li><li>Open <strong>Tasks</strong> (lower right) and confirm the Load task shows completed.</li><li>Click <strong>Commit</strong> (upper right), then <strong>Commit</strong> in the dialog, and wait for it to finish.</li></ol>
-<div class="callout stuck"><p class="c-title">Loading is not committing</p><p>A loaded snapshot replaces only the candidate configuration. Until you commit, the firewall is still running whatever was there before, and nothing in the lab will match the guide.</p></div>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>Click the <strong>Client</strong> tab in NETLAB+ to access the Client PC.</li><li>On the <em>Zorin</em> desktop, click <strong>lab-user</strong>.</li><li>For the lab-user password, enter <code>Pal0Alt0!</code> and press <strong>Enter</strong>.</li><li>Double-click the <strong>Firefox Web Browser</strong> icon on the Desktop.</li><li>In the Firefox address field, type <code>https://192.168.1.254</code> and press <strong>Enter</strong>.</li></ol>
+</div>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="6"><li>Log in to the firewall web interface as username <code>admin</code>, password <code>Pal0Alt0!</code>. If the login page does not appear, wait an additional 1 to 3 minutes for the firewall to initialize and refresh the page.</li><li>Navigate to <span class="path" data-path="Device &gt; Setup &gt; Operations"></span> and click <strong>Load named configuration snapshot</strong> in the <em>Configuration Management</em> section.</li><li>In the <em>Load Named Configuration</em> window, select <code>edu-210-11.0a-08.xml</code> from the <strong>Name</strong> drop-down and click <strong>OK</strong>.</li><li>The <em>Loading Configuration</em> window says the configuration is being loaded and to check the Task Manager. Click <strong>Close</strong>.</li><li>Click the <strong>Tasks</strong> icon at the bottom-right of the web interface.</li><li>In <em>Task Manager – All Tasks</em>, verify the <strong>Load</strong> task shows <strong>Completed</strong>. Click <strong>Close</strong>.</li><li>Click the <strong>Commit</strong> link at the top-right of the web interface.</li><li>In the <em>Commit</em> window, click <strong>Commit</strong>.</li><li>When the commit operation completes, click <strong>Close</strong>.</li><li>Minimize the Palo Alto Networks Firewall and continue to the next task.</li></ol>
+<div class="callout stuck"><p class="c-title">Loading is not committing</p><p>A loaded snapshot replaces only the candidate configuration. Until you commit (steps 12 to 14), the firewall is still running whatever was there before, and nothing in the lab will match the guide.</p></div>
+</div>
 <h3 class="task-head"><span class="tn">2.2</span>Generate traffic without Security Profiles</h3>
-<ol class="steps-list" start="1">
-<li>Open <strong>Remmina</strong>, double-click <strong>Server-Extranet</strong>, and start the attack script. Let it run uninterrupted (about 6 minutes) and minimize the window.</li>
-</ol>
-<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">paloalto42@extranet1:~$</span> <span class="cmd">cd pcaps92019/attack.pcaps/</span>
-<span class="prompt">paloalto42@extranet1:~$</span> <span class="cmd">./malwareattacks.sh</span></pre>
-<ol class="steps-list" start="2">
-<li>In a new Firefox window, open <code>http://192.168.50.80/badtarfile.tar</code> and <strong>Save</strong> it. The download succeeds.</li>
-<li>In a new tab, open <code>http://192.168.50.80/companyssns.txt</code>. The file displays. Close Firefox.</li>
-<li>In the client terminal, look up a domain you'll later sinkhole. You get a normal public address.</li>
-</ol>
+<p class="task-intro">With no Security Profiles yet, the firewall allows threats, a tar file, a file full of SSNs, and lookups of domains you’ll later sinkhole. Watch it all get through.</p>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>On the client desktop, open the <strong>Remmina</strong> application.</li><li>Double-click <strong>Server-Extranet</strong>. It opens an SSH session to the server and logs you in automatically.</li></ol>
+</div>
+<div class="mrun mr-extranet"><p class="mband"><span class="mb-ic" aria-hidden="true">🗄️</span><span>On Server-Extranet</span><span class="mb-sub">SSH to the extranet server from Remmina on the Client. Prompt: paloalto42@extranet1:~$</span></p>
+<ol class="steps-list" start="3"><li>Change the working directory.</li></ol>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">paloalto42@extranet1:~$</span> <span class="cmd">cd pcaps92019/attack.pcaps/</span></pre>
+<ol class="steps-list" start="4"><li>Run the simulated attacks. The prompt now shows the attack.pcaps folder. The script takes about 6 minutes; let it run uninterrupted.</li></ol>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">paloalto42@extranet1:~/pcaps92019/attack.pcaps$</span> <span class="cmd">./malwareattacks.sh</span></pre>
+<div class="callout tip"><p class="c-title">What the script is</p><p>It replays recorded attack traffic (packet captures) from the extranet server so the firewall has threats to see. It’s a lab traffic generator, not live malware.</p></div>
+</div>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="5"><li>Minimize the Remmina connection window.</li><li>On the client desktop, open another <strong>Firefox</strong> window.</li><li>Type <code>http://192.168.50.80/badtarfile.tar</code> and press Enter. The download should succeed; this is a file type you will block later.</li><li>When prompted, select <strong>Save</strong>.</li><li>Open a new tab. Type <code>http://192.168.50.80/companyssns.txt</code> and press Enter. The browser displays fictitious names and social security numbers.</li><li>Close that Firefox window.</li><li>On the client desktop, open <strong>Terminal Emulator</strong>.</li><li>Generate a DNS query with <code>dig</code>. It returns a public IP address, meaning the domain is reachable (yours may differ from the screenshot).</li></ol>
 <pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">lab-user@client-a:~/Desktop/Lab-Files$</span> <span class="cmd">dig @8.8.8.8 www.quora.com</span></pre>
+<div class="callout fix"><p class="c-title">The guide’s prompt has backslashes</p><p>The guide prints the prompt as <code>lab-user@client-a:~\Desktop\Lab-Files$</code>. The client is Linux, so the path uses forward slashes. The command itself is the same.</p></div>
 <p class="shot" id="shot-1"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 1</span> The client terminal showing dig returning a real IP address for www.quora.com.</span></p>
-<div class="callout tip"><p class="c-title">Leave the terminal open</p><p>You'll repeat the same dig at the end.</p></div>
-<h3 class="task-head"><span class="tn">2.3</span>Create an antivirus profile</h3>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Objects &gt; Security Profiles &gt; Antivirus"></span>, check <strong>default</strong>, and click <strong>Clone</strong>, then OK.</li>
-<li>Open <strong>default-1</strong>, rename it <code>Corp-AV</code>, description <code>Standard antivirus profile for all security policy rules</code>. Click OK.</li>
-</ol>
-<div class="callout why"><p class="c-title">Why clone?</p><p>Predefined profiles can't be edited. Cloning gives you a copy you can tune later without starting from scratch.</p></div>
-<h3 class="task-head"><span class="tn">2.4</span>Create a vulnerability protection profile</h3>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Objects &gt; Security Profiles &gt; Vulnerability Protection"></span>, check <strong>strict</strong>, Clone, OK.</li>
-<li>Open <strong>strict-1</strong>, rename it <code>Corp-Vuln</code>, description <code>Standard vulnerability profile for all security policy rules</code>.</li>
-</ol>
-<h3 class="task-head"><span class="tn">2.5</span>Create a file blocking profile</h3>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Objects &gt; Security Profiles &gt; File Blocking"></span>, check <strong>strict file blocking</strong>, Clone, OK.</li>
-<li>Open <strong>strict file blocking-1</strong>, rename it <code>Corp-FileBlock</code>, description <code>Standard file blocking profile for all security policy rules</code>.</li>
-</ol>
-<h3 class="task-head"><span class="tn">2.6</span>Create a data filtering profile</h3>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Objects &gt; Custom Objects &gt; Data Patterns"></span> and click <strong>Add</strong>. Name <code>US-SSNs</code>, description <code>US Social Security Numbers</code>, Pattern Type <strong>Predefined Pattern</strong>. Add <strong>Social Security Numbers</strong> and <strong>Social Security Numbers (without dash separator)</strong>. Click OK.</li>
-<li>Go to <span class="path" data-path="Objects &gt; Security Profiles &gt; Data Filtering"></span> and click <strong>Add</strong>. Name <code>Corp-DataFilter</code>, description <code>Standard data filtering profile for all security rules</code>.</li>
-<li>Add the <strong>US-SSNs</strong> pattern. Set <strong>Alert Threshold</strong> to <code>1</code>, <strong>Block Threshold</strong> to <code>3</code>, and <strong>Log Severity</strong> to <strong>critical</strong>. Click OK.</li>
-</ol>
-<div class="callout fix"><p class="c-title">"More than three" means three or more</p><p>The guide says the profile blocks files with more than three SSNs, but a block threshold of 3 blocks at three matches. One or two matches only alert.</p></div>
-<h3 class="task-head"><span class="tn">2.7</span>Create an anti-spyware profile</h3>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Objects &gt; Security Profiles &gt; Anti-Spyware"></span>, check <strong>strict</strong>, Clone, OK.</li>
-<li>Open <strong>strict-1</strong>, rename it <code>Corp-AS</code>, description <code>Standard anti-spyware profile for all security policy rules</code>.</li>
-</ol>
-<h3 class="task-head"><span class="tn">2.8</span>Create an external dynamic list of malicious domains</h3>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Objects &gt; External Dynamic Lists"></span> and click <strong>Add</strong>. Read the notice about domain tokens and click <strong>Cancel</strong>.</li>
-<li>Name <code>malicious-domains-edl</code>, Type <strong>Domain List</strong>, description <code>Custom list of bad domains maintained on Extranet server</code>, Source <code>http://192.168.50.80/malicious-domains.txt</code>. Check <strong>Automatically expand to include subdomains</strong>. Check for updates <strong>Every Five Minutes</strong>. Click OK.</li>
-<li>Open the list again, cancel the notice, and click <strong>Test Source URL</strong>. It should report the URL is accessible.</li>
-</ol>
-<div class="callout tip"><p class="c-title">What's on the list</p><p>quora.com and producthunt.com, chosen for the lab. They aren't actually malicious.</p></div>
+<ol class="steps-list" start="13"><li>Leave the Terminal Emulator open; you use it again at the end.</li><li>Re-open the firewall web interface with the <strong>firewall-a – Mozilla Firefox</strong> icon in the task bar.</li><li>Leave the firewall open and continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.3</span>Create a corporate antivirus profile</h3>
+<p class="task-intro">Uses Palo Alto Networks signatures to block known viruses.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Objects &gt; Security Profiles &gt; Antivirus"></span>. Check the box next to the <strong>default</strong> entry.</li><li>At the bottom of the window, click <strong>Clone</strong>.</li><li>In the <em>Clone</em> window, leave the settings unchanged. Click <strong>OK</strong>.</li><li>A new entry <strong>default-1</strong> appears. Click it to edit it.</li><li>In the <em>Antivirus Profile</em> window, enter Name <code>Corp-AV</code> and Description <code>Standard antivirus profile for all security policy rules.</code> Click <strong>OK</strong>.</li><li>Leave the firewall open and continue to the next task.</li></ol>
+<div class="callout why"><p class="c-title">Why clone?</p><p>Predefined profiles can’t be edited. Cloning gives you a copy you can tune later without starting from scratch.</p></div>
+</div>
+<h3 class="task-head"><span class="tn">2.4</span>Create a corporate vulnerability security profile</h3>
+<p class="task-intro">Palo Alto Networks supplies two to start from, strict and default. You clone strict.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Objects &gt; Security Profiles &gt; Vulnerability Protection"></span>. Check the box beside <strong>strict</strong>. Click <strong>Clone</strong>.</li><li>In the <em>Clone</em> window, click <strong>OK</strong>.</li><li>Click the entry <strong>strict-1</strong> to open it.</li><li>Change the Name to <code>Corp-Vuln</code>. For Description, enter <code>Standard vulnerability profile for all security policy rules.</code> Click <strong>OK</strong>.</li><li>Leave the firewall open and continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.5</span>Create a corporate file blocking profile</h3>
+<p class="task-intro">Detect, report, and block potentially harmful file types. You clone <em>strict file blocking</em>.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Objects &gt; Security Profiles &gt; File Blocking"></span>. Check the entry <strong>strict file blocking</strong>. Click <strong>Clone</strong>.</li><li>In the <em>Clone</em> window, click <strong>OK</strong>.</li><li>Click the entry <strong>strict file blocking-1</strong> to open it.</li><li>Change the Name to <code>Corp-FileBlock</code>. For Description, enter <code>Standard file blocking profile for all security policy rules.</code> Click <strong>OK</strong>.</li><li>Leave the firewall open and continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.6</span>Create a corporate data filtering profile</h3>
+<p class="task-intro">Data filtering profiles are built on data patterns, so you define the SSN pattern first.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Objects &gt; Custom Objects &gt; Data Patterns"></span>. Click <strong>Add</strong>.</li><li>In the <em>Data Patterns</em> window, enter Name <code>US-SSNs</code> and Description <code>US Social Security Numbers</code>. Change <strong>Pattern Type</strong> to <strong>Predefined Pattern</strong>. Click <strong>Add</strong> and select <strong>Social Security Numbers</strong>. Click <strong>Add</strong> again and select <strong>Social Security Numbers (without dash separator)</strong>. Click <strong>OK</strong>.</li><li>Select <span class="path" data-path="Objects &gt; Security Profiles &gt; Data Filtering"></span>. Click <strong>Add</strong>.</li><li>In the <em>Data Filtering Profile</em> window, enter Name <code>Corp-DataFilter</code> and Description <code>Standard data filtering profile for all security rules.</code> Click <strong>Add</strong> and select the <strong>US-SSNs</strong> data pattern. Set <strong>Alert Threshold</strong> to <code>1</code>, <strong>Block Threshold</strong> to <code>3</code>, and <strong>Log Severity</strong> to <strong>critical</strong>. Click <strong>OK</strong>.</li><li>Leave the firewall open and continue to the next task.</li></ol>
+<div class="callout fix"><p class="c-title">“More than three” means three or more</p><p>The guide says the profile blocks files with more than three SSNs, but a block threshold of 3 blocks at three matches. One or two matches only alert.</p></div>
+</div>
+<h3 class="task-head"><span class="tn">2.7</span>Create a corporate anti-spyware profile</h3>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Objects &gt; Security Profiles &gt; Anti-Spyware"></span>. Check the box next to the <strong>strict</strong> profile. Click <strong>Clone</strong>.</li><li>In the <em>Clone</em> window, click <strong>OK</strong>.</li><li>Click the entry <strong>strict-1</strong> to open it.</li><li>Enter Name <code>Corp-AS</code> and Description <code>Standard anti-spyware profile for all security policy rules.</code> Click <strong>OK</strong>.</li><li>Leave the firewall open and continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.8</span>Create an External Dynamic List for malicious domains</h3>
+<p class="task-intro">The firewall pulls a list of domains from a server in the extranet. In 2.9 the Corp-AS profile sinkholes them.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Objects &gt; External Dynamic Lists"></span>. Click <strong>Add</strong>.</li><li>The firewall shows a notice about tokens for domain entries. Read it and click <strong>Cancel</strong>.</li><li>In the <em>External Dynamic Lists</em> window, configure: Name <code>malicious-domains-edl</code>; Type <strong>Domain List</strong>; Description <code>Custom list of bad domains maintained on Extranet server</code>; Source <code>http://192.168.50.80/malicious-domains.txt</code>; <strong>Automatically expand to include subdomains</strong> checked; Check for updates <strong>Every Five Minutes</strong>. Click <strong>OK</strong>.</li><li>Click <strong>malicious-domains-edl</strong>.</li><li>At the tokens notice, click <strong>Cancel</strong>.</li><li>Click <strong>Test Source URL</strong> to verify the firewall can reach the list.</li><li>A message says the source URL is accessible. Click <strong>Close</strong>.</li></ol>
+<div class="callout tip"><p class="c-title">What’s on the list</p><p>quora.com and producthunt.com, chosen for the lab. They aren’t actually malicious.</p></div>
 <p class="shot" id="shot-2"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 2</span> The Test Source URL result showing the EDL source is accessible.</span></p>
-<h3 class="task-head"><span class="tn">2.9</span>Sinkhole the EDL in the anti-spyware profile</h3>
-<ol class="steps-list" start="1">
-<li>Open <strong>Corp-AS</strong> and select the <strong>DNS Policies</strong> tab.</li>
-<li>Under External Dynamic Lists, set the <strong>Policy Action</strong> for <strong>malicious-domains-edl</strong> to <strong>sinkhole</strong>. Click OK.</li>
-</ol>
-<div class="callout fix"><p class="c-title">Name drift</p><p>The guide calls the profile "Corporate-AS" once. It's the Corp-AS you just created.</p></div>
+<ol class="steps-list" start="8"><li>Click <strong>OK</strong> to close the External Dynamic Lists window.</li><li>Leave the firewall open and continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.9</span>Update the Anti-Spyware Profile with EDL</h3>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Objects &gt; Security Profiles &gt; Anti-Spyware"></span>. Click <strong>Corp-AS</strong> to edit it.</li><li>Click the <strong>DNS Policies</strong> tab. Under <strong>External Dynamic Lists</strong>, change the <strong>Policy Action</strong> for <strong>malicious-domains-edl</strong> to <strong>sinkhole</strong>. Click <strong>OK</strong>.</li><li>Click the <strong>Commit</strong> button at the upper right of the web interface.</li><li>In the <em>Commit</em> window, click <strong>Commit</strong>.</li><li>Wait until the commit process is complete. Click <strong>Close</strong>.</li><li>Leave the firewall open and continue to the next task.</li></ol>
+<div class="callout fix"><p class="c-title">Name drift</p><p>The 2.8 introduction calls the profile “Corporate-AS”. It’s the Corp-AS you created in 2.7.</p></div>
+</div>
 <h3 class="task-head"><span class="tn">2.10</span>Create a Security Profile Group</h3>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Objects &gt; Security Profile Groups"></span> and click <strong>Add</strong>. Name it <code>Corp-Profiles-Group</code>.</li>
-<li>Choose Corp-AV, Corp-AS, Corp-Vuln, Corp-FileBlock, and Corp-DataFilter in their drop-downs. Leave URL Filtering and WildFire Analysis at <strong>None</strong>. Click OK.</li>
-</ol>
+<p class="task-intro">One group holds all your Corp- profiles, so each rule needs a single selection instead of five.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Objects &gt; Security Profile Groups"></span>. Click <strong>Add</strong>.</li><li>Enter Name <code>Corp-Profiles-Group</code>. In each profile drop-down, select the Corp- entry you created: <strong>Corp-AV</strong>, <strong>Corp-AS</strong>, <strong>Corp-Vuln</strong>, <strong>Corp-FileBlock</strong>, <strong>Corp-DataFilter</strong>. Leave <strong>URL Filtering</strong> and <strong>WildFire Analysis</strong> at <strong>None</strong>. Click <strong>OK</strong>.</li></ol>
 <p class="shot" id="shot-3"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 3</span> The Corp-Profiles-Group window with all five Corp- profiles selected.</span></p>
-<h3 class="task-head"><span class="tn">2.11</span>Apply the group to every allow rule</h3>
-<ol class="steps-list" start="1">
-<li>In <span class="path" data-path="Policies &gt; Security"></span>, open each allow rule in turn. On <strong>Actions</strong>, set <strong>Profile Type</strong> to <strong>Group</strong> and choose <strong>Corp-Profiles-Group</strong>. Click OK.</li>
-<li>Do all six: Allow-PANW-Apps, Users_to_Extranet, Users_to_Internet, Extranet_to_Internet, Extranet_to_User_Net, and the Acquisition allow rule.</li>
-<li>Hover over each rule's profile icon to confirm, then commit.</li>
-</ol>
-<div class="callout fix"><p class="c-title">The Acquisition rule's name</p><p>The guide lists <strong>Acquisition-Allow-All</strong>. If your baseline carries Lab 11's rename, it's <strong>Allow-Corp-Apps</strong> (and Allow-Mktg-Apps also allows traffic). Apply the group to every rule whose action is Allow, whatever it's called.</p></div>
-<div class="callout stuck"><p class="c-title">A skipped rule is uninspected traffic</p><p>Profiles only act on traffic matched by a rule that carries them. Block and deny rules don't need them.</p></div>
+<ol class="steps-list" start="3"><li>Leave the firewall open and continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.11</span>Apply the Corp-Profiles-Group to a Security policy</h3>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Policies &gt; Security"></span>.</li><li>Edit <strong>each</strong> rule that allows traffic. On the <strong>Actions</strong> tab, set the Profile Setting to use <strong>Corp-Profiles-Group</strong> (Profile Type <strong>Group</strong>). The rules: <strong>Allow-PANW-Apps</strong>, <strong>Users_to_Extranet</strong>, <strong>Users_to_Internet</strong>, <strong>Extranet_to_Internet</strong>, <strong>Extranet_to_User_Net</strong>, and <strong>Acquisition-Allow-All</strong>.</li><li>Hover over each modified rule’s Profile icon to verify it shows Corp-Profiles-Group.</li></ol>
+<div class="callout fix"><p class="c-title">The Acquisition rule’s name</p><p>The guide lists <strong>Acquisition-Allow-All</strong>. If your baseline carries Lab 11’s rename, it’s <strong>Allow-Corp-Apps</strong> (and Allow-Mktg-Apps also allows traffic). Apply the group to every rule whose action is Allow, whatever it’s called.</p></div>
+<div class="callout stuck"><p class="c-title">A skipped rule is uninspected traffic</p><p>Profiles only act on traffic matched by a rule that carries them. Block and deny rules don’t need them.</p></div>
 <p class="shot" id="shot-4"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 4</span> The Security policy with the profile icon showing on all six allow rules.</span></p>
-<h3 class="task-head"><span class="tn">2.12</span>Test again with Security Profiles</h3>
-<ol class="steps-list" start="1">
-<li>In the Server-Extranet window, run <code>./malwareattacks.sh</code> again (same folder) and let it finish.</li>
-<li>Open a <strong>private</strong> Firefox window (right-click Firefox in the taskbar) and request <code>http://192.168.50.80/badtarfile.tar</code>. You get <strong>File Transfer Blocked</strong>.</li>
-<li>In a new tab, request <code>http://192.168.50.80/companyssns.txt</code>. You get <strong>Data Transfer Blocked</strong>. Close Firefox.</li>
-<li>In the terminal, run the dig again. It now returns <code>sinkhole.paloaltonetworks.com</code>.</li>
-</ol>
-<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">lab-user@client-a:~/Desktop/Lab-Files$</span> <span class="cmd">dig @8.8.8.8 www.quora.com</span></pre>
-<ol class="steps-list" start="5">
-<li>Go to <span class="path" data-path="Monitor &gt; Logs &gt; Threat"></span>, clear filters, and page through entries for spyware, vulnerabilities, file blocking, data filtering, and the DNS sinkhole.</li>
-</ol>
-<div class="callout why"><p class="c-title">Why a private window</p><p>It avoids Firefox's cache, which could serve the earlier, unblocked copies of the files.</p></div>
-<div class="callout tip"><p class="c-title">The sinkhole answer is success</p><p>It means the firewall intercepted the lookup and replaced the answer. A real infected host would then try to connect to the sinkhole address, and that attempt identifies it in the Traffic log.</p></div>
-<div class="callout stuck"><p class="c-title">The high-level steps stop early</p><p>Task 1 ends at the tar file. Do the SSN file, the dig, and the Threat log review whichever version you follow; they prove the data filtering and sinkhole work.</p></div>
+<ol class="steps-list" start="4"><li>Click the <strong>Commit</strong> link at the top-right of the web interface.</li><li>In the <em>Commit</em> window, click <strong>Commit</strong>.</li><li>When the commit completes, click <strong>Close</strong>.</li><li>Minimize the firewall’s Firefox window and continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.12</span>Generate attack traffic with Security Profiles</h3>
+<p class="task-intro">Same tests as 2.2. This time every one should be stopped or sinkholed.</p>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>Re-open the <strong>Server-Extranet</strong> Remmina window from the taskbar.</li></ol>
+</div>
+<div class="mrun mr-extranet"><p class="mband"><span class="mb-ic" aria-hidden="true">🗄️</span><span>On Server-Extranet</span><span class="mb-sub">SSH to the extranet server from Remmina on the Client. Prompt: paloalto42@extranet1:~$</span></p>
+<ol class="steps-list" start="2"><li>If you are not already in the attack folder, change to it.</li></ol>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">paloalto42@extranet1:~$</span> <span class="cmd">cd pcaps92019/attack.pcaps/</span></pre>
+<ol class="steps-list" start="3"><li>Run the simulated attacks again. Let it run uninterrupted (about 6 minutes).</li></ol>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">paloalto42@extranet1:~/pcaps92019/attack.pcaps$</span> <span class="cmd">./malwareattacks.sh</span></pre>
+</div>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="4"><li>Minimize the Remmina connection window.</li><li>In the client taskbar, right-click the <strong>firewall-a - Mozilla Firefox</strong> application and select <strong>Open a New Private Window</strong>.</li><li>Type <code>http://192.168.50.80/badtarfile.tar</code> and press Enter. You get a <strong>File Transfer Blocked</strong> page from the firewall (the File Blocking profile). Open a new tab.</li></ol>
 <p class="shot" id="shot-5"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 5</span> The File Transfer Blocked page for badtarfile.tar.</span></p>
+<ol class="steps-list" start="7"><li>In the new tab, type <code>http://192.168.50.80/companyssns.txt</code> and press Enter. You get a <strong>Data Transfer Blocked</strong> page (the Data Filtering profile and US-SSNs pattern).</li></ol>
 <p class="shot" id="shot-6"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 6</span> The Data Transfer Blocked page for companyssns.txt.</span></p>
+<div class="callout why"><p class="c-title">Why a private window</p><p>It avoids Firefox’s cache, which could serve the earlier, unblocked copies of the files.</p></div>
+<ol class="steps-list" start="8"><li>Close that Firefox window.</li><li>From the client taskbar, re-open the <strong>lab-user@client-a</strong> Terminal Emulator.</li><li>Run the same DNS query. This time it returns <code>sinkhole.paloaltonetworks.com</code> instead of an IP address: the Anti-Spyware profile’s DNS sinkhole intercepted it.</li></ol>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">lab-user@client-a:~/Desktop/Lab-Files$</span> <span class="cmd">dig @8.8.8.8 www.quora.com</span></pre>
+<div class="callout fix"><p class="c-title">The guide’s prompt has backslashes</p><p>The guide prints the prompt as <code>lab-user@client-a:~\Desktop\Lab-Files$</code>. The client is Linux, so the path uses forward slashes. The command itself is the same.</p></div>
+<div class="callout tip"><p class="c-title">The sinkhole answer is success</p><p>It means the firewall intercepted the lookup and replaced the answer. A real infected host would then try to connect to the sinkhole address, and that attempt identifies it in the Traffic log.</p></div>
 <p class="shot" id="shot-7"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 7</span> The terminal showing dig returning sinkhole.paloaltonetworks.com.</span></p>
+<ol class="steps-list" start="11"><li>Re-open the firewall web interface with the <strong>firewall-a – Mozilla Firefox</strong> icon in the task bar.</li></ol>
+</div>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="12"><li>Select <span class="path" data-path="Monitor &gt; Logs &gt; Threat"></span>. Clear any filters and press Enter. Page through the log: it has many <strong>spyware</strong> and <strong>vulnerability</strong> entries, the firewall blocking the attack traffic. The table fills in as the script finishes; refresh periodically.</li></ol>
 <p class="shot" id="shot-8"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 8</span> The Threat log showing spyware and vulnerability entries from the attack script.</span></p>
+<div class="callout stuck"><p class="c-title">The high-level steps stop early</p><p>Task 1 ends at the tar file. Do the SSN file, the dig, and the Threat log review whichever version you follow; they prove the data filtering and sinkhole work.</p></div>
+<ol class="steps-list" start="13"><li>The lab is now complete; you may end your reservation.</li></ol>
+</div>
 </section>
 
 <section class="unit" id="s-reference" data-section="reference" data-label="Reference" data-part="Understand">

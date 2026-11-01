@@ -34,6 +34,34 @@ html[data-present="on"] .pm-dock{position:fixed;left:0;right:0;bottom:0;z-index:
 .pm-dock .pm-where{flex:1 1 auto;text-align:center;min-width:0;font-size:.78rem;color:var(--ink-2)}
 .pm-dock .pm-where b{color:var(--ink);display:block;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media print{.pm-dock,.pm-toggle{display:none!important}}
+</style><style id="mb-css">
+/* Machine bands: which VM / session each run of steps happens on. Page-local; uses site.css colour tokens. */
+.mrun{--mb:var(--accent);--mb-soft:var(--accent-soft);border-left:4px solid var(--mb);margin:1rem 0 1.2rem;padding:0 0 .2rem .9rem}
+.mrun.mr-client{--mb:var(--ok);--mb-soft:var(--ok-soft)}
+.mrun.mr-webui{--mb:var(--accent);--mb-soft:var(--accent-soft)}
+.mrun.mr-fwcli{--mb:var(--warn);--mb-soft:var(--warn-soft)}
+.mrun.mr-extranet{--mb:var(--focus);--mb-soft:var(--surface-2)}
+.mband{display:flex;flex-wrap:wrap;align-items:baseline;gap:.2rem .6rem;margin:0 0 .6rem -.9rem;padding:.4rem .8rem;
+  background:var(--mb-soft);border-radius:0 var(--radius-m) var(--radius-m) 0;font-weight:700;font-size:var(--step--1)}
+.mband .mb-ic{font-size:1.05rem}
+.mband .mb-sub{font-weight:400;color:var(--ink-2);font-size:.85em}
+.mlabel{display:inline-block;margin-right:.35rem;padding:0 .45rem;border-radius:var(--radius-s);font-weight:700;font-size:.85em;
+  border-left:3px solid var(--accent);background:var(--surface-2)}
+.mlabel.ml-client{border-left-color:var(--ok)}.mlabel.ml-webui{border-left-color:var(--accent)}
+.mlabel.ml-fwcli{border-left-color:var(--warn)}.mlabel.ml-extranet{border-left-color:var(--focus)}
+.mrun .shot{margin-left:.6rem}
+.topo{width:100%;max-width:760px;height:auto;display:block;margin:.4rem 0 .3rem}
+.topo .bx{fill:var(--surface);stroke:var(--rule);stroke-width:1.5}
+.topo .fw{fill:var(--accent-soft);stroke:var(--accent);stroke-width:2}
+.topo .ln{stroke:var(--ink-2);stroke-width:2;fill:none}
+.topo .ln.mg{stroke-dasharray:5 4}
+.topo .dim{opacity:.45}
+.topo text{fill:var(--ink);font-family:var(--font-body);font-size:13px}
+.topo .h{font-weight:700;font-size:14px}
+.topo .m{font-family:var(--font-mono);font-size:12px}
+.topo .s{fill:var(--ink-2);font-size:12px}
+.diverge{border-left-color:var(--warn)}
+@media print{.mrun{border-left-color:#666}.mband{background:#eee}}
 </style></head>
 <body data-root=".." data-lab="12" data-page="labs/index.html">
 <a class="skip-link" href="#main">Skip to main content</a>
@@ -67,18 +95,60 @@ html[data-present="on"] .pm-dock{position:fixed;left:0;right:0;bottom:0;z-index:
 <section class="unit" id="s-setup" data-section="setup" data-label="Before you begin" data-part="Prepare">
 <header><span class="sec-n">02</span><h2>Before you begin</h2></header>
 <p>You'll use the web interface and Firefox, including its certificate manager.</p>
+<h4>Lab Settings (from the NDG guide)</h4>
 <div class="table-wrap"><table>
-<caption class="visually-hidden">Hosts in the lab network</caption>
-<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th><th scope="col">Sign-in</th></tr></thead>
+<caption class="visually-hidden">Lab Settings: virtual machines, addresses, and sign-ins</caption>
+<thead><tr><th scope="col">Virtual Machine</th><th scope="col">IP Address</th><th scope="col">Account</th><th scope="col">Password</th></tr></thead>
 <tbody>
-<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td><td><code>lab-user / Pal0Alt0!</code></td></tr>
-<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td><td><code>admin / Pal0Alt0!</code></td></tr>
-<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td><td><code>root / Pal0Alt0</code></td></tr>
-<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td><td>—</td></tr>
-<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td><td>—</td></tr>
-<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td><td>—</td></tr>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td><code>lab-user</code></td><td><code>Pal0Alt0!</code></td></tr>
+<tr><td>DMZ</td><td><code>192.168.50.10</code></td><td><code>root</code></td><td><code>Pal0Alt0!</code></td></tr>
+<tr><td>Firewall</td><td><code>192.168.1.254</code></td><td><code>admin</code></td><td><code>Pal0Alt0!</code></td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td><code>root</code></td><td><code>Pal0Alt0</code></td></tr>
 </tbody></table></div>
-<p class="box-note">Sign-in credentials are shown above (the fixed NETLAB+ pod logins, case-sensitive). </p>
+<p class="box-note">Passwords are case-sensitive and use zeros, not the letter O. The vRouter password has no exclamation point.</p>
+<p class="box-note"><strong>Currency note:</strong> these labs run PAN-OS 11.0, which reached end-of-life on November 17, 2024 and no longer receives security fixes. Everything here still works in the lab; on a real firewall you would run a supported release (11.1, 11.2, or 12.1), where most screens are the same.</p>
+<h4>Pod topology</h4>
+<svg class="topo" viewBox="0 0 760 360" role="img" aria-labelledby="topo-t topo-d">
+<title id="topo-t">Pod topology</title>
+<desc id="topo-d">The firewall firewall-a sits between the Internet zone (ethernet1/1, 203.0.113.20/24, next hop 203.0.113.1), the Users_Net zone (ethernet1/2, 192.168.1.1/24, with the Client at 192.168.1.20, the vRouter at 192.168.1.10, and the firewall management port at 192.168.1.254), and the Extranet zone (ethernet1/3, 192.168.50.1/24, servers including web 192.168.50.80, DNS 192.168.50.53 and DMZ 192.168.50.10).</desc>
+<g><rect class="bx" x="250" y="8" width="260" height="74" rx="8"/>
+<text class="h" x="266" y="32">Internet zone</text>
+<text class="m" x="266" y="54">ISP router 203.0.113.1</text>
+<text class="s" x="266" y="72">8.8.8.8 and real websites beyond</text>
+<path class="ln" d="M380 82V128"/><text class="m" x="388" y="110">ethernet1/1 203.0.113.20/24</text></g>
+<rect class="fw" x="20" y="128" width="720" height="56" rx="8"/>
+<text class="h" x="36" y="152">firewall-a (PA-VM)</text>
+<text class="m" x="36" y="172">MGT 192.168.1.254 · default gateway 192.168.1.10 (vRouter)</text>
+<path class="ln mg" d="M70 184V240"/>
+<g><path class="ln" d="M190 184V240"/><text class="m" x="198" y="224">e1/2 192.168.1.1</text></g>
+<rect class="bx" x="20" y="240" width="236" height="112" rx="8"/>
+<text class="h" x="34" y="264">Users_Net zone</text>
+<text class="m" x="34" y="284">192.168.1.0/24</text>
+<text class="m" x="34" y="306">Client 192.168.1.20</text>
+<text class="m" x="34" y="326">vRouter 192.168.1.10</text>
+<text class="s" x="34" y="344">MGT port is on this subnet</text>
+<g><rect class="bx" x="272" y="240" width="238" height="112" rx="8"/>
+<text class="h" x="286" y="264">Extranet zone</text>
+<text class="m" x="286" y="284">192.168.50.0/24</text>
+<text class="m" x="286" y="306">Web .80 · DNS .53 · DMZ .10</text>
+<text class="s" x="286" y="326">Other lab servers on .50.x</text>
+<path class="ln" d="M390 184V240"/><text class="m" x="398" y="224">e1/3 192.168.50.1</text></g>
+
+</svg>
+<p class="box-note">Data interfaces, VR-1 and zones as built in Lab 4 and loaded by this lab’s snapshot.</p>
+<h4>Addresses you’ll use</h4>
+<div class="table-wrap"><table>
+<caption class="visually-hidden">Addresses in the lab network</caption>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td></tr>
+</tbody></table></div>
+
 <h4>What's already in the baseline</h4>
 <p>Everything through Lab 10. The allow rules carry Security Profiles, so the test virus is caught whenever the firewall can actually see it: the guide's first test proves that over HTTP.</p>
 <h4>The test file</h4>
@@ -87,121 +157,125 @@ html[data-present="on"] .pm-dock{position:fixed;left:0;right:0;bottom:0;z-index:
 
 <section class="unit" id="s-walkthrough" data-section="walkthrough" data-label="Walkthrough" data-part="Do the lab">
 <header><span class="sec-n">03</span><h2>Walkthrough of the detailed steps</h2></header>
-<h3 class="task-head"><span class="tn">2.1</span>Load the lab configuration</h3>
+<div class="callout tip"><p class="c-title">Reading the machine bands</p><p>Each coloured band says where the steps under it happen, and it stays in force until the next band:
+<span class="mlabel ml-client">🖥️ Client</span> <span class="mlabel ml-webui">🧱 Firewall web interface</span> <span class="mlabel ml-fwcli">⌨️ Firewall CLI</span> <span class="mlabel ml-extranet">🗄️ Server-Extranet</span>.
+When a single step switches machines, it carries an inline label instead. Step numbers match the guide’s Detailed Lab Steps exactly.</p></div>
+<h3 class="task-head"><span class="tn">2.1</span>Apply a baseline configuration to the firewall</h3>
 <p class="task-intro">Every lab starts from a known baseline, so your firewall matches the guide no matter what you did last time.</p>
-<ol class="steps-list" start="1"><li>On the client desktop, log in as <code>lab-user</code>, open Firefox, and browse to <code>https://192.168.1.254</code>. Log in as <code>admin</code> with the password from Lab Settings. If the login page does not appear, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li>Go to <span class="path" data-path="Device > Setup > Operations"></span> and click <strong>Load named configuration snapshot</strong>. Choose <code>edu-210-11.0a-12.xml</code> and click OK, then Close.</li><li>Open <strong>Tasks</strong> (lower right) and confirm the Load task shows completed.</li><li>Click <strong>Commit</strong> (upper right), then <strong>Commit</strong> in the dialog, and wait for it to finish.</li></ol>
-<div class="callout stuck"><p class="c-title">Loading is not committing</p><p>A loaded snapshot replaces only the candidate configuration. Until you commit, the firewall is still running whatever was there before, and nothing in the lab will match the guide.</p></div>
-<h3 class="task-head"><span class="tn">2.2</span>See what the firewall misses without decryption</h3>
-<ol class="steps-list" start="1">
-<li>In a new Firefox tab, open <code>http://192.168.50.80/eicar.com</code>. The connection is reset. Close the tab.</li>
-<li>In <span class="path" data-path="Monitor &gt; Logs &gt; Threat"></span>, find the entry showing the firewall blocked the eicar download.</li>
-<li>Now open <code>https://192.168.50.80/eicar.com</code>. At the warning, click <strong>Advanced</strong>, then <strong>Accept the Risk and Continue</strong>.</li>
-<li>When asked to save the file, click <strong>Cancel</strong>. The download wasn't blocked. Close the tab.</li>
-</ol>
-<div class="callout fix"><p class="c-title">Misleading task title</p><p>The guide calls this "Examine Firewall Configuration." It's the before test: the same file over HTTP and over HTTPS.</p></div>
-<div class="callout why"><p class="c-title">The whole lab in one comparison</p><p>Same file, same server, same profiles. Over HTTP the firewall sees it; over HTTPS it can't.</p></div>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>Click the <strong>Client</strong> tab in NETLAB+ to access the Client PC.</li><li>On the <em>Zorin</em> desktop, click <strong>lab-user</strong>.</li><li>For the lab-user password, enter <code>Pal0Alt0!</code> and press <strong>Enter</strong>.</li><li>Double-click the <strong>Firefox Web Browser</strong> icon on the Desktop.</li><li>In the Firefox address field, type <code>https://192.168.1.254</code> and press <strong>Enter</strong>.</li></ol>
+</div>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="6"><li>Log in to the firewall web interface as username <code>admin</code>, password <code>Pal0Alt0!</code>. If the login page does not appear, wait an additional 1 to 3 minutes for the firewall to initialize and refresh the page.</li><li>Navigate to <span class="path" data-path="Device &gt; Setup &gt; Operations"></span> and click <strong>Load named configuration snapshot</strong> in the <em>Configuration Management</em> section.</li><li>In the <em>Load Named Configuration</em> window, select <code>edu-210-11.0a-12.xml</code> from the <strong>Name</strong> drop-down and click <strong>OK</strong>.</li><li>The <em>Loading Configuration</em> window says the configuration is being loaded and to check the Task Manager. Click <strong>Close</strong>.</li><li>Click the <strong>Tasks</strong> icon at the bottom-right of the web interface.</li><li>In <em>Task Manager – All Tasks</em>, verify the <strong>Load</strong> task shows <strong>Completed</strong>. Click <strong>Close</strong>.</li><li>Click the <strong>Commit</strong> link at the top-right of the web interface.</li><li>In the <em>Commit</em> window, click <strong>Commit</strong>.</li><li>When the commit operation completes, click <strong>Close</strong>.</li><li>Leave the Palo Alto Networks Firewall open and continue to the next task.</li></ol>
+<div class="callout stuck"><p class="c-title">Loading is not committing</p><p>A loaded snapshot replaces only the candidate configuration. Until you commit (steps 12 to 14), the firewall is still running whatever was there before, and nothing in the lab will match the guide.</p></div>
+</div>
+<h3 class="task-head"><span class="tn">2.2</span>Examine firewall configuration</h3>
+<p class="task-intro">The before test: the same test virus over HTTP and then over HTTPS.</p>
+<div class="callout fix"><p class="c-title">Misleading task title</p><p>The guide calls this “Examine Firewall Configuration.” It’s the before test: the same file over HTTP and over HTTPS.</p></div>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>On the client desktop, open a new tab in Firefox.</li><li>Type <code>http://192.168.50.80/eicar.com</code> and press Enter. You get a page saying the connection was reset: unencrypted, the firewall can inspect and block it.</li><li>Close the eicar tab.</li></ol>
+</div>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="4"><li>In the firewall web interface, navigate to <span class="path" data-path="Monitor &gt; Logs &gt; Threat"></span>. You see one or more <strong>vulnerability</strong> entries showing the firewall blocked the eicar download.</li></ol>
 <p class="shot" id="shot-1"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 1</span> The Threat log entry for the eicar file blocked over HTTP.</span></p>
+</div>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="5"><li>In Firefox, open a new tab and browse to <code>https://192.168.50.80/eicar.com</code>.</li><li>If Firefox presents a warning, click <strong>Advanced</strong>.</li><li>Click <strong>Accept the Risk and Continue</strong>. (The server uses a self-signed certificate.)</li><li>When prompted to save the file, click <strong>Cancel</strong>. The download wasn’t blocked: encrypted, the virus is hidden from the firewall.</li></ol>
 <p class="shot" id="shot-2"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 2</span> The Firefox prompt to save eicar.com over HTTPS, showing it was not blocked.</span></p>
-<h3 class="task-head"><span class="tn">2.3</span>Create the forward trust certificate</h3>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Device &gt; Certificate Management &gt; Certificates"></span> and click <strong>Generate</strong>.</li>
-<li>Certificate Name <code>trusted-cert</code>, Common Name <code>192.168.1.1</code>, and check <strong>Certificate Authority</strong>. Click <strong>Generate</strong>, then OK.</li>
-<li>Open <strong>trusted-cert</strong>, check <strong>Forward Trust Certificate</strong>, and click OK.</li>
-</ol>
+<div class="callout why"><p class="c-title">The whole lab in one comparison</p><p>Same file, same server, same profiles. Over HTTP the firewall sees it; over HTTPS it can’t.</p></div>
+<ol class="steps-list" start="9"><li>Close the eicar tab.</li><li>Leave the firewall open and continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.3</span>Create a self-signed certificate for trusted connections</h3>
+<p class="task-intro">The firewall signs a stand-in certificate for each trusted HTTPS site a user visits. This CA is what it signs with.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Device &gt; Certificate Management &gt; Certificates"></span>. Click <strong>Generate</strong> to create a new CA certificate.</li></ol>
+<ol class="steps-list" start="2"><li>In the <em>Generate Certificate</em> window, set Certificate Name <code>trusted-cert</code>, Common Name <code>192.168.1.1</code>, and check <strong>Certificate Authority</strong>. Click <strong>Generate</strong>. A status window confirms the certificate and key pair were generated.</li><li>In the <em>Generate Certificate</em> window, click <strong>OK</strong>.</li><li>A new entry appears in the Device Certificates table. Click <strong>trusted-cert</strong>.</li><li>In the <em>Certificate information</em> window, check <strong>Forward Trust Certificate</strong>. Click <strong>OK</strong>.</li><li>Leave the firewall open and continue to the next task.</li></ol>
 <div class="callout why"><p class="c-title">It must be a CA</p><p>The firewall uses this certificate to sign a fresh certificate for every site a user visits. Only a CA certificate can sign other certificates.</p></div>
-<h3 class="task-head"><span class="tn">2.4</span>Create the forward untrust certificate</h3>
-<ol class="steps-list" start="1">
-<li>Click <strong>Generate</strong> again. Certificate Name <code>untrusted-cert</code>, Common Name <code>DO NOT TRUST</code>, <strong>Certificate Authority</strong> checked. Generate, then OK.</li>
-<li>Open <strong>untrusted-cert</strong>, check <strong>Forward Untrust Certificate</strong>, and click OK.</li>
-</ol>
-<div class="callout stuck"><p class="c-title">The high-level steps skip this</p><p>Creating untrusted-cert (here) and testing it (2.9) appear only in the detailed steps. A forward proxy without an untrust certificate is incomplete: users wouldn't be warned about servers with bad certificates.</p></div>
+</div>
+<h3 class="task-head"><span class="tn">2.4</span>Create a self-signed certificate for untrusted connections</h3>
+<p class="task-intro">For sites whose certificates aren’t trustworthy (self-signed, expired), the firewall signs with this one instead, so the user still gets a warning.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Click <strong>Generate</strong> to create another CA certificate.</li></ol>
+<ol class="steps-list" start="2"><li>In the <em>Generate Certificate</em> window, set Certificate Name <code>untrusted-cert</code>, Common Name <code>DO NOT TRUST</code>, and check <strong>Certificate Authority</strong>. Click <strong>Generate</strong>. A status window confirms the certificate and key pair were generated.</li><li>In the <em>Generate Certificate</em> window, click <strong>OK</strong>.</li><li>A new entry appears in the Device Certificates table. Click <strong>untrusted-cert</strong>.</li><li>In the <em>Certificate information</em> window, check <strong>Forward Untrust Certificate</strong>. Click <strong>OK</strong>.</li><li>Leave the firewall open and continue to the next task.</li></ol>
+<div class="callout stuck"><p class="c-title">The high-level steps skip this</p><p>Creating untrusted-cert (here) and testing it (2.9) appear only in the detailed steps. A forward proxy without an untrust certificate is incomplete: users wouldn’t be warned about servers with bad certificates.</p></div>
 <p class="shot" id="shot-3"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 3</span> The Certificates page showing trusted-cert as Forward Trust and untrusted-cert as Forward Untrust, both CAs.</span></p>
-<h3 class="task-head"><span class="tn">2.5</span>Create the decryption policy</h3>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Policies &gt; Decryption"></span> and click <strong>Add</strong>.</li>
-<li><strong>General:</strong> name <code>Decrypt_User_Traffic</code>, description <code>Decrypts web traffic from Users_Net.</code></li>
-<li><strong>Source:</strong> zone <strong>Users_Net</strong>, address Any, user any.</li>
-<li><strong>Destination:</strong> zones <strong>Internet</strong> and <strong>Extranet</strong>, address Any.</li>
-<li><strong>Service/URL Category:</strong> Service any, URL Category Any.</li>
-<li><strong>Options:</strong> Action <strong>Decrypt</strong>, Type <strong>SSL Forward Proxy</strong>, Decryption Profile <strong>default</strong>. Click OK, then commit.</li>
-</ol>
+</div>
+<h3 class="task-head"><span class="tn">2.5</span>Create Decryption policy for outbound traffic</h3>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Policies &gt; Decryption"></span>. Click <strong>Add</strong>.</li><li><strong>General</strong> tab: Name <code>Decrypt_User_Traffic</code>; Description <code>Decrypts web traffic from Users_Net.</code></li><li><strong>Source</strong> tab: Source Zone <strong>Users_Net</strong>; Source Address <strong>Any</strong>; Source User <strong>any</strong>.</li><li><strong>Destination</strong> tab: Destination Zones <strong>Internet</strong> and <strong>Extranet</strong>; Destination Address <strong>Any</strong>.</li><li><strong>Service/URL Category</strong> tab: verify Service is <strong>any</strong> and the <strong>Any</strong> box above URL Category is checked.</li><li><strong>Options</strong> tab: Action <strong>Decrypt</strong>; Type <strong>SSL Forward Proxy</strong>; Decryption Profile <strong>default</strong>. Click <strong>OK</strong>.</li><li>Verify the Decryption policy is visible and matches these settings.</li></ol>
 <div class="callout why"><p class="c-title">Why Extranet too?</p><p>The test server, 192.168.50.80, is in the Extranet zone. Without it here, the HTTPS eicar test would never be decrypted.</p></div>
-<div class="callout tip"><p class="c-title">Decrypting "any" category is a starting point</p><p>The guide notes it exposes personal data in categories like health, finance, and government. Task 2.12 adds exemptions.</p></div>
+<div class="callout tip"><p class="c-title">Decrypting “any” category is a starting point</p><p>The guide notes it exposes personal data in categories like health, finance, and government. Task 2.12 adds exemptions.</p></div>
 <p class="shot" id="shot-4"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 4</span> The Decrypt_User_Traffic rule with action Decrypt and type SSL Forward Proxy.</span></p>
-<h3 class="task-head"><span class="tn">2.6</span>Test outbound decryption</h3>
-<ol class="steps-list" start="1">
-<li>In a new tab, open <code>https://paloaltonetworks.com</code>. You get a warning. Click <strong>Advanced</strong>, then <strong>View Certificate</strong>.</li>
-<li>Note the <strong>Issuer</strong>: 192.168.1.1. The firewall signed this certificate on the site's behalf.</li>
-<li>Close the certificate and warning tabs (keep the firewall tab).</li>
-</ol>
-<div class="callout why"><p class="c-title">Why the warning</p><p>Firefox doesn't yet trust the firewall's CA. The certificate is technically fine; the browser just doesn't know the issuer. The next two tasks fix that.</p></div>
+<ol class="steps-list" start="8"><li>Click the <strong>Commit</strong> link at the top-right of the web interface.</li><li>In the <em>Commit</em> window, click <strong>Commit</strong>.</li><li>When the commit operation successfully completes, click <strong>Close</strong>.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.6</span>Test outbound decryption policy</h3>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>In Firefox, open a new tab. Type <code>https://paloaltonetworks.com</code> and press Enter.</li><li>The browser shows a caution message. Click <strong>Advanced</strong>. The client doesn’t trust the certificate the firewall (192.168.1.1) generated.</li><li>Click <strong>View Certificate</strong>.</li><li>Under the section for www.paloaltonetworks.com, the <strong>Issuer Name</strong> contains <strong>192.168.1.1</strong>: the firewall issued it, using trusted-cert.</li></ol>
+<div class="callout why"><p class="c-title">Why the warning</p><p>Firefox doesn’t yet trust the firewall’s CA. The certificate is technically fine; the browser just doesn’t know the issuer. The next two tasks fix that.</p></div>
 <p class="shot" id="shot-5"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 5</span> The certificate viewer showing www.paloaltonetworks.com issued by 192.168.1.1.</span></p>
-<h3 class="task-head"><span class="tn">2.7</span>Export the firewall's CA certificate</h3>
-<ol class="steps-list" start="1">
-<li>In <span class="path" data-path="Device &gt; Certificate Management &gt; Certificates"></span>, select (don't open) <strong>trusted-cert</strong> and click <strong>Export Certificate</strong>.</li>
-<li>File Format <strong>Base64 Encoded Certificate (PEM)</strong>, <strong>uncheck Export Private Key</strong>, and click OK. Save it in Downloads.</li>
-</ol>
+<ol class="steps-list" start="5"><li>Close the certificate and warning tabs, but leave the firewall web interface tab open.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.7</span>Export the firewall certificate</h3>
+<p class="task-intro">You export trusted-cert so Firefox on the client can trust it.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Device &gt; Certificate Management &gt; Certificates"></span>. Highlight <strong>trusted-cert</strong>, but don’t open it.</li><li>At the bottom of the window, click <strong>Export Certificate</strong>.</li><li>In <em>Export Certificate – trusted-cert</em>, set File Format to <strong>Base64 Encoded Certificate (PEM)</strong>. <strong>Uncheck</strong> Export Private Key. Click <strong>OK</strong>.</li><li><span class="mlabel ml-client">On Client:</span> In the Firefox save dialog, make sure the workstation’s <strong>Downloads</strong> folder is selected and click <strong>Save</strong>.</li><li>Leave the firewall open and continue to the next task.</li></ol>
 <div class="callout stuck"><p class="c-title">Never export the private key here</p><p>Clients need only the public certificate. Anyone with the private key could impersonate every site your users visit.</p></div>
-<h3 class="task-head"><span class="tn">2.8</span>Import it into Firefox</h3>
-<ol class="steps-list" start="1">
-<li>Open Firefox's menu (three lines) &gt; <strong>Settings</strong> &gt; <strong>Privacy &amp; Security</strong>, scroll to <strong>Certificates</strong>, and click <strong>View Certificates</strong>.</li>
-<li>On the <strong>Authorities</strong> tab, click <strong>Import</strong>, choose <code>cert_trusted-cert.crt</code> from Downloads, and click Open.</li>
-<li>Check both <strong>Trust this CA</strong> boxes and click OK. Confirm 192.168.1.1 appears in the list, then click OK and close Settings.</li>
-</ol>
+</div>
+<h3 class="task-head"><span class="tn">2.8</span>Import the firewall certificate</h3>
+<p class="task-intro">Firefox keeps its own list of trusted authorities. You add the firewall to it.</p>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>In the upper-right corner of Firefox, click the “hamburger” menu and choose <strong>Settings</strong>.</li><li>On the left, select <strong>Privacy &amp; Security</strong>.</li><li>Scroll to the <strong>Certificates</strong> section at the bottom. Click <strong>View Certificates</strong>.</li><li>In <em>Certificate Manager</em>, on the <strong>Authorities</strong> tab, click <strong>Import</strong>.</li><li>In the file window, click <strong>Downloads</strong>, select <code>cert_trusted-cert.crt</code>, and click <strong>Open</strong>.</li><li>In the <em>Downloading Certificate</em> window, check <strong>both</strong> Trust this CA boxes. Click <strong>OK</strong>.</li><li>The firewall’s trusted-cert entry appears in the list of authorities. Click <strong>OK</strong>.</li></ol>
 <div class="callout stuck"><p class="c-title">Authorities, not Your Certificates</p><p>CA certificates go on the Authorities tab, and the trust box must be checked. Imported anywhere else, nothing changes.</p></div>
-<div class="callout tip"><p class="c-title">If it isn't listed</p><p>Click OK, then View Certificates again; the list sometimes doesn't refresh.</p></div>
-<p class="shot" id="shot-6"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 6</span> Firefox's Authorities tab showing the 192.168.1.1 certificate imported.</span></p>
-<h3 class="task-head"><span class="tn">2.9</span>Test the forward untrust certificate</h3>
-<ol class="steps-list" start="1">
-<li>In a new tab, open <code>https://192.168.50.80</code>. Firefox still warns. Click <strong>Advanced</strong>, then <strong>View Certificate</strong>.</li>
-<li>The issuer is <strong>DO NOT TRUST</strong>: the firewall saw the server's self-signed certificate and passed that untrustworthiness on.</li>
-<li>Close the certificate tab and leave the warning tab open.</li>
-</ol>
-<div class="callout fix"><p class="c-title">The guide's note names the wrong issuer</p><p>After step 2 the guide repeats the earlier note that the certificate was "generated by the firewall (192.168.1.1)." For this site, the issuer you should see is <strong>DO NOT TRUST</strong>, the forward untrust certificate. That's the whole point of the task.</p></div>
-<div class="callout why"><p class="c-title">A warning here is correct</p><p>The warning after importing trusted-cert proves the forward proxy isn't hiding bad server certificates from users.</p></div>
-<p class="shot" id="shot-7"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 7</span> The certificate viewer showing 192.168.50.80's certificate issued by DO NOT TRUST.</span></p>
-<h3 class="task-head"><span class="tn">2.10</span>Test the virus download again</h3>
-<ol class="steps-list" start="1">
-<li>On the warning tab, click <strong>Accept the Risk and Continue</strong>. The server's default page loads.</li>
-<li>Change the address to <code>https://192.168.50.80/eicar.com</code> and press Enter. The connection fails: the firewall decrypted the session and the antivirus profile blocked the file.</li>
-<li>Close the tab.</li>
-</ol>
+<div class="callout tip"><p class="c-title">If it isn’t listed</p><p>Click OK, then View Certificates again; the list sometimes doesn’t refresh.</p></div>
+<p class="shot" id="shot-6"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 6</span> Firefox’s Authorities tab showing the 192.168.1.1 certificate imported.</span></p>
+<ol class="steps-list" start="8"><li>Close the Settings tab. Open a new Firefox tab and continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.9</span>Test Forward Untrust certificate</h3>
+<p class="task-intro">The extranet web server has a self-signed certificate, so the firewall should present your DO NOT TRUST certificate.</p>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>Type <code>https://192.168.50.80</code> and press Enter.</li><li>Note the warning Firefox presents. Click <strong>Advanced</strong>.</li><li>Click <strong>View Certificate</strong>.</li><li>Note the certificate information: the firewall intervened and presented the Forward Untrust certificate you created.</li></ol>
+<div class="callout fix"><p class="c-title">The guide’s note names the wrong issuer</p><p>After step 2 the guide repeats the earlier note that the certificate was “generated by the firewall (192.168.1.1).” For this site, the issuer you should see is <strong>DO NOT TRUST</strong>, the forward untrust certificate. That’s the whole point of the task.</p></div>
+<div class="callout why"><p class="c-title">A warning here is correct</p><p>The warning after importing trusted-cert proves the forward proxy isn’t hiding bad server certificates from users.</p></div>
+<p class="shot" id="shot-7"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 7</span> The certificate viewer showing 192.168.50.80’s certificate issued by DO NOT TRUST.</span></p>
+<ol class="steps-list" start="5"><li>Close the certificate tab.</li><li>Make sure the <em>Warning: Potential Security Risk Ahead</em> tab is still open and selected, and continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.10</span>Test outbound decryption policy again</h3>
+<p class="task-intro">With decryption on, try the HTTPS virus download again.</p>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>In the Firefox warning tab, click <strong>Accept the Risk and Continue</strong>.</li><li>You see the default page for the extranet web server.</li><li>Append <code>eicar.com</code> to the address, making <code>https://192.168.50.80/eicar.com</code>, and press Enter.</li><li>The connection does not succeed, and you get a message from the browser. This time the firewall saw and blocked the file.</li><li>Close the eicar tab and continue to the next task.</li></ol>
 <div class="callout fix"><p class="c-title">Two eicar paths</p><p>The high-level steps test with www.eicar.org; the detailed steps use https://192.168.50.80/eicar.com. Either proves decryption works.</p></div>
-<h3 class="task-head"><span class="tn">2.11</span>Review the logs</h3>
-<ol class="steps-list" start="1">
-<li>In <span class="path" data-path="Monitor &gt; Logs &gt; Traffic"></span>, add the <strong>Decrypted</strong> column and drag <strong>Session End Reason</strong> to the left.</li>
-<li>Apply the filter below. Wait a minute or two if it's empty.</li>
-</ol>
+</div>
+<h3 class="task-head"><span class="tn">2.11</span>Review firewall logs</h3>
+<p class="task-intro">The logs show which sessions were decrypted and why they ended.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Monitor &gt; Logs &gt; Traffic"></span>.</li><li>Click the small triangle to the right of the <strong>Receive Time</strong> header and add <strong>Columns &gt; Decrypted</strong>.</li><li>Drag the <strong>Session End Reason</strong> column from the right side to the beginning of the table (scroll right to find it). Optional, but it makes threat-ended sessions easy to spot.</li><li>In the filter builder, type the filter below and click <strong>Apply Filter</strong>. It shows sessions the firewall decrypted that ended because of a detected threat. Allow a minute or two for entries to appear.</li></ol>
 <pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( flags has proxy ) and ( session_end_reason eq threat )</span></pre>
-<ol class="steps-list" start="3">
-<li>Open an entry's details (magnifying glass) and confirm <strong>Decrypted</strong> is checked.</li>
-<li>In <span class="path" data-path="Monitor &gt; Logs &gt; Threat"></span>, add the Decrypted column, clear filters, and apply the filter below. Open the vulnerability entry.</li>
-</ol>
-<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( flags has proxy )</span></pre>
-<ol class="steps-list" start="5">
-<li>In the Details section, note the threat ID (the guide shows 39040) and the <strong>View in Threat Vault</strong> link. Select rows in the lower pane to see more about why the session was terminated.</li>
-</ol>
-<div class="callout tip"><p class="c-title">What "flags has proxy" means</p><p>The firewall acted as a proxy for the session, which is what decryption is. Those rows show yes in the Decrypted column.</p></div>
+<div class="callout tip"><p class="c-title">What “flags has proxy” means</p><p>The firewall acted as a proxy for the session, which is what decryption is. Those rows show yes in the Decrypted column.</p></div>
+<ol class="steps-list" start="5"><li>Click the magnifying glass next to the entry to see the session details.</li><li>The <strong>Decrypted</strong> box is checked: the firewall decrypted this session. Click <strong>Close</strong>.</li></ol>
 <p class="shot" id="shot-8"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 8</span> The Traffic log filtered to decrypted sessions ended by a threat, with the Decrypted column showing yes.</span></p>
+<ol class="steps-list" start="7"><li>Select <span class="path" data-path="Monitor &gt; Logs &gt; Threat"></span>.</li><li>Add the <strong>Decrypted</strong> column to the table.</li><li>Delete any filters. Create and apply the filter below. Click the magnifying glass next to the <strong>vulnerability</strong> entry.</li></ol>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( flags has proxy )</span></pre>
+<ol class="steps-list" start="10"><li>In the top half of the window, scroll to the <strong>Details</strong> section in the middle column. It describes the file the firewall detected and blocked. Note the ID number (39040 in the guide) and the <strong>View in Threat Vault</strong> link (Threat Vault requires a support account).</li><li>In the bottom half, highlight an entry with Type <strong>vulnerability</strong> to see why the firewall terminated the connection; the top half changes with your selection. Click <strong>Close</strong>.</li></ol>
 <p class="shot" id="shot-9"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 9</span> The Threat log detail for the decrypted eicar entry showing the threat ID.</span></p>
-<h3 class="task-head"><span class="tn">2.12</span>Exclude sensitive categories from decryption</h3>
-<ol class="steps-list" start="1">
-<li>In <span class="path" data-path="Policies &gt; Decryption"></span>, click <strong>Add</strong>. Name <code>No-Decryption</code>, description <code>Do not decrypt URLs in gov, shopping and finance.</code></li>
-<li>Source zone <strong>Users_Net</strong>; destination zone <strong>Internet</strong>; Service any.</li>
-<li>URL Category: add <strong>government</strong>, <strong>financial-services</strong>, and <strong>shopping</strong>.</li>
-<li><strong>Options:</strong> Action <strong>No Decrypt</strong>, Decryption Profile <strong>default</strong>. Click OK.</li>
-<li>Look at the two rules' order, answer the guide's question, then drag <strong>No-Decryption</strong> above Decrypt_User_Traffic. Commit.</li>
-</ol>
-<div class="callout guideq"><p class="c-title">Q1: Is there anything wrong with these rules?</p><p><strong>a. Yes.</strong> Decrypt_User_Traffic matches any category and sits first, so No-Decryption would never be reached. No-decrypt rules always go at the top.</p></div>
-<div class="callout fix"><p class="c-title">Rule name drift</p><p>The guide's answer text calls the rule "Decrypt_Users_Traffic." It's Decrypt_User_Traffic.</p></div>
+<ol class="steps-list" start="12"><li>Leave the firewall open and continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.12</span>Exclude URL categories from decryption</h3>
+<p class="task-intro">A No Decrypt rule keeps sensitive categories private. Which categories to exclude depends on policy, law, and HR in production.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Policies &gt; Decryption"></span>. Click <strong>Add</strong>.</li><li><strong>General</strong> tab: Name <code>No-Decryption</code>; Description <code>Do not decrypt URLs in gov, shopping and finance.</code></li><li><strong>Source</strong> tab: under Source Zone, click <strong>Add</strong> and select <strong>Users_Net</strong>.</li><li><strong>Destination</strong> tab: under Destination Zone, click <strong>Add</strong> and select <strong>Internet</strong>.</li><li><strong>Service/URL Category</strong> tab: leave Service at <strong>any</strong>.</li><li>Under URL Category, use <strong>Add</strong> to add <code>government</code>, <code>financial-services</code>, and <code>shopping</code>.</li><li><strong>Options</strong> tab: verify the Action is <strong>No Decrypt</strong>. Set Decryption Profile to <strong>default</strong>. Click <strong>OK</strong>.</li><li>You now have two Decryption rules. Notice what’s wrong?</li></ol>
+<div class="callout guideq"><p class="c-title">Guide question Q1</p><p>Is there anything wrong with these Decryption policy rules?</p><p><strong>Answer:</strong> <strong>a. Yes.</strong> Decrypt_User_Traffic matches any category and sits first, so No-Decryption would never be reached. No-decrypt rules always go at the top.</p></div>
+<div class="callout fix"><p class="c-title">Rule name drift</p><p>The guide’s answer text calls the rule “Decrypt_Users_Traffic.” It’s Decrypt_User_Traffic.</p></div>
+<ol class="steps-list" start="9"><li>Drag and drop <strong>No-Decryption</strong> above <strong>Decrypt_User_Traffic</strong>.</li></ol>
 <p class="shot" id="shot-10"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 10</span> The decryption policy with No-Decryption above Decrypt_User_Traffic.</span></p>
-<h3 class="task-head"><span class="tn">2.13</span>Test the exemption</h3>
-<ol class="steps-list" start="1">
-<li>Open Firefox and browse to <code>https://www.texas.gov</code>.</li>
-<li>Click the padlock &gt; the arrow next to <strong>Connection secure</strong> &gt; <strong>More Information</strong> &gt; <strong>View Certificate</strong>.</li>
-<li>The issuer is a public CA, <strong>not</strong> 192.168.1.1. The government category was exempt, so the firewall didn't decrypt.</li>
-</ol>
+<ol class="steps-list" start="10"><li>Click the <strong>Commit</strong> link at the top-right of the web interface.</li><li>In the <em>Commit</em> window, click <strong>Commit</strong>.</li><li>When the commit operation successfully completes, click <strong>Close</strong>.</li><li>Close the Firefox browser and continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.13</span>Test the No-Decryption rule</h3>
+<p class="task-intro">Browse to a site in an excluded category and check who issued its certificate.</p>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>On the client desktop, open the <strong>Firefox Web Browser</strong>.</li><li>In a new tab, type <code>https://www.texas.gov</code> and press Enter.</li><li>Click the padlock icon to open the site information. Click the arrow next to <strong>Connection secure</strong>.</li><li>In <em>Connection Security for www.texas.gov</em>, click <strong>More Information</strong>.</li><li>In the <em>Page Info</em> window, click <strong>View Certificate</strong>.</li><li>The <strong>Issuer Name</strong> is <em>not</em> 192.168.1.1. Government sites are excluded, so the firewall didn’t decrypt this one. (Your issuer may differ from the guide’s.)</li></ol>
 <p class="shot" id="shot-11"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 11</span> The certificate for www.texas.gov showing an issuer other than 192.168.1.1.</span></p>
+<ol class="steps-list" start="7"><li>The lab is now complete; you may end your reservation.</li></ol>
+</div>
 </section>
 
 <section class="unit" id="s-reference" data-section="reference" data-label="Reference" data-part="Understand">
@@ -239,7 +313,7 @@ html[data-present="on"] .pm-dock{position:fixed;left:0;right:0;bottom:0;z-index:
 <section class="unit" id="s-evidence" data-section="evidence" data-label="What to submit" data-part="Wrap up">
 <header><span class="sec-n">08</span><h2>Screenshots to capture</h2></header>
 <p>Take each screenshot at its marker. Name the files by lab and number (for example <code>lab12-shot9.png</code>) and submit them in Canvas as your instructor directs.</p>
-<ul class="checklist evidence" data-save="lab12-evidence"><li><input type="checkbox" id="ev12-0"><div><label for="ev12-0">Screenshot 1: The Threat log entry for the eicar file blocked over HTTP.</label><a class="ev-where" href="#shot-1">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev12-1"><div><label for="ev12-1">Screenshot 2: The Firefox prompt to save eicar.com over HTTPS, showing it was not blocked.</label><a class="ev-where" href="#shot-2">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev12-2"><div><label for="ev12-2">Screenshot 3: The Certificates page showing trusted-cert as Forward Trust and untrusted-cert as Forward Untrust, both CAs.</label><a class="ev-where" href="#shot-3">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev12-3"><div><label for="ev12-3">Screenshot 4: The Decrypt_User_Traffic rule with action Decrypt and type SSL Forward Proxy.</label><a class="ev-where" href="#shot-4">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev12-4"><div><label for="ev12-4">Screenshot 5: The certificate viewer showing www.paloaltonetworks.com issued by 192.168.1.1.</label><a class="ev-where" href="#shot-5">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev12-5"><div><label for="ev12-5">Screenshot 6: Firefox's Authorities tab showing the 192.168.1.1 certificate imported.</label><a class="ev-where" href="#shot-6">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev12-6"><div><label for="ev12-6">Screenshot 7: The certificate viewer showing 192.168.50.80's certificate issued by DO NOT TRUST.</label><a class="ev-where" href="#shot-7">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev12-7"><div><label for="ev12-7">Screenshot 8: The Traffic log filtered to decrypted sessions ended by a threat, with the Decrypted column showing yes.</label><a class="ev-where" href="#shot-8">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev12-8"><div><label for="ev12-8">Screenshot 9: The Threat log detail for the decrypted eicar entry showing the threat ID.</label><a class="ev-where" href="#shot-9">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev12-9"><div><label for="ev12-9">Screenshot 10: The decryption policy with No-Decryption above Decrypt_User_Traffic.</label><a class="ev-where" href="#shot-10">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev12-10"><div><label for="ev12-10">Screenshot 11: The certificate for www.texas.gov showing an issuer other than 192.168.1.1.</label><a class="ev-where" href="#shot-11">Find it in the walkthrough</a></div></li></ul>
+<ul class="checklist evidence" data-save="lab12-evidence"><li><input type="checkbox" id="ev12-0"><div><label for="ev12-0">Screenshot 1: The Threat log entry for the eicar file blocked over HTTP.</label><a class="ev-where" href="#shot-1">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev12-1"><div><label for="ev12-1">Screenshot 2: The Firefox prompt to save eicar.com over HTTPS, showing it was not blocked.</label><a class="ev-where" href="#shot-2">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev12-2"><div><label for="ev12-2">Screenshot 3: The Certificates page showing trusted-cert as Forward Trust and untrusted-cert as Forward Untrust, both CAs.</label><a class="ev-where" href="#shot-3">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev12-3"><div><label for="ev12-3">Screenshot 4: The Decrypt_User_Traffic rule with action Decrypt and type SSL Forward Proxy.</label><a class="ev-where" href="#shot-4">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev12-4"><div><label for="ev12-4">Screenshot 5: The certificate viewer showing www.paloaltonetworks.com issued by 192.168.1.1.</label><a class="ev-where" href="#shot-5">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev12-5"><div><label for="ev12-5">Screenshot 6: Firefox’s Authorities tab showing the 192.168.1.1 certificate imported.</label><a class="ev-where" href="#shot-6">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev12-6"><div><label for="ev12-6">Screenshot 7: The certificate viewer showing 192.168.50.80’s certificate issued by DO NOT TRUST.</label><a class="ev-where" href="#shot-7">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev12-7"><div><label for="ev12-7">Screenshot 8: The Traffic log filtered to decrypted sessions ended by a threat, with the Decrypted column showing yes.</label><a class="ev-where" href="#shot-8">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev12-8"><div><label for="ev12-8">Screenshot 9: The Threat log detail for the decrypted eicar entry showing the threat ID.</label><a class="ev-where" href="#shot-9">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev12-9"><div><label for="ev12-9">Screenshot 10: The decryption policy with No-Decryption above Decrypt_User_Traffic.</label><a class="ev-where" href="#shot-10">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev12-10"><div><label for="ev12-10">Screenshot 11: The certificate for www.texas.gov showing an issuer other than 192.168.1.1.</label><a class="ev-where" href="#shot-11">Find it in the walkthrough</a></div></li></ul>
 <p class="box-note">Checkmarks are saved in this browser only. They help you keep track; the screenshots themselves go to Canvas.</p>
 </section>
 

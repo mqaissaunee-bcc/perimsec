@@ -34,6 +34,34 @@ html[data-present="on"] .pm-dock{position:fixed;left:0;right:0;bottom:0;z-index:
 .pm-dock .pm-where{flex:1 1 auto;text-align:center;min-width:0;font-size:.78rem;color:var(--ink-2)}
 .pm-dock .pm-where b{color:var(--ink);display:block;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media print{.pm-dock,.pm-toggle{display:none!important}}
+</style><style id="mb-css">
+/* Machine bands: which VM / session each run of steps happens on. Page-local; uses site.css colour tokens. */
+.mrun{--mb:var(--accent);--mb-soft:var(--accent-soft);border-left:4px solid var(--mb);margin:1rem 0 1.2rem;padding:0 0 .2rem .9rem}
+.mrun.mr-client{--mb:var(--ok);--mb-soft:var(--ok-soft)}
+.mrun.mr-webui{--mb:var(--accent);--mb-soft:var(--accent-soft)}
+.mrun.mr-fwcli{--mb:var(--warn);--mb-soft:var(--warn-soft)}
+.mrun.mr-extranet{--mb:var(--focus);--mb-soft:var(--surface-2)}
+.mband{display:flex;flex-wrap:wrap;align-items:baseline;gap:.2rem .6rem;margin:0 0 .6rem -.9rem;padding:.4rem .8rem;
+  background:var(--mb-soft);border-radius:0 var(--radius-m) var(--radius-m) 0;font-weight:700;font-size:var(--step--1)}
+.mband .mb-ic{font-size:1.05rem}
+.mband .mb-sub{font-weight:400;color:var(--ink-2);font-size:.85em}
+.mlabel{display:inline-block;margin-right:.35rem;padding:0 .45rem;border-radius:var(--radius-s);font-weight:700;font-size:.85em;
+  border-left:3px solid var(--accent);background:var(--surface-2)}
+.mlabel.ml-client{border-left-color:var(--ok)}.mlabel.ml-webui{border-left-color:var(--accent)}
+.mlabel.ml-fwcli{border-left-color:var(--warn)}.mlabel.ml-extranet{border-left-color:var(--focus)}
+.mrun .shot{margin-left:.6rem}
+.topo{width:100%;max-width:760px;height:auto;display:block;margin:.4rem 0 .3rem}
+.topo .bx{fill:var(--surface);stroke:var(--rule);stroke-width:1.5}
+.topo .fw{fill:var(--accent-soft);stroke:var(--accent);stroke-width:2}
+.topo .ln{stroke:var(--ink-2);stroke-width:2;fill:none}
+.topo .ln.mg{stroke-dasharray:5 4}
+.topo .dim{opacity:.45}
+.topo text{fill:var(--ink);font-family:var(--font-body);font-size:13px}
+.topo .h{font-weight:700;font-size:14px}
+.topo .m{font-family:var(--font-mono);font-size:12px}
+.topo .s{fill:var(--ink-2);font-size:12px}
+.diverge{border-left-color:var(--warn)}
+@media print{.mrun{border-left-color:#666}.mband{background:#eee}}
 </style></head>
 <body data-root=".." data-lab="2" data-page="labs/index.html">
 <a class="skip-link" href="#main">Skip to main content</a>
@@ -67,18 +95,60 @@ html[data-present="on"] .pm-dock{position:fixed;left:0;right:0;bottom:0;z-index:
 <section class="unit" id="s-setup" data-section="setup" data-label="Before you begin" data-part="Prepare">
 <header><span class="sec-n">02</span><h2>Before you begin</h2></header>
 <p>You work in the web interface from the client's Firefox browser. Exporting a snapshot downloads a file to the client's Downloads folder.</p>
+<h4>Lab Settings (from the NDG guide)</h4>
 <div class="table-wrap"><table>
-<caption class="visually-hidden">Hosts in the lab network</caption>
-<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th><th scope="col">Sign-in</th></tr></thead>
+<caption class="visually-hidden">Lab Settings: virtual machines, addresses, and sign-ins</caption>
+<thead><tr><th scope="col">Virtual Machine</th><th scope="col">IP Address</th><th scope="col">Account</th><th scope="col">Password</th></tr></thead>
 <tbody>
-<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td><td><code>lab-user / Pal0Alt0!</code></td></tr>
-<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td><td><code>admin / Pal0Alt0!</code></td></tr>
-<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td><td><code>root / Pal0Alt0</code></td></tr>
-<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td><td>—</td></tr>
-<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td><td>—</td></tr>
-<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td><td>—</td></tr>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td><code>lab-user</code></td><td><code>Pal0Alt0!</code></td></tr>
+<tr><td>DMZ</td><td><code>192.168.50.10</code></td><td><code>root</code></td><td><code>Pal0Alt0!</code></td></tr>
+<tr><td>Firewall</td><td><code>192.168.1.254</code></td><td><code>admin</code></td><td><code>Pal0Alt0!</code></td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td><code>root</code></td><td><code>Pal0Alt0</code></td></tr>
 </tbody></table></div>
-<p class="box-note">Sign-in credentials are shown above (the fixed NETLAB+ pod logins, case-sensitive). </p>
+<p class="box-note">Passwords are case-sensitive and use zeros, not the letter O. The vRouter password has no exclamation point.</p>
+<p class="box-note"><strong>Currency note:</strong> these labs run PAN-OS 11.0, which reached end-of-life on November 17, 2024 and no longer receives security fixes. Everything here still works in the lab; on a real firewall you would run a supported release (11.1, 11.2, or 12.1), where most screens are the same.</p>
+<h4>Pod topology</h4>
+<svg class="topo" viewBox="0 0 760 360" role="img" aria-labelledby="topo-t topo-d">
+<title id="topo-t">Pod topology</title>
+<desc id="topo-d">The firewall firewall-a sits between the Internet zone (ethernet1/1, 203.0.113.20/24, next hop 203.0.113.1), the Users_Net zone (ethernet1/2, 192.168.1.1/24, with the Client at 192.168.1.20, the vRouter at 192.168.1.10, and the firewall management port at 192.168.1.254), and the Extranet zone (ethernet1/3, 192.168.50.1/24, servers including web 192.168.50.80, DNS 192.168.50.53 and DMZ 192.168.50.10).</desc>
+<g class="dim"><rect class="bx" x="250" y="8" width="260" height="74" rx="8"/>
+<text class="h" x="266" y="32">Internet zone</text>
+<text class="m" x="266" y="54">ISP router 203.0.113.1</text>
+<text class="s" x="266" y="72">8.8.8.8 and real websites beyond</text>
+<path class="ln" d="M380 82V128"/><text class="m" x="388" y="110">ethernet1/1 203.0.113.20/24</text></g>
+<rect class="fw" x="20" y="128" width="720" height="56" rx="8"/>
+<text class="h" x="36" y="152">firewall-a (PA-VM)</text>
+<text class="m" x="36" y="172">MGT 192.168.1.254 · default gateway 192.168.1.10 (vRouter)</text>
+<path class="ln mg" d="M70 184V240"/>
+<g class="dim"><path class="ln" d="M190 184V240"/><text class="m" x="198" y="224">e1/2 192.168.1.1</text></g>
+<rect class="bx" x="20" y="240" width="236" height="112" rx="8"/>
+<text class="h" x="34" y="264">Users_Net zone</text>
+<text class="m" x="34" y="284">192.168.1.0/24</text>
+<text class="m" x="34" y="306">Client 192.168.1.20</text>
+<text class="m" x="34" y="326">vRouter 192.168.1.10</text>
+<text class="s" x="34" y="344">MGT port is on this subnet</text>
+<g class="dim"><rect class="bx" x="272" y="240" width="238" height="112" rx="8"/>
+<text class="h" x="286" y="264">Extranet zone</text>
+<text class="m" x="286" y="284">192.168.50.0/24</text>
+<text class="m" x="286" y="306">Web .80 · DNS .53 · DMZ .10</text>
+<text class="s" x="286" y="326">Other lab servers on .50.x</text>
+<path class="ln" d="M390 184V240"/><text class="m" x="398" y="224">e1/3 192.168.50.1</text></g>
+
+</svg>
+<p class="box-note">Faded parts exist in the pod but are not configured yet; Lab 4 builds the data interfaces and zones.</p>
+<h4>Addresses you’ll use</h4>
+<div class="table-wrap"><table>
+<caption class="visually-hidden">Addresses in the lab network</caption>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td></tr>
+</tbody></table></div>
+
 <h4>What's already in the baseline</h4>
 <p>The Lab 1 settings (DNS, NTP, banner, management access) are already in <code>edu-210-11.0a-02.xml</code>. There are still no data interfaces, zones, or policy.</p>
 <h4>Three configurations to keep straight</h4>
@@ -87,80 +157,74 @@ html[data-present="on"] .pm-dock{position:fixed;left:0;right:0;bottom:0;z-index:
 
 <section class="unit" id="s-walkthrough" data-section="walkthrough" data-label="Walkthrough" data-part="Do the lab">
 <header><span class="sec-n">03</span><h2>Walkthrough of the detailed steps</h2></header>
-<h3 class="task-head"><span class="tn">2.1</span>Load the lab configuration</h3>
+<div class="callout tip"><p class="c-title">Reading the machine bands</p><p>Each coloured band says where the steps under it happen, and it stays in force until the next band:
+<span class="mlabel ml-client">🖥️ Client</span> <span class="mlabel ml-webui">🧱 Firewall web interface</span> <span class="mlabel ml-fwcli">⌨️ Firewall CLI</span> <span class="mlabel ml-extranet">🗄️ Server-Extranet</span>.
+When a single step switches machines, it carries an inline label instead. Step numbers match the guide’s Detailed Lab Steps exactly.</p></div>
+<h3 class="task-head"><span class="tn">2.1</span>Load lab configuration</h3>
 <p class="task-intro">Every lab starts from a known baseline, so your firewall matches the guide no matter what you did last time.</p>
-<ol class="steps-list" start="1"><li>On the client desktop, log in as <code>lab-user</code>, open Firefox, and browse to <code>https://192.168.1.254</code>. Log in as <code>admin</code> with the password from Lab Settings. If the login page does not appear, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li>Go to <span class="path" data-path="Device > Setup > Operations"></span> and click <strong>Load named configuration snapshot</strong>. Choose <code>edu-210-11.0a-02.xml</code> and click OK, then Close.</li><li>Open <strong>Tasks</strong> (lower right) and confirm the Load task shows completed.</li><li>Click <strong>Commit</strong> (upper right), then <strong>Commit</strong> in the dialog, and wait for it to finish.</li></ol>
-<div class="callout stuck"><p class="c-title">Loading is not committing</p><p>A loaded snapshot replaces only the candidate configuration. Until you commit, the firewall is still running whatever was there before, and nothing in the lab will match the guide.</p></div>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>Click the <strong>Client</strong> tab in NETLAB+ to access the Client PC.</li><li>On the <em>Zorin</em> desktop, click <strong>lab-user</strong>.</li><li>For the lab-user password, enter <code>Pal0Alt0!</code> and press <strong>Enter</strong>.</li><li>Double-click the <strong>Firefox Web Browser</strong> icon on the Desktop.</li><li>In the Firefox address field, type <code>https://192.168.1.254</code> and press <strong>Enter</strong>.</li></ol>
+</div>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="6"><li>Log in to the firewall web interface as username <code>admin</code>, password <code>Pal0Alt0!</code>. If the login page does not appear, wait an additional 1 to 3 minutes for the firewall to initialize and refresh the page.</li><li>Navigate to <span class="path" data-path="Device &gt; Setup &gt; Operations"></span> and click <strong>Load named configuration snapshot</strong> in the <em>Configuration Management</em> section.</li><li>In the <em>Load Named Configuration</em> window, select <code>edu-210-11.0a-02.xml</code> from the <strong>Name</strong> drop-down and click <strong>OK</strong>.</li><li>The <em>Loading Configuration</em> window says the configuration is being loaded and to check the Task Manager. Click <strong>Close</strong>.</li><li>Click the <strong>Tasks</strong> icon at the bottom-right of the web interface.</li><li>In <em>Task Manager – All Tasks</em>, verify the <strong>Load</strong> task shows <strong>Completed</strong>. Click <strong>Close</strong>.</li><li>Click the <strong>Commit</strong> link at the top-right of the web interface.</li><li>In the <em>Commit</em> window, click <strong>Commit</strong>.</li><li>When the commit operation completes, click <strong>Close</strong>.</li><li>Leave the Palo Alto Networks Firewall open and continue to the next task.</li></ol>
+<div class="callout stuck"><p class="c-title">Loading is not committing</p><p>A loaded snapshot replaces only the candidate configuration. Until you commit (steps 12 to 14), the firewall is still running whatever was there before, and nothing in the lab will match the guide.</p></div>
 <p class="shot" id="shot-1"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 1</span> The commit completing after loading the Lab 2 baseline.</span></p>
+</div>
 <h3 class="task-head"><span class="tn">2.2</span>Save a named configuration snapshot</h3>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Device &gt; Setup &gt; Operations"></span> and click <strong>Save named configuration snapshot</strong>.</li>
-<li>Name it <code>firewall-a-lab2</code> and click OK, then Close.</li>
-</ol>
-<div class="callout tip"><p class="c-title">Where the file went</p><p>Save writes the snapshot to the firewall's own storage. It is not on your workstation yet; that is what the next task does.</p></div>
-<div class="callout fix"><p class="c-title">The two halves use different names</p><p>The high-level steps (Task 1) name the snapshot <code>firewall-a</code> plus today's date. The detailed steps use <code>firewall-a-lab2</code>. Either is fine; use the detailed name if you're following this page.</p></div>
+<p class="task-intro">You save the firewall configuration with a specific filename.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Device &gt; Setup &gt; Operations"></span>. Click <strong>Save named configuration snapshot</strong>.</li><li>In the <em>Save Named Configuration</em> window, enter <code>firewall-a-lab2</code>. Click <strong>OK</strong>.</li><li>In the <em>Confirmation</em> window, click <strong>Close</strong>.</li><li>Leave the firewall open and continue to the next task.</li></ol>
+<div class="callout tip"><p class="c-title">Where the file went</p><p>Save writes the snapshot to the firewall’s own storage. It is not on your workstation yet; that is what the next task does.</p></div>
+<div class="callout fix"><p class="c-title">The two halves use different names</p><p>The high-level steps (Task 1) name the snapshot <code>firewall-a</code> plus today’s date. The detailed steps use <code>firewall-a-lab2</code>. Either is fine; use the detailed name if you’re following this page.</p></div>
+</div>
 <h3 class="task-head"><span class="tn">2.3</span>Export a named configuration snapshot</h3>
-<ol class="steps-list" start="1">
-<li>On the same Operations page, click <strong>Export named configuration snapshot</strong>.</li>
-<li>Choose <code>firewall-a-lab2</code> and click OK.</li>
-<li>When Firefox asks, save the file in <strong>Downloads</strong>.</li>
-</ol>
+<p class="task-intro">You export firewall-a-lab2 from the firewall to your workstation.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Under <span class="path" data-path="Device &gt; Setup &gt; Operations"></span>, in <em>Configuration Management</em>, click <strong>Export named configuration snapshot</strong>.</li><li>In the <em>Export Named Configuration</em> window, use the drop-down list to select <code>firewall-a-lab2</code>. Click <strong>OK</strong>.</li><li><span class="mlabel ml-client">On Client:</span> In the Firefox save dialog on the client desktop, in the <strong>Downloads</strong> folder, verify that <code>firewall-a-lab2</code> appears as the file name. Click <strong>Save</strong>.</li><li>Leave the firewall open and continue to the next task.</li></ol>
 <div class="callout why"><p class="c-title">Why export at all</p><p>A snapshot stored on the firewall dies with the firewall. An exported copy is your backup for hardware failure, a bad upgrade, or a replacement unit.</p></div>
-<p class="shot" id="shot-2"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 2</span> The Downloads folder (or Firefox's download list) showing firewall-a-lab2 saved on the client.</span></p>
+<p class="shot" id="shot-2"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 2</span> The Downloads folder (or Firefox’s download list) showing firewall-a-lab2 saved on the client.</span></p>
+</div>
 <h3 class="task-head"><span class="tn">2.4</span>Revert ongoing configuration changes</h3>
-<p class="task-intro">You'll introduce a believable typo, confirm it's there, then throw it away without committing.</p>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Device &gt; Setup &gt; Services"></span>, click the Services gear, and change <strong>Primary DNS Server</strong> to <code>88.8.8.8</code>. Click OK.</li>
-<li>Confirm the wrong value shows on the Services panel.</li>
-<li>At the upper right, click <strong>Changes</strong> and choose <strong>Revert Changes</strong>.</li>
-<li>Leave the scope as shown (device-and-network) and click <strong>Revert</strong>, then Close.</li>
-<li>Check the Services panel again: the primary DNS server is back to <code>8.8.8.8</code>.</li>
-</ol>
+<p class="task-intro">You introduce a believable typo, confirm it’s there, then throw it away without committing.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Device &gt; Setup &gt; Services"></span>. Edit the Services section by clicking the <strong>Services</strong> gear icon.</li><li>In the <em>Services</em> window, change <strong>Primary DNS Server</strong> to <code>88.8.8.8</code> (an easy mistake to make). Click <strong>OK</strong>.</li><li>Verify the mistake is showing in the Services panel for the Primary DNS Server.</li></ol>
 <p class="shot" id="shot-3"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 3</span> The Services panel showing the mistaken 88.8.8.8 before you revert.</span></p>
+<ol class="steps-list" start="4"><li>In the upper-right corner of the web interface, click the <strong>Changes</strong> button and select <strong>Revert Changes</strong>.</li><li>In the <em>Revert Changes</em> window, leave the settings unchanged (the Revert Scope shows <em>device-and-network</em>). Click <strong>Revert</strong>.</li><li>In the <em>Message</em> window, click <strong>Close</strong>.</li><li>In the Services panel, notice that the Primary DNS Server is back to its original value, <code>8.8.8.8</code>.</li><li>Leave the firewall open and continue to the next task.</li></ol>
 <p class="shot" id="shot-4"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 4</span> The Services panel showing 8.8.8.8 restored after Revert Changes.</span></p>
 <div class="callout stuck"><p class="c-title">Which revert is this?</p><p><strong>Revert Changes</strong> (under the Changes button) returns the candidate to the running configuration. That is different from <strong>Revert to running configuration</strong> and <strong>Revert to last saved configuration</strong> on the Operations page, covered in Module 3. Here they would all have the same effect, because the typo is the only pending change.</p></div>
+</div>
 <h3 class="task-head"><span class="tn">2.5</span>Preview configuration changes</h3>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Device &gt; Setup &gt; Operations"></span> and click <strong>SNMP Setup</strong> (Miscellaneous section).</li>
-<li>Set <strong>Physical Location</strong> to <code>Santa Clara, CA, USA</code>, <strong>Contact</strong> to <code>Unit 42</code>, and <strong>SNMP Community String</strong> to <code>paloalto42</code>. Click OK.</li>
-<li>Click <strong>Commit</strong>, but in the Commit window click <strong>Preview Changes</strong>, not Commit.</li>
-<li>Leave <strong>Lines of Context</strong> at 10 and click OK. A <strong>Device Config Audit</strong> window opens: running configuration on the left, candidate on the right.</li>
-<li>Find your SNMP lines. Green is added, yellow is modified, red is deleted.</li>
-<li>Close the audit window and click <strong>Cancel</strong> in the Commit window.</li>
-</ol>
-<div class="callout fix"><p class="c-title">A comma in the wrong place</p><p>The guide's step reads "Physical Location to Santa Clara, CA, USA for Contact". It means three separate fields: Physical Location is <code>Santa Clara, CA, USA</code>; Contact is <code>Unit 42</code>.</p></div>
+<p class="task-intro">You make a small change and compare the candidate configuration with the running configuration before committing.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Go to <span class="path" data-path="Device &gt; Setup &gt; Operations"></span> and click <strong>SNMP Setup</strong> in the <em>Miscellaneous</em> section.</li><li>In the <em>SNMP Setup</em> window, set <strong>Physical Location</strong> to <code>Santa Clara, CA, USA</code>, <strong>Contact</strong> to <code>Unit 42</code>, and <strong>SNMP Community String</strong> to <code>paloalto42</code>. Click <strong>OK</strong>.</li><li>Click the <strong>Commit</strong> button at the upper right of the web interface.</li><li>In the <em>Commit</em> window, click <strong>Preview Changes</strong> (not Commit).</li><li>In the <em>Preview Changes</em> window, leave <strong>Lines of Context</strong> at <code>10</code>. Click <strong>OK</strong>.</li><li>A new browser window named <em>Device Config Audit</em> shows the running configuration on the left and the candidate configuration on the right. Review the SNMP settings you changed. Green is added, yellow is modified, red is deleted.</li><li>Close the Device Config Audit window with the <strong>X</strong> in its upper-right corner.</li><li>Click <strong>Cancel</strong> in the Commit window.</li><li>Leave the firewall open and continue to the next task.</li></ol>
+<div class="callout fix"><p class="c-title">A comma in the wrong place</p><p>The guide’s step 2 reads “Physical Location to Santa Clara, CA, USA for Contact”. It means three separate fields: Physical Location is <code>Santa Clara, CA, USA</code>; Contact is <code>Unit 42</code>; the community string is <code>paloalto42</code>.</p></div>
 <p class="shot" id="shot-5"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 5</span> The Device Config Audit window with the SNMP changes highlighted on the candidate side.</span></p>
 <div class="callout tip"><p class="c-title">Leave it uncommitted</p><p>The lesson is seeing the difference, not applying it. Lab 3 loads a fresh baseline, so nothing carries over either way.</p></div>
+</div>
 <h3 class="task-head"><span class="tn">2.6</span>Examine log files</h3>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Monitor &gt; Logs &gt; System"></span>.</li>
-<li>Open any column header's drop-down arrow, choose <strong>Columns</strong>, and uncheck <strong>Object</strong>.</li>
-<li>Drag the <strong>Severity</strong> column header to the far left.</li>
-</ol>
-<div class="callout why"><p class="c-title">Why bother arranging columns</p><p>Every log has more columns than fit on screen. Putting the one you scan most (here, Severity) on the left saves time in every lab that follows. The same menu adds hidden columns, which you'll need in Labs 6, 11, and 12.</p></div>
+<p class="task-intro">You navigate the System log. The same techniques work in every log: Traffic, Threat, URL Filtering, and the rest.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Monitor &gt; Logs &gt; System"></span>.</li><li>Hide the <strong>Object</strong> column: click the small drop-down arrow at the right side of any column header and open <strong>Columns</strong>. Notice Object is currently checked and visible.</li><li>Uncheck <strong>Object</strong> and notice the column is now hidden.</li><li>Drag and drop the <strong>Severity</strong> column header to the left-most position (hold the left mouse button while dragging).</li><li>The table now displays Severity as the first column.</li><li>Leave the firewall open and continue to the next task.</li></ol>
+<div class="callout why"><p class="c-title">Why bother arranging columns</p><p>Every log has more columns than fit on screen. Putting the one you scan most (here, Severity) on the left saves time in every lab that follows. The same menu adds hidden columns, which you’ll need in Labs 6, 11, and 12.</p></div>
 <p class="shot" id="shot-6"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 6</span> The System log with Object hidden and Severity as the first column.</span></p>
+</div>
 <h3 class="task-head"><span class="tn">2.7</span>Create a log file filter</h3>
-<ol class="steps-list" start="1">
-<li>In the System log, click any <strong>informational</strong> value in the Severity column. The filter box fills in for you.</li>
-<li>Click <strong>Apply Filter</strong> (the arrow at the upper right of the filter box).</li>
-<li>Now click any <strong>general</strong> value in the Type column. The filter grows an <code>and</code> clause. Apply it again.</li>
-<li>Click <strong>Clear Filter</strong> when you're done.</li>
-</ol>
-<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( severity eq informational )</span>
-<span class="cmd">( severity eq informational ) and ( subtype eq general )</span></pre>
-<div class="callout tip"><p class="c-title">Click to learn the syntax</p><p>Clicking a value is the fastest way to learn the field names. The System log calls the Type column <code>subtype</code> in filters, which you'd never guess.</p></div>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Monitor &gt; Logs &gt; System"></span>.</li><li>In the Severity column, click any entry that says <strong>informational</strong>.</li><li>The interface builds a filter statement for you. Click the <strong>Apply Filter</strong> button (the arrow) at the upper right of the window.</li><li>The System log updates to show only entries with Severity <em>informational</em>.</li><li>In the <strong>Type</strong> column, click any entry that says <strong>general</strong>.</li><li>Notice the interface adds to the syntax to create a combined filter.</li><li>Click <strong>Apply Filter</strong>. The log shows only entries that match both conditions.</li></ol>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( severity eq informational ) and ( subtype eq general )</span></pre>
+<div class="callout tip"><p class="c-title">Click to learn the syntax</p><p>Clicking a value is the fastest way to learn the field names. The System log calls the Type column <code>subtype</code> in filters, which you’d never guess.</p></div>
 <p class="shot" id="shot-7"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 7</span> The System log filtered to informational and general entries, with the filter text visible.</span></p>
+<ol class="steps-list" start="8"><li>Remove the filter by clicking the <strong>Clear Filter</strong> button (the X) at the upper right. Clearing filters before you move on means the log shows everything the next time you open it.</li><li>Leave the firewall open and continue to the next task.</li></ol>
+</div>
 <h3 class="task-head"><span class="tn">2.8</span>Use the Filter Builder</h3>
-<ol class="steps-list" start="1">
-<li>Go to the <strong>Dashboard</strong> and note the current date and time under General Information.</li>
-<li>Back in <span class="path" data-path="Monitor &gt; Logs &gt; System"></span>, clear any filter, then click <strong>Add Filter</strong> (the plus icon).</li>
-<li>Build the first clause: connector <strong>and</strong>, attribute <strong>Severity</strong>, operator <strong>equal</strong>, value <strong>informational</strong>. Click <strong>Add</strong>.</li>
-<li>Build the second: <strong>and</strong>, <strong>Time Generated</strong>, <strong>greater than or equal to</strong>, today's date, and a time about 60 minutes before the time you noted. Click <strong>Add</strong>, then <strong>Apply</strong>.</li>
-<li>Click <strong>Apply Filter</strong> in the log. You see only the last hour of informational entries.</li>
-</ol>
-<div class="callout stuck"><p class="c-title">Your time is not the guide's time</p><p>The screenshots use 17:25. Use your own lab clock, which runs in UTC because of the time zone you set in Lab 1. The result should look roughly like this:</p></div>
+<p class="task-intro">For long or precise searches you build the filter clause by clause. Here: every informational System entry from the last 60 minutes.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select the <strong>Dashboard</strong> tab. In <em>General Information</em>, scroll to the bottom and find <strong>Time</strong>. Write down the current date and time.</li><li>Select <span class="path" data-path="Monitor &gt; Logs &gt; System"></span>. Verify no filter is present; if one is, click <strong>Clear Filter</strong>.</li><li>Click the <strong>Add Filter</strong> button (the plus icon) in the upper right of the System Logs window.</li><li>In the <em>Add Log Filter</em> window, build the first clause: <strong>A.</strong> Connector <strong>and</strong>; <strong>B.</strong> Attribute <strong>Severity</strong>; <strong>C.</strong> Operator <strong>equal</strong>; <strong>D.</strong> Value <strong>informational</strong>; <strong>E.</strong> click <strong>Add</strong>; <strong>F.</strong> note that the filter field at the top updates with the syntax.</li><li>Build the second clause: <strong>A.</strong> Connector <strong>and</strong>; <strong>B.</strong> Attribute <strong>Time Generated</strong>; <strong>C.</strong> Operator <strong>greater than or equal to</strong>; <strong>D.</strong> in the first Value drop-down, the date you recorded in step 1; <strong>E.</strong> in the second, a time about 60 minutes before the time you recorded (round as needed; the guide’s 17:25:21 becomes 16:25:00); <strong>F.</strong> click <strong>Add</strong>; <strong>G.</strong> note the filter updates.</li><li>In the <em>Add Log Filter</em> window, click <strong>Apply</strong>.</li><li>Your filter appears in the System log filter field. Your date and time will differ from the guide’s.</li></ol>
+<div class="callout stuck"><p class="c-title">Your time is not the guide’s time</p><p>The screenshots use 17:25. Use the time you read from your own Dashboard in step 1. The result should look roughly like this:</p></div>
 <pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( severity eq informational ) and ( time_generated geq '2026/10/21 16:25:00' )</span></pre>
 <p class="shot" id="shot-8"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 8</span> The Add Log Filter window showing both clauses and the generated filter text.</span></p>
+<ol class="steps-list" start="8"><li>Click the <strong>Apply Filter</strong> button in the upper right corner.</li><li>The System log shows only entries generated after the time you specified. The bottom of page 1 shows the first entry after that time.</li><li>The lab is now complete; you may end your reservation.</li></ol>
+</div>
 </section>
 
 <section class="unit" id="s-reference" data-section="reference" data-label="Reference" data-part="Understand">
@@ -197,7 +261,7 @@ html[data-present="on"] .pm-dock{position:fixed;left:0;right:0;bottom:0;z-index:
 <section class="unit" id="s-evidence" data-section="evidence" data-label="What to submit" data-part="Wrap up">
 <header><span class="sec-n">08</span><h2>Screenshots to capture</h2></header>
 <p>Take each screenshot when you reach its marker in the walkthrough. Name the files by lab and number (for example <code>lab02-shot4.png</code>) and submit them in Canvas as your instructor directs.</p>
-<ul class="checklist evidence" data-save="lab2-evidence"><li><input type="checkbox" id="ev2-0"><div><label for="ev2-0">Screenshot 1: The commit completing after loading the Lab 2 baseline.</label><a class="ev-where" href="#shot-1">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev2-1"><div><label for="ev2-1">Screenshot 2: The Downloads folder (or Firefox's download list) showing firewall-a-lab2 saved on the client.</label><a class="ev-where" href="#shot-2">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev2-2"><div><label for="ev2-2">Screenshot 3: The Services panel showing the mistaken 88.8.8.8 before you revert.</label><a class="ev-where" href="#shot-3">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev2-3"><div><label for="ev2-3">Screenshot 4: The Services panel showing 8.8.8.8 restored after Revert Changes.</label><a class="ev-where" href="#shot-4">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev2-4"><div><label for="ev2-4">Screenshot 5: The Device Config Audit window with the SNMP changes highlighted on the candidate side.</label><a class="ev-where" href="#shot-5">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev2-5"><div><label for="ev2-5">Screenshot 6: The System log with Object hidden and Severity as the first column.</label><a class="ev-where" href="#shot-6">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev2-6"><div><label for="ev2-6">Screenshot 7: The System log filtered to informational and general entries, with the filter text visible.</label><a class="ev-where" href="#shot-7">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev2-7"><div><label for="ev2-7">Screenshot 8: The Add Log Filter window showing both clauses and the generated filter text.</label><a class="ev-where" href="#shot-8">Find it in the walkthrough</a></div></li></ul>
+<ul class="checklist evidence" data-save="lab2-evidence"><li><input type="checkbox" id="ev2-0"><div><label for="ev2-0">Screenshot 1: The commit completing after loading the Lab 2 baseline.</label><a class="ev-where" href="#shot-1">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev2-1"><div><label for="ev2-1">Screenshot 2: The Downloads folder (or Firefox’s download list) showing firewall-a-lab2 saved on the client.</label><a class="ev-where" href="#shot-2">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev2-2"><div><label for="ev2-2">Screenshot 3: The Services panel showing the mistaken 88.8.8.8 before you revert.</label><a class="ev-where" href="#shot-3">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev2-3"><div><label for="ev2-3">Screenshot 4: The Services panel showing 8.8.8.8 restored after Revert Changes.</label><a class="ev-where" href="#shot-4">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev2-4"><div><label for="ev2-4">Screenshot 5: The Device Config Audit window with the SNMP changes highlighted on the candidate side.</label><a class="ev-where" href="#shot-5">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev2-5"><div><label for="ev2-5">Screenshot 6: The System log with Object hidden and Severity as the first column.</label><a class="ev-where" href="#shot-6">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev2-6"><div><label for="ev2-6">Screenshot 7: The System log filtered to informational and general entries, with the filter text visible.</label><a class="ev-where" href="#shot-7">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev2-7"><div><label for="ev2-7">Screenshot 8: The Add Log Filter window showing both clauses and the generated filter text.</label><a class="ev-where" href="#shot-8">Find it in the walkthrough</a></div></li></ul>
 <p class="box-note">Checkmarks are saved in this browser only. They help you keep track; the screenshots themselves go to Canvas.</p>
 </section>
 

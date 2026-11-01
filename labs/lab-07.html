@@ -34,6 +34,34 @@ html[data-present="on"] .pm-dock{position:fixed;left:0;right:0;bottom:0;z-index:
 .pm-dock .pm-where{flex:1 1 auto;text-align:center;min-width:0;font-size:.78rem;color:var(--ink-2)}
 .pm-dock .pm-where b{color:var(--ink);display:block;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media print{.pm-dock,.pm-toggle{display:none!important}}
+</style><style id="mb-css">
+/* Machine bands: which VM / session each run of steps happens on. Page-local; uses site.css colour tokens. */
+.mrun{--mb:var(--accent);--mb-soft:var(--accent-soft);border-left:4px solid var(--mb);margin:1rem 0 1.2rem;padding:0 0 .2rem .9rem}
+.mrun.mr-client{--mb:var(--ok);--mb-soft:var(--ok-soft)}
+.mrun.mr-webui{--mb:var(--accent);--mb-soft:var(--accent-soft)}
+.mrun.mr-fwcli{--mb:var(--warn);--mb-soft:var(--warn-soft)}
+.mrun.mr-extranet{--mb:var(--focus);--mb-soft:var(--surface-2)}
+.mband{display:flex;flex-wrap:wrap;align-items:baseline;gap:.2rem .6rem;margin:0 0 .6rem -.9rem;padding:.4rem .8rem;
+  background:var(--mb-soft);border-radius:0 var(--radius-m) var(--radius-m) 0;font-weight:700;font-size:var(--step--1)}
+.mband .mb-ic{font-size:1.05rem}
+.mband .mb-sub{font-weight:400;color:var(--ink-2);font-size:.85em}
+.mlabel{display:inline-block;margin-right:.35rem;padding:0 .45rem;border-radius:var(--radius-s);font-weight:700;font-size:.85em;
+  border-left:3px solid var(--accent);background:var(--surface-2)}
+.mlabel.ml-client{border-left-color:var(--ok)}.mlabel.ml-webui{border-left-color:var(--accent)}
+.mlabel.ml-fwcli{border-left-color:var(--warn)}.mlabel.ml-extranet{border-left-color:var(--focus)}
+.mrun .shot{margin-left:.6rem}
+.topo{width:100%;max-width:760px;height:auto;display:block;margin:.4rem 0 .3rem}
+.topo .bx{fill:var(--surface);stroke:var(--rule);stroke-width:1.5}
+.topo .fw{fill:var(--accent-soft);stroke:var(--accent);stroke-width:2}
+.topo .ln{stroke:var(--ink-2);stroke-width:2;fill:none}
+.topo .ln.mg{stroke-dasharray:5 4}
+.topo .dim{opacity:.45}
+.topo text{fill:var(--ink);font-family:var(--font-body);font-size:13px}
+.topo .h{font-weight:700;font-size:14px}
+.topo .m{font-family:var(--font-mono);font-size:12px}
+.topo .s{fill:var(--ink-2);font-size:12px}
+.diverge{border-left-color:var(--warn)}
+@media print{.mrun{border-left-color:#666}.mband{background:#eee}}
 </style></head>
 <body data-root=".." data-lab="7" data-page="labs/index.html">
 <a class="skip-link" href="#main">Skip to main content</a>
@@ -67,18 +95,60 @@ html[data-present="on"] .pm-dock{position:fixed;left:0;right:0;bottom:0;z-index:
 <section class="unit" id="s-setup" data-section="setup" data-label="Before you begin" data-part="Prepare">
 <header><span class="sec-n">02</span><h2>Before you begin</h2></header>
 <p>You'll use the web interface, Firefox, and the <strong>App Generator</strong> icon on the client desktop, which plays a mix of application traffic.</p>
+<h4>Lab Settings (from the NDG guide)</h4>
 <div class="table-wrap"><table>
-<caption class="visually-hidden">Hosts in the lab network</caption>
-<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th><th scope="col">Sign-in</th></tr></thead>
+<caption class="visually-hidden">Lab Settings: virtual machines, addresses, and sign-ins</caption>
+<thead><tr><th scope="col">Virtual Machine</th><th scope="col">IP Address</th><th scope="col">Account</th><th scope="col">Password</th></tr></thead>
 <tbody>
-<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td><td><code>lab-user / Pal0Alt0!</code></td></tr>
-<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td><td><code>admin / Pal0Alt0!</code></td></tr>
-<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td><td><code>root / Pal0Alt0</code></td></tr>
-<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td><td>—</td></tr>
-<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td><td>—</td></tr>
-<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td><td>—</td></tr>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td><code>lab-user</code></td><td><code>Pal0Alt0!</code></td></tr>
+<tr><td>DMZ</td><td><code>192.168.50.10</code></td><td><code>root</code></td><td><code>Pal0Alt0!</code></td></tr>
+<tr><td>Firewall</td><td><code>192.168.1.254</code></td><td><code>admin</code></td><td><code>Pal0Alt0!</code></td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td><code>root</code></td><td><code>Pal0Alt0</code></td></tr>
 </tbody></table></div>
-<p class="box-note">Sign-in credentials are shown above (the fixed NETLAB+ pod logins, case-sensitive). </p>
+<p class="box-note">Passwords are case-sensitive and use zeros, not the letter O. The vRouter password has no exclamation point.</p>
+<p class="box-note"><strong>Currency note:</strong> these labs run PAN-OS 11.0, which reached end-of-life on November 17, 2024 and no longer receives security fixes. Everything here still works in the lab; on a real firewall you would run a supported release (11.1, 11.2, or 12.1), where most screens are the same.</p>
+<h4>Pod topology</h4>
+<svg class="topo" viewBox="0 0 760 360" role="img" aria-labelledby="topo-t topo-d">
+<title id="topo-t">Pod topology</title>
+<desc id="topo-d">The firewall firewall-a sits between the Internet zone (ethernet1/1, 203.0.113.20/24, next hop 203.0.113.1), the Users_Net zone (ethernet1/2, 192.168.1.1/24, with the Client at 192.168.1.20, the vRouter at 192.168.1.10, and the firewall management port at 192.168.1.254), and the Extranet zone (ethernet1/3, 192.168.50.1/24, servers including web 192.168.50.80, DNS 192.168.50.53 and DMZ 192.168.50.10).</desc>
+<g><rect class="bx" x="250" y="8" width="260" height="74" rx="8"/>
+<text class="h" x="266" y="32">Internet zone</text>
+<text class="m" x="266" y="54">ISP router 203.0.113.1</text>
+<text class="s" x="266" y="72">8.8.8.8 and real websites beyond</text>
+<path class="ln" d="M380 82V128"/><text class="m" x="388" y="110">ethernet1/1 203.0.113.20/24</text></g>
+<rect class="fw" x="20" y="128" width="720" height="56" rx="8"/>
+<text class="h" x="36" y="152">firewall-a (PA-VM)</text>
+<text class="m" x="36" y="172">MGT 192.168.1.254 · default gateway 192.168.1.10 (vRouter)</text>
+<path class="ln mg" d="M70 184V240"/>
+<g><path class="ln" d="M190 184V240"/><text class="m" x="198" y="224">e1/2 192.168.1.1</text></g>
+<rect class="bx" x="20" y="240" width="236" height="112" rx="8"/>
+<text class="h" x="34" y="264">Users_Net zone</text>
+<text class="m" x="34" y="284">192.168.1.0/24</text>
+<text class="m" x="34" y="306">Client 192.168.1.20</text>
+<text class="m" x="34" y="326">vRouter 192.168.1.10</text>
+<text class="s" x="34" y="344">MGT port is on this subnet</text>
+<g><rect class="bx" x="272" y="240" width="238" height="112" rx="8"/>
+<text class="h" x="286" y="264">Extranet zone</text>
+<text class="m" x="286" y="284">192.168.50.0/24</text>
+<text class="m" x="286" y="306">Web .80 · DNS .53 · DMZ .10</text>
+<text class="s" x="286" y="326">Other lab servers on .50.x</text>
+<path class="ln" d="M390 184V240"/><text class="m" x="398" y="224">e1/3 192.168.50.1</text></g>
+
+</svg>
+<p class="box-note">Data interfaces, VR-1 and zones as built in Lab 4 and loaded by this lab’s snapshot.</p>
+<h4>Addresses you’ll use</h4>
+<div class="table-wrap"><table>
+<caption class="visually-hidden">Addresses in the lab network</caption>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td></tr>
+</tbody></table></div>
+
 <h4>What's already in the baseline</h4>
 <p>Interfaces, zones, NAT, and the Lab 5 rules: the two known-bad block rules at the top, then Users_to_Extranet, Users_to_Internet, and Extranet_to_Internet, all with Application <strong>any</strong>.</p>
 <h4>Why the firewall's own traffic hits a Security rule here</h4>
@@ -87,112 +157,118 @@ html[data-present="on"] .pm-dock{position:fixed;left:0;right:0;bottom:0;z-index:
 
 <section class="unit" id="s-walkthrough" data-section="walkthrough" data-label="Walkthrough" data-part="Do the lab">
 <header><span class="sec-n">03</span><h2>Walkthrough of the detailed steps</h2></header>
-<h3 class="task-head"><span class="tn">2.1</span>Load the lab configuration</h3>
+<div class="callout tip"><p class="c-title">Reading the machine bands</p><p>Each coloured band says where the steps under it happen, and it stays in force until the next band:
+<span class="mlabel ml-client">🖥️ Client</span> <span class="mlabel ml-webui">🧱 Firewall web interface</span> <span class="mlabel ml-fwcli">⌨️ Firewall CLI</span> <span class="mlabel ml-extranet">🗄️ Server-Extranet</span>.
+When a single step switches machines, it carries an inline label instead. Step numbers match the guide’s Detailed Lab Steps exactly.</p></div>
+<h3 class="task-head"><span class="tn">2.1</span>Apply a baseline configuration to the firewall</h3>
 <p class="task-intro">Every lab starts from a known baseline, so your firewall matches the guide no matter what you did last time.</p>
-<ol class="steps-list" start="1"><li>On the client desktop, log in as <code>lab-user</code>, open Firefox, and browse to <code>https://192.168.1.254</code>. Log in as <code>admin</code> with the password from Lab Settings. If the login page does not appear, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li>Go to <span class="path" data-path="Device > Setup > Operations"></span> and click <strong>Load named configuration snapshot</strong>. Choose <code>edu-210-11.0a-07.xml</code> and click OK, then Close.</li><li>Open <strong>Tasks</strong> (lower right) and confirm the Load task shows completed.</li><li>Click <strong>Commit</strong> (upper right), then <strong>Commit</strong> in the dialog, and wait for it to finish.</li></ol>
-<div class="callout stuck"><p class="c-title">Loading is not committing</p><p>A loaded snapshot replaces only the candidate configuration. Until you commit, the firewall is still running whatever was there before, and nothing in the lab will match the guide.</p></div>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>Click the <strong>Client</strong> tab in NETLAB+ to access the Client PC.</li><li>On the <em>Zorin</em> desktop, click <strong>lab-user</strong>.</li><li>For the lab-user password, enter <code>Pal0Alt0!</code> and press <strong>Enter</strong>.</li><li>Double-click the <strong>Firefox Web Browser</strong> icon on the Desktop.</li><li>In the Firefox address field, type <code>https://192.168.1.254</code> and press <strong>Enter</strong>.</li></ol>
+</div>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="6"><li>Log in to the firewall web interface as username <code>admin</code>, password <code>Pal0Alt0!</code>. If the login page does not appear, wait an additional 1 to 3 minutes for the firewall to initialize and refresh the page.</li><li>Navigate to <span class="path" data-path="Device &gt; Setup &gt; Operations"></span> and click <strong>Load named configuration snapshot</strong> in the <em>Configuration Management</em> section.</li><li>In the <em>Load Named Configuration</em> window, select <code>edu-210-11.0a-07.xml</code> from the <strong>Name</strong> drop-down and click <strong>OK</strong>.</li><li>The <em>Loading Configuration</em> window says the configuration is being loaded and to check the Task Manager. Click <strong>Close</strong>.</li><li>Click the <strong>Tasks</strong> icon at the bottom-right of the web interface.</li><li>In <em>Task Manager – All Tasks</em>, verify the <strong>Load</strong> task shows <strong>Completed</strong>. Click <strong>Close</strong>.</li><li>Click the <strong>Commit</strong> link at the top-right of the web interface.</li><li>In the <em>Commit</em> window, click <strong>Commit</strong>.</li><li>When the commit operation completes, click <strong>Close</strong>.</li><li>Leave the Palo Alto Networks Firewall open and continue to the next task.</li></ol>
+<div class="callout stuck"><p class="c-title">Loading is not committing</p><p>A loaded snapshot replaces only the candidate configuration. Until you commit (steps 12 to 14), the firewall is still running whatever was there before, and nothing in the lab will match the guide.</p></div>
+</div>
 <h3 class="task-head"><span class="tn">2.2</span>Configure an application group</h3>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Objects &gt; Application Groups"></span> and click <strong>Add</strong>.</li>
-<li>Name it <code>paloalto-apps</code> and add <code>paloalto-dns-security</code>, <code>paloalto-updates</code>, <code>paloalto-userid-agent</code>, <code>paloalto-wildfire-cloud</code>, and <code>pan-db-cloud</code>. Click OK.</li>
-</ol>
+<p class="task-intro">paloalto-apps groups a few of the applications the firewall uses to reach Palo Alto Networks services. You use it in a rule next.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Navigate to <span class="path" data-path="Objects &gt; Application Groups"></span>. Click <strong>Add</strong>.</li><li>In the <em>Application Group</em> window, enter Name <code>paloalto-apps</code> and add the applications <code>paloalto-dns-security</code>, <code>paloalto-updates</code>, <code>paloalto-userid-agent</code>, <code>paloalto-wildfire-cloud</code>, and <code>pan-db-cloud</code> (type them, or use <strong>Browse</strong>). Click <strong>OK</strong>.</li><li>Leave the firewall open and continue to the next task.</li></ol>
 <div class="callout tip"><p class="c-title">An example, not a full list</p><p>The guide says so too: a production firewall may need more Palo Alto Networks applications than these five.</p></div>
-<h3 class="task-head"><span class="tn">2.3</span>Configure a Security rule for firewall update traffic</h3>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Policies &gt; Security"></span> and click <strong>Add</strong>.</li>
-<li><strong>General:</strong> name <code>Allow-PANW-Apps</code>, description <code>Allows PANW apps for firewall</code>.</li>
-<li><strong>Source:</strong> zone <strong>Users_Net</strong>, address <code>192.168.1.254</code>.</li>
-<li><strong>Destination:</strong> zone <strong>Internet</strong>, address <strong>Any</strong>.</li>
-<li><strong>Application:</strong> add <strong>paloalto-apps</strong> (type the first few letters; groups appear at the end of the list).</li>
-<li><strong>Service/URL Category:</strong> application-default and Any.</li>
-<li><strong>Actions:</strong> Allow, <strong>Log at Session End</strong>. Click OK.</li>
-<li>The rule lands just above intrazone-default, at the bottom. Commit, and notice the commit result has a <strong>Rule Shadow</strong> tab. Close it for now.</li>
-</ol>
-<div class="callout why"><p class="c-title">Positive enforcement</p><p>You're saying exactly what the firewall's own traffic may do, rather than listing what to block. That's the model App-ID is built for.</p></div>
-<h3 class="task-head"><span class="tn">2.4</span>Test the Allow-PANW-Apps rule</h3>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Device &gt; Dynamic Updates"></span> and click <strong>Check Now</strong>.</li>
-<li>In <span class="path" data-path="Monitor &gt; Logs &gt; Traffic"></span>, clear filters and apply the filter below. Leave it in place.</li>
-</ol>
+</div>
+<h3 class="task-head"><span class="tn">2.3</span>Configure a Security policy rule to allow firewall update traffic</h3>
+<p class="task-intro">Positive enforcement: you state exactly what the firewall’s own traffic may do.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Navigate to <span class="path" data-path="Policies &gt; Security"></span>. Click <strong>Add</strong>.</li><li><strong>General</strong> tab: Name <code>Allow-PANW-Apps</code>. Description <code>Allows PANW apps for firewall.</code></li><li><strong>Source</strong> tab: Source Zone <strong>Users_Net</strong>; Source Address <code>192.168.1.254</code>.</li><li><strong>Destination</strong> tab: Destination Zone <strong>Internet</strong>; Destination Address <strong>Any</strong>.</li><li><strong>Application</strong> tab: add <strong>paloalto-apps</strong>. Type the first few letters; application groups appear at the very end of the list.</li><li><strong>Service/URL Category</strong> tab: verify <strong>application-default</strong> and <strong>Any</strong> are selected.</li><li><strong>Actions</strong> tab: verify Action <strong>Allow</strong> and Log Setting <strong>Log at Session End</strong>. Click <strong>OK</strong>.</li><li>The Allow-PANW-Apps rule is listed just above <strong>intrazone-default</strong>.</li><li>Click the <strong>Commit</strong> button at the upper right.</li><li>In the <em>Commit</em> window, click <strong>Commit</strong>.</li><li>When the commit finishes, notice the extra <strong>Rule Shadow</strong> tab. It only appears when a rule shadows another. You fix it later. Click <strong>Close</strong>.</li><li>Leave the firewall open and continue to the next task.</li></ol>
+<div class="callout why"><p class="c-title">Positive enforcement</p><p>You’re saying exactly what the firewall’s own traffic may do, rather than listing what to block. That’s the model App-ID is built for.</p></div>
+</div>
+<h3 class="task-head"><span class="tn">2.4</span>Test the Allow-PANW-Apps Security policy rule</h3>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Device &gt; Dynamic Updates"></span>. Click <strong>Check Now</strong>. The firewall uses the paloalto-updates application, which is in your group.</li><li>Select <span class="path" data-path="Monitor &gt; Logs &gt; Traffic"></span>. Clear any filters, then create and apply the filter below. Leave it in place for later.</li></ol>
 <pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( app eq paloalto-updates )</span></pre>
-<div class="callout guideq"><p class="c-title">Q1: Which rule allowed the traffic?</p><p><strong>a. Users_to_Internet.</strong> It sits above Allow-PANW-Apps and allows any application from Users_Net to Internet, so it matches first.</p></div>
-<div class="callout guideq"><p class="c-title">Q2: Once Users_to_Internet matches, does the firewall keep checking later rules?</p><p><strong>True.</strong> The first matching rule wins and evaluation stops. That's what makes Allow-PANW-Apps shadowed.</p></div>
+<div class="callout guideq"><p class="c-title">Guide question Q1</p><p>Which rule allowed the application traffic to pass through the firewall? a. Users_to_Internet  b. egress-inside-content-id  c. Inside_Nets_to_Internet  d. Users_to_Extranet</p><p><strong>Answer:</strong> <strong>a. Users_to_Internet.</strong> It sits above Allow-PANW-Apps and allows any application from Users_Net to Internet, so it matches first.</p></div>
+<div class="callout guideq"><p class="c-title">Guide question Q2</p><p>Once Users_to_Internet matches and the firewall allows the traffic, there is no reason to keep comparing against later rules, due to the “shadow” effect. True or False?</p><p><strong>Answer:</strong> <strong>a. True.</strong> The first matching rule wins and evaluation stops. That’s what makes Allow-PANW-Apps shadowed.</p></div>
 <p class="shot" id="shot-1"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 1</span> The Traffic log showing paloalto-updates sessions matched by Users_to_Internet.</span></p>
+<ol class="steps-list" start="3"><li>Leave the firewall open and continue to the next task.</li></ol>
+</div>
 <h3 class="task-head"><span class="tn">2.5</span>Identify shadowed rules</h3>
-<ol class="steps-list" start="1">
-<li>Click <strong>Tasks</strong> (lower right) and click the <strong>Commit</strong> link for your last commit.</li>
-<li>Select the <strong>Rule Shadow</strong> tab and click the number under <strong>Count</strong> to see which rule is shadowed and by what.</li>
-</ol>
+<p class="task-intro">You might miss the Rule Shadow tab at commit time, so you find it again in the Task list.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>In the bottom-right corner of the web interface, click <strong>Tasks</strong>.</li><li>In <em>Task Manager – All Tasks</em>, scroll to the most recent <strong>Commit</strong> under Type and click its <strong>Commit</strong> link.</li><li>In <em>Job Status – Commit</em>, select the <strong>Rule Shadow</strong> tab. Click the number under <strong>Count</strong> (1 in the guide) to see which rule is shadowed and by what. Click <strong>Close</strong>.</li></ol>
 <p class="shot" id="shot-2"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 2</span> The Rule Shadow tab showing Allow-PANW-Apps shadowed by Users_to_Internet.</span></p>
-<h3 class="task-head"><span class="tn">2.6</span>Fix the rule order</h3>
-<ol class="steps-list" start="1">
-<li>In <span class="path" data-path="Policies &gt; Security"></span>, select (don't open) Allow-PANW-Apps.</li>
-<li>Drag it, or use <strong>Move</strong>, so it becomes <strong>rule 3</strong>: directly below the two block rules and above Users_to_Extranet and Users_to_Internet.</li>
-<li>Commit.</li>
-</ol>
-<div class="callout why"><p class="c-title">Why not move it to the very top?</p><p>The known-bad block rules should stay first, so nothing, not even the firewall's own traffic, reaches a known-malicious address.</p></div>
-<h3 class="task-head"><span class="tn">2.7</span>Test the modified rule</h3>
-<ol class="steps-list" start="1">
-<li>Click <strong>Check Now</strong> in <span class="path" data-path="Device &gt; Dynamic Updates"></span> again.</li>
-<li>Reapply <code>( app eq paloalto-updates )</code>. New entries now show rule <strong>Allow-PANW-Apps</strong>.</li>
-<li>In a new tab, open <code>www.paloaltonetworks.com</code>, then close the tab.</li>
-<li>Apply the filter below. App-ID shows the browsing as <strong>dns</strong> and <strong>ssl</strong>, allowed by Users_to_Internet.</li>
-</ol>
-<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( addr.src eq 192.168.1.20 ) and ( rule eq Users_to_Internet )</span></pre>
+<ol class="steps-list" start="4"><li>In the Task Manager window, click <strong>Close</strong>.</li><li>Leave the firewall open and continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.6</span>Modify the Security policy to function properly</h3>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Navigate to <span class="path" data-path="Policies &gt; Security"></span>. Highlight <strong>Allow-PANW-Apps</strong>, but do not open it.</li><li>Drag and drop it to the correct location, or use the <strong>Move</strong> button at the bottom.</li><li>Confirm Allow-PANW-Apps is now the <strong>3rd</strong> rule: directly below the two known-bad block rules and above Users_to_Extranet and Users_to_Internet.</li><li>Click the <strong>Commit</strong> button at the upper right of the web interface.</li><li>In the <em>Commit</em> window, click <strong>Commit</strong>.</li><li>Wait until the commit process is complete. Click <strong>Close</strong>.</li><li>Leave the firewall open and continue to the next task.</li></ol>
+<div class="callout why"><p class="c-title">Why not move it to the very top?</p><p>The known-bad block rules should stay first, so nothing, not even the firewall’s own traffic, reaches a known-malicious address.</p></div>
+</div>
+<h3 class="task-head"><span class="tn">2.7</span>Test the modified Security policy rule</h3>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Device &gt; Dynamic Updates"></span>. Click <strong>Check Now</strong>.</li><li>Select <span class="path" data-path="Monitor &gt; Logs &gt; Traffic"></span>. Make sure <code>( app eq paloalto-updates )</code> is applied and click <strong>Apply Filter</strong> to refresh. New paloalto-updates entries now show rule <strong>Allow-PANW-Apps</strong>.</li></ol>
 <p class="shot" id="shot-3"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 3</span> The Traffic log showing paloalto-updates now matched by Allow-PANW-Apps.</span></p>
+<ol class="steps-list" start="3"><li><span class="mlabel ml-client">On Client:</span> Open a new tab in Firefox.</li><li><span class="mlabel ml-client">On Client:</span> Type <code>www.paloaltonetworks.com</code> and press Enter. Once it opens, close the tab with its <strong>X</strong>.</li><li>Select <span class="path" data-path="Monitor &gt; Logs &gt; Traffic"></span>. Clear any filters, then create and apply the filter below. App-ID identified the traffic as <strong>dns</strong> and <strong>ssl</strong>, both allowed by Users_to_Internet.</li></ol>
+<pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( addr.src eq 192.168.1.20 ) and ( rule eq Users_to_Internet )</span></pre>
+<ol class="steps-list" start="6"><li>Minimize the firewall’s Firefox window and continue to the next task.</li></ol>
+</div>
 <h3 class="task-head"><span class="tn">2.8</span>Generate application traffic</h3>
-<ol class="steps-list" start="1">
-<li>Double-click <strong>App Generator</strong> on the client desktop and press Enter to start it. Press Enter again when it finishes, and give it 30 to 60 seconds.</li>
-<li>Apply the filter below and read the Application column.</li>
-</ol>
+<p class="task-intro">A short script on the client generates traffic from many applications toward the Internet and Extranet zones.</p>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>On the client desktop, double-click the <strong>App Generator</strong> icon.</li><li>Press <strong>Enter</strong> to start the App Generator script and let it run. When it finishes, press <strong>Enter</strong>. Allow 30 seconds to 1 minute before going on.</li></ol>
+</div>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="3"><li>Return to the <strong>firewall-a – Mozilla Firefox</strong> window from the taskbar.</li><li>Select <span class="path" data-path="Monitor &gt; Logs &gt; Traffic"></span>. Create and apply the filter below and note the entries in the <strong>Application</strong> column. You see many applications, some unfamiliar.</li></ol>
 <pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( addr.src in 192.168.1.20 ) and ( app neq dns )</span></pre>
-<div class="callout guideq"><p class="c-title">Q3: How should you approach applications from Users_Net to the Extranet?</p><p><strong>b. Allow only specific applications based on a defined policy.</strong> That's the App-ID model, and it's what task 2.10 does.</p></div>
-<div class="callout guideq"><p class="c-title">Q4: Are there denied applications from Users_Net you should allow?</p><p><strong>b. Reevaluate and potentially allow specific denied applications based on security needs.</strong> Decide case by case, from business need.</p></div>
+<div class="callout guideq"><p class="c-title">Guide question Q3</p><p>Which option best represents the approach to allowing applications from Users_Net to the Extranet?</p><p><strong>Answer:</strong> <strong>b. Allow only specific applications based on a defined policy.</strong> That’s the App-ID model, and it’s what task 2.10 does.</p></div>
+<div class="callout guideq"><p class="c-title">Guide question Q4</p><p>Are there any applications being denied from Users_Net that you should allow?</p><p><strong>Answer:</strong> <strong>b. Reevaluate and potentially allow specific denied applications based on security needs.</strong> Decide case by case, from business need.</p></div>
 <p class="shot" id="shot-4"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 4</span> The Traffic log showing the variety of applications App Generator produced.</span></p>
-<h3 class="task-head"><span class="tn">2.9</span>Research an application</h3>
-<ol class="steps-list" start="1">
-<li>Filter the Traffic log for dailymotion.</li>
-</ol>
+<ol class="steps-list" start="5"><li>Leave the firewall open and continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.9</span>Research applications</h3>
+<p class="task-intro">Before you allow or block an application, look it up in the firewall’s own application database.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>In the Traffic log, enter the filter below to search for dailymotion. Click the <strong>Apply</strong> icon.</li></ol>
 <pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( addr.src in 192.168.1.20 ) and ( app eq dailymotion )</span></pre>
-<ol class="steps-list" start="2">
-<li>Go to <span class="path" data-path="Objects &gt; Applications"></span>, search for <code>dailymotion</code>, and click its name.</li>
-</ol>
-<div class="callout guideq"><p class="c-title">Q5: What category is dailymotion?</p><p><strong>c. media.</strong></p></div>
-<div class="callout guideq"><p class="c-title">Q6: What risk level?</p><p>Read the <strong>Risk</strong> value on the application's entry. Palo Alto Networks can change risk ratings in content updates, so the entry on your firewall is the authoritative answer.</p></div>
-<div class="callout guideq"><p class="c-title">Q7: Which characteristics might make you block it?</p><p>Read the checked characteristics in the entry's <strong>Characteristics</strong> section (evasive, used by malware, capable of file transfer, prone to misuse, and so on). Answer <strong>e</strong> only if every listed option is checked on your firewall.</p></div>
-<div class="callout guideq"><p class="c-title">Q8: What ports does it use?</p><p><strong>b. TCP/80,443.</strong> It's a web application, so its standard ports are HTTP and HTTPS.</p></div>
+<ol class="steps-list" start="2"><li>Navigate to <span class="path" data-path="Objects &gt; Applications"></span>. In the Search field, enter <code>dailymotion</code> (the name as it appears in the Traffic log) and click the magnifying glass. Click <strong>dailymotion</strong> in the Name column.</li><li>The Applications database entry shows detailed information about the application.</li></ol>
+<div class="callout guideq"><p class="c-title">Guide question Q5</p><p>What category does the application fall into?</p><p><strong>Answer:</strong> <strong>c. media.</strong></p></div>
+<div class="callout guideq"><p class="c-title">Guide question Q6</p><p>What risk level has Palo Alto Networks assigned to the application?</p><p><strong>Answer:</strong> Read the <strong>Risk</strong> value on the application’s entry. Palo Alto Networks can change risk ratings in content updates, so the entry on your firewall is the authoritative answer.</p></div>
+<div class="callout guideq"><p class="c-title">Guide question Q7</p><p>What characteristics might make you want to block it?</p><p><strong>Answer:</strong> Read the checked items in the entry’s <strong>Characteristics</strong> section (evasive, prone to misuse, capable of file transfer, and so on). Answer <strong>e</strong> only if every listed option is checked on your firewall.</p></div>
+<div class="callout guideq"><p class="c-title">Guide question Q8</p><p>What ports does dailymotion support?</p><p><strong>Answer:</strong> <strong>b. TCP/80,443.</strong> It’s a web application, so its standard ports are HTTP and HTTPS.</p></div>
 <p class="shot" id="shot-5"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 5</span> The dailymotion entry in Objects &gt; Applications showing category, risk, and characteristics.</span></p>
-<h3 class="task-head"><span class="tn">2.10</span>Narrow the rules to named applications</h3>
-<ol class="steps-list" start="1">
-<li>Open <strong>Users_to_Extranet</strong>. On <strong>Application</strong>, uncheck <strong>Any</strong> and add <code>ssl</code>, <code>ssh</code>, <code>ping</code>, <code>dns</code>, <code>ldap</code>, <code>radius</code>, <code>web-browsing</code>. Click OK.</li>
-<li>Open <strong>Users_to_Internet</strong>. Uncheck <strong>Any</strong> and add <code>ping</code>, <code>dns</code>, <code>ssl</code>, <code>yelp</code>, <code>web-browsing</code>, <code>dropbox</code>, <code>ms-office365</code>.</li>
-<li>In the right pane, check the <strong>Depends On</strong> column header to select every dependency, then click <strong>Add to Current Rule</strong>. Confirm the extras now appear in the list, and click OK.</li>
-<li>Commit.</li>
-</ol>
-<div class="callout stuck"><p class="c-title">Don't skip the dependencies</p><p>Applications like dropbox and ms-office365 ride on other applications. Without them, the commit warns about unresolved dependencies and the applications half-work.</p></div>
+<ol class="steps-list" start="4"><li>Click <strong>Close</strong> on the Application window.</li><li>Leave the firewall open and continue to the next task.</li></ol>
+</div>
+<h3 class="task-head"><span class="tn">2.10</span>Update Security policy rules</h3>
+<p class="task-intro">Users_to_Extranet and Users_to_Internet were set to Application Any in Lab 5. Now you narrow them to what the organization actually needs.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Navigate to <span class="path" data-path="Policies &gt; Security"></span>. Select <strong>Users_to_Extranet</strong> to edit it.</li><li>On the <strong>Application</strong> tab, uncheck <strong>Any</strong> and add <code>ssl</code>, <code>ssh</code>, <code>ping</code>, <code>dns</code>, <code>ldap</code>, <code>radius</code>, and <code>web-browsing</code>. Click <strong>OK</strong>.</li><li>Select <strong>Users_to_Internet</strong> to edit it.</li><li>On the <strong>Application</strong> tab, uncheck <strong>Any</strong> and add <code>ping</code>, <code>dns</code>, <code>ssl</code>, <code>yelp</code>, <code>web-browsing</code>, <code>dropbox</code>, and <code>ms-office365</code>.</li><li>Check the box next to the <strong>Depends On</strong> column header to select every item in that column. Click <strong>Add to Current Rule</strong>.</li><li>Scan the Applications list on the left and note the dependent applications have been added. Click <strong>OK</strong>.</li><li>Click the <strong>Commit</strong> button at the upper right of the web interface.</li><li>In the <em>Commit</em> window, click <strong>Commit</strong>.</li><li>Wait until the commit process is complete. Click <strong>Close</strong>.</li><li>Minimize the firewall’s Firefox window and continue to the next task.</li></ol>
+<div class="callout stuck"><p class="c-title">Don’t skip the dependencies</p><p>Applications like dropbox and ms-office365 ride on other applications. Without them, the commit warns about unresolved dependencies and the applications half-work.</p></div>
 <div class="callout tip"><p class="c-title">Your dependency list will differ</p><p>Palo Alto Networks updates application definitions often, so the Depends On list may not match the screenshot.</p></div>
-<p class="shot" id="shot-6"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 6</span> Users_to_Internet's Application tab showing the named applications plus the added dependencies.</span></p>
-<h3 class="task-head"><span class="tn">2.11</span>Test the narrowed rules</h3>
-<ol class="steps-list" start="1">
-<li>Run <strong>App Generator</strong> again and let it finish. Errors and pauses are expected: the firewall is now blocking much of what it plays.</li>
-<li>Clear filters and apply the filter below to see what's being denied, mostly by <strong>interzone-default</strong>.</li>
-</ol>
+<p class="shot" id="shot-6"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 6</span> Users_to_Internet’s Application tab showing the named applications plus the added dependencies.</span></p>
+</div>
+<h3 class="task-head"><span class="tn">2.11</span>Test the updated Security policy rules</h3>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>On the client desktop, double-click the <strong>App Generator</strong> icon.</li><li>Press <strong>Enter</strong> to start the App Generator script and let it run. When it finishes, press <strong>Enter</strong>. Allow 30 seconds to 1 minute before going on.</li></ol>
+</div>
+<div class="callout stuck"><p class="c-title">Errors and pauses are expected</p><p>Ignore any errors the script prints. The firewall is now blocking many of the applications it plays, and the script pauses while those time out.</p></div>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="3"><li>Return to the <strong>firewall-a – Mozilla Firefox</strong> window from the taskbar.</li><li>Select <span class="path" data-path="Monitor &gt; Logs &gt; Traffic"></span>. Clear any filters, then create and apply the filter below and note the Application column. Many applications are now blocked by <strong>interzone-default</strong>: anything not explicitly allowed is denied.</li></ol>
 <pre class="cli" data-kind="filter"><span class="kind">Log filter</span><span class="cmd">( action neq allow )</span></pre>
-<div class="callout fix"><p class="c-title">A typo in the guide's filter</p><p>The guide prints <code>( action ne q allow )</code>. The operator is one word: <code>neq</code>.</p></div>
+<div class="callout fix"><p class="c-title">A typo in the guide’s filter</p><p>The guide prints <code>( action ne q allow )</code>. The operator is one word: <code>neq</code>. Typed with the space, the filter won’t parse.</p></div>
 <p class="shot" id="shot-7"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 7</span> The Traffic log showing denied applications after the rules were narrowed.</span></p>
+<ol class="steps-list" start="5"><li>Clear the filter in the Traffic log. Leave the firewall open and continue to the next task.</li></ol>
+</div>
 <h3 class="task-head"><span class="tn">2.12</span>Enable the Application Block Page</h3>
-<ol class="steps-list" start="1">
-<li>In a new Firefox tab, try <code>http://www.shutterfly.com</code>. It just fails to load. Close the tab.</li>
-<li>Go to <span class="path" data-path="Device &gt; Response Pages"></span> and click <strong>Disabled</strong> next to <strong>Application Block Page</strong>.</li>
-<li>Check <strong>Enable Application Block Page</strong> and click OK. Commit.</li>
-</ol>
+<p class="task-intro">Without a block page, users think the internet is broken and call the help desk. It is disabled by default.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li><span class="mlabel ml-client">On Client:</span> To see what users experience without the page, open a new Firefox tab and try <code>http://www.shutterfly.com</code>. It just fails to load. Close the tab.</li><li>Navigate to <span class="path" data-path="Device &gt; Response Pages"></span>. In the row for <strong>Application Block Page</strong>, click the <strong>Disabled</strong> link under Action.</li><li>In the <em>Application Block Page</em> window, check <strong>Enable Application Block Page</strong>. Click <strong>OK</strong>.</li><li>Click the <strong>Commit</strong> button at the upper right of the web interface.</li><li>In the <em>Commit</em> window, click <strong>Commit</strong>.</li><li>Wait until the commit process is complete. Click <strong>Close</strong>.</li><li>Leave the firewall open and continue to the next task.</li></ol>
+</div>
 <h3 class="task-head"><span class="tn">2.13</span>Test the Application Block Page</h3>
-<ol class="steps-list" start="1">
-<li>In a new tab, try <code>http://www.shutterfly.com</code> again, using <strong>http</strong> in Firefox. Now the firewall shows a page saying the application was blocked.</li>
-</ol>
-<div class="callout stuck"><p class="c-title">It only works on unencrypted pages</p><p>The firewall can't insert a page into an HTTPS session it isn't decrypting. Type <code>http://</code> explicitly; Lab 12's decryption is what extends block pages to HTTPS.</p></div>
-<div class="callout tip"><p class="c-title">Response Pages on the interface</p><p>The page is served from ethernet1/2, which works because Lab 4's Allow-mgt profile includes <strong>Response Pages</strong>.</p></div>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>Open a new tab in Firefox.</li><li>Try <code>http://www.shutterfly.com</code>. Use <strong>http</strong> and use <strong>Firefox</strong>; some browsers (Chrome) silently switch to HTTPS.</li><li>The firewall presents a page saying the application has been blocked. This is the default page; you can customize it.</li></ol>
+<div class="callout stuck"><p class="c-title">It only works on unencrypted pages</p><p>The firewall can’t insert a page into an HTTPS session it isn’t decrypting. Type <code>http://</code> explicitly; Lab 12’s decryption is what extends block pages to HTTPS.</p></div>
+<div class="callout tip"><p class="c-title">Response Pages on the interface</p><p>The page is served from ethernet1/2, which works because Lab 4’s Allow-mgt profile includes <strong>Response Pages</strong>. The guide notes this requirement too.</p></div>
 <p class="shot" id="shot-8"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 8</span> The Application Blocked page for shutterfly.com.</span></p>
+<ol class="steps-list" start="4"><li>Close the Application Blocked tab in Firefox.</li><li>The lab is now complete; you may end your reservation.</li></ol>
+</div>
 </section>
 
 <section class="unit" id="s-reference" data-section="reference" data-label="Reference" data-part="Understand">
@@ -228,7 +304,7 @@ html[data-present="on"] .pm-dock{position:fixed;left:0;right:0;bottom:0;z-index:
 <section class="unit" id="s-evidence" data-section="evidence" data-label="What to submit" data-part="Wrap up">
 <header><span class="sec-n">08</span><h2>Screenshots to capture</h2></header>
 <p>Take each screenshot at its marker. Name the files by lab and number (for example <code>lab07-shot6.png</code>) and submit them in Canvas as your instructor directs.</p>
-<ul class="checklist evidence" data-save="lab7-evidence"><li><input type="checkbox" id="ev7-0"><div><label for="ev7-0">Screenshot 1: The Traffic log showing paloalto-updates sessions matched by Users_to_Internet.</label><a class="ev-where" href="#shot-1">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev7-1"><div><label for="ev7-1">Screenshot 2: The Rule Shadow tab showing Allow-PANW-Apps shadowed by Users_to_Internet.</label><a class="ev-where" href="#shot-2">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev7-2"><div><label for="ev7-2">Screenshot 3: The Traffic log showing paloalto-updates now matched by Allow-PANW-Apps.</label><a class="ev-where" href="#shot-3">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev7-3"><div><label for="ev7-3">Screenshot 4: The Traffic log showing the variety of applications App Generator produced.</label><a class="ev-where" href="#shot-4">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev7-4"><div><label for="ev7-4">Screenshot 5: The dailymotion entry in Objects &gt; Applications showing category, risk, and characteristics.</label><a class="ev-where" href="#shot-5">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev7-5"><div><label for="ev7-5">Screenshot 6: Users_to_Internet's Application tab showing the named applications plus the added dependencies.</label><a class="ev-where" href="#shot-6">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev7-6"><div><label for="ev7-6">Screenshot 7: The Traffic log showing denied applications after the rules were narrowed.</label><a class="ev-where" href="#shot-7">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev7-7"><div><label for="ev7-7">Screenshot 8: The Application Blocked page for shutterfly.com.</label><a class="ev-where" href="#shot-8">Find it in the walkthrough</a></div></li></ul>
+<ul class="checklist evidence" data-save="lab7-evidence"><li><input type="checkbox" id="ev7-0"><div><label for="ev7-0">Screenshot 1: The Traffic log showing paloalto-updates sessions matched by Users_to_Internet.</label><a class="ev-where" href="#shot-1">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev7-1"><div><label for="ev7-1">Screenshot 2: The Rule Shadow tab showing Allow-PANW-Apps shadowed by Users_to_Internet.</label><a class="ev-where" href="#shot-2">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev7-2"><div><label for="ev7-2">Screenshot 3: The Traffic log showing paloalto-updates now matched by Allow-PANW-Apps.</label><a class="ev-where" href="#shot-3">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev7-3"><div><label for="ev7-3">Screenshot 4: The Traffic log showing the variety of applications App Generator produced.</label><a class="ev-where" href="#shot-4">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev7-4"><div><label for="ev7-4">Screenshot 5: The dailymotion entry in Objects &gt; Applications showing category, risk, and characteristics.</label><a class="ev-where" href="#shot-5">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev7-5"><div><label for="ev7-5">Screenshot 6: Users_to_Internet’s Application tab showing the named applications plus the added dependencies.</label><a class="ev-where" href="#shot-6">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev7-6"><div><label for="ev7-6">Screenshot 7: The Traffic log showing denied applications after the rules were narrowed.</label><a class="ev-where" href="#shot-7">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev7-7"><div><label for="ev7-7">Screenshot 8: The Application Blocked page for shutterfly.com.</label><a class="ev-where" href="#shot-8">Find it in the walkthrough</a></div></li></ul>
 <p class="box-note">Checkmarks are saved in this browser only. They help you keep track; the screenshots themselves go to Canvas.</p>
 </section>
 

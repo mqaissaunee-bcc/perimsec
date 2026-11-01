@@ -34,6 +34,34 @@ html[data-present="on"] .pm-dock{position:fixed;left:0;right:0;bottom:0;z-index:
 .pm-dock .pm-where{flex:1 1 auto;text-align:center;min-width:0;font-size:.78rem;color:var(--ink-2)}
 .pm-dock .pm-where b{color:var(--ink);display:block;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media print{.pm-dock,.pm-toggle{display:none!important}}
+</style><style id="mb-css">
+/* Machine bands: which VM / session each run of steps happens on. Page-local; uses site.css colour tokens. */
+.mrun{--mb:var(--accent);--mb-soft:var(--accent-soft);border-left:4px solid var(--mb);margin:1rem 0 1.2rem;padding:0 0 .2rem .9rem}
+.mrun.mr-client{--mb:var(--ok);--mb-soft:var(--ok-soft)}
+.mrun.mr-webui{--mb:var(--accent);--mb-soft:var(--accent-soft)}
+.mrun.mr-fwcli{--mb:var(--warn);--mb-soft:var(--warn-soft)}
+.mrun.mr-extranet{--mb:var(--focus);--mb-soft:var(--surface-2)}
+.mband{display:flex;flex-wrap:wrap;align-items:baseline;gap:.2rem .6rem;margin:0 0 .6rem -.9rem;padding:.4rem .8rem;
+  background:var(--mb-soft);border-radius:0 var(--radius-m) var(--radius-m) 0;font-weight:700;font-size:var(--step--1)}
+.mband .mb-ic{font-size:1.05rem}
+.mband .mb-sub{font-weight:400;color:var(--ink-2);font-size:.85em}
+.mlabel{display:inline-block;margin-right:.35rem;padding:0 .45rem;border-radius:var(--radius-s);font-weight:700;font-size:.85em;
+  border-left:3px solid var(--accent);background:var(--surface-2)}
+.mlabel.ml-client{border-left-color:var(--ok)}.mlabel.ml-webui{border-left-color:var(--accent)}
+.mlabel.ml-fwcli{border-left-color:var(--warn)}.mlabel.ml-extranet{border-left-color:var(--focus)}
+.mrun .shot{margin-left:.6rem}
+.topo{width:100%;max-width:760px;height:auto;display:block;margin:.4rem 0 .3rem}
+.topo .bx{fill:var(--surface);stroke:var(--rule);stroke-width:1.5}
+.topo .fw{fill:var(--accent-soft);stroke:var(--accent);stroke-width:2}
+.topo .ln{stroke:var(--ink-2);stroke-width:2;fill:none}
+.topo .ln.mg{stroke-dasharray:5 4}
+.topo .dim{opacity:.45}
+.topo text{fill:var(--ink);font-family:var(--font-body);font-size:13px}
+.topo .h{font-weight:700;font-size:14px}
+.topo .m{font-family:var(--font-mono);font-size:12px}
+.topo .s{fill:var(--ink-2);font-size:12px}
+.diverge{border-left-color:var(--warn)}
+@media print{.mrun{border-left-color:#666}.mband{background:#eee}}
 </style></head>
 <body data-root=".." data-lab="14" data-page="labs/index.html">
 <a class="skip-link" href="#main">Skip to main content</a>
@@ -67,18 +95,60 @@ html[data-present="on"] .pm-dock{position:fixed;left:0;right:0;bottom:0;z-index:
 <section class="unit" id="s-setup" data-section="setup" data-label="Before you begin" data-part="Prepare">
 <header><span class="sec-n">02</span><h2>Before you begin</h2></header>
 <p>Read the whole guide once before you touch the firewall, and list every name you have to create. Grading checks names exactly, including capitalization.</p>
+<h4>Lab Settings (from the NDG guide)</h4>
 <div class="table-wrap"><table>
-<caption class="visually-hidden">Hosts in the lab network</caption>
-<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th><th scope="col">Sign-in</th></tr></thead>
+<caption class="visually-hidden">Lab Settings: virtual machines, addresses, and sign-ins</caption>
+<thead><tr><th scope="col">Virtual Machine</th><th scope="col">IP Address</th><th scope="col">Account</th><th scope="col">Password</th></tr></thead>
 <tbody>
-<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td><td><code>lab-user / Pal0Alt0!</code></td></tr>
-<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td><td><code>admin / Pal0Alt0!</code></td></tr>
-<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td><td><code>root / Pal0Alt0</code></td></tr>
-<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td><td>—</td></tr>
-<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td><td>—</td></tr>
-<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td><td>—</td></tr>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td><code>lab-user</code></td><td><code>Pal0Alt0!</code></td></tr>
+<tr><td>DMZ</td><td><code>192.168.50.10</code></td><td><code>root</code></td><td><code>Pal0Alt0!</code></td></tr>
+<tr><td>Firewall</td><td><code>192.168.1.254</code></td><td><code>admin</code></td><td><code>Pal0Alt0!</code></td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td><code>root</code></td><td><code>Pal0Alt0</code></td></tr>
 </tbody></table></div>
-<p class="box-note">Sign-in credentials are shown above (the fixed NETLAB+ pod logins, case-sensitive). </p>
+<p class="box-note">Passwords are case-sensitive and use zeros, not the letter O. The vRouter password has no exclamation point.</p>
+<p class="box-note"><strong>Currency note:</strong> these labs run PAN-OS 11.0, which reached end-of-life on November 17, 2024 and no longer receives security fixes. Everything here still works in the lab; on a real firewall you would run a supported release (11.1, 11.2, or 12.1), where most screens are the same.</p>
+<h4>Pod topology</h4>
+<svg class="topo" viewBox="0 0 760 360" role="img" aria-labelledby="topo-t topo-d">
+<title id="topo-t">Pod topology</title>
+<desc id="topo-d">The firewall firewall-a sits between the Internet zone (ethernet1/1, 203.0.113.20/24, next hop 203.0.113.1), the Users zone (ethernet1/2, 192.168.1.1/24, with the Client at 192.168.1.20, the vRouter at 192.168.1.10, and the firewall management port at 192.168.1.254), and the Extranet zone (ethernet1/3, 192.168.50.1/24, servers including web 192.168.50.80, DNS 192.168.50.53 and DMZ 192.168.50.10).</desc>
+<g><rect class="bx" x="250" y="8" width="260" height="74" rx="8"/>
+<text class="h" x="266" y="32">Internet zone</text>
+<text class="m" x="266" y="54">ISP router 203.0.113.1</text>
+<text class="s" x="266" y="72">8.8.8.8 and real websites beyond</text>
+<path class="ln" d="M380 82V128"/><text class="m" x="388" y="110">ethernet1/1 203.0.113.20/24</text></g>
+<rect class="fw" x="20" y="128" width="720" height="56" rx="8"/>
+<text class="h" x="36" y="152">firewall-a (PA-VM)</text>
+<text class="m" x="36" y="172">MGT 192.168.1.254 · default gateway 192.168.1.10 (vRouter)</text>
+<path class="ln mg" d="M70 184V240"/>
+<g><path class="ln" d="M190 184V240"/><text class="m" x="198" y="224">e1/2 192.168.1.1</text></g>
+<rect class="bx" x="20" y="240" width="236" height="112" rx="8"/>
+<text class="h" x="34" y="264">Users zone</text>
+<text class="m" x="34" y="284">192.168.1.0/24</text>
+<text class="m" x="34" y="306">Client 192.168.1.20</text>
+<text class="m" x="34" y="326">vRouter 192.168.1.10</text>
+<text class="s" x="34" y="344">MGT port is on this subnet</text>
+<g><rect class="bx" x="272" y="240" width="238" height="112" rx="8"/>
+<text class="h" x="286" y="264">Extranet zone</text>
+<text class="m" x="286" y="284">192.168.50.0/24</text>
+<text class="m" x="286" y="306">Web .80 · DNS .53 · DMZ .10</text>
+<text class="s" x="286" y="326">Other lab servers on .50.x</text>
+<path class="ln" d="M390 184V240"/><text class="m" x="398" y="224">e1/3 192.168.50.1</text></g>
+
+</svg>
+<p class="box-note">Target layout for the capstone. You build the interfaces, VR-1 and the three zones yourself.</p>
+<h4>Addresses you’ll use</h4>
+<div class="table-wrap"><table>
+<caption class="visually-hidden">Addresses in the lab network</caption>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td></tr>
+</tbody></table></div>
+
 <h4>Names you must create exactly</h4>
 <div class="table-wrap"><table><thead><tr><th scope="col">Object</th><th scope="col">Name</th></tr></thead><tbody><tr><td>Virtual router</td><td><code>VR-1</code></td><td>—</td></tr><tr><td>Default route</td><td><code>Default-Route</code></td><td>—</td></tr><tr><td>Interface Management Profile</td><td><code>Allow-ping</code></td><td>—</td></tr><tr><td>Zones</td><td><code>Internet</code>, <code>Users</code>, <code>Extranet</code></td><td>—</td></tr><tr><td>NAT rules</td><td><code>Users_to_Internet</code>, <code>Extranet_to_Internet</code></td><td>—</td></tr><tr><td>Security rules</td><td><code>Block_Bad_URLs</code>, <code>Users_to_Extranet</code>, <code>Users_to_Internet</code>, <code>Extranet_to_Internet</code></td><td>—</td></tr><tr><td>Profiles</td><td><code>Corp-URL</code>, <code>Corp-FB</code>, <code>Corp-AV</code>, <code>Corp-AS</code>, <code>Corp-Vuln</code>, <code>Corp-WF</code></td><td>—</td></tr><tr><td>Profile group</td><td><code>Corp-Profiles</code></td><td>—</td></tr></tbody></table></div>
 <div class="callout stuck"><p class="c-title">These are not the names from earlier labs</p><p>The zone is <strong>Users</strong>, not Users_Net. The block rule is <strong>Block_Bad_URLs</strong> with underscores, not Block-Bad-URLs. The file blocking profile is <strong>Corp-FB</strong>, the group is <strong>Corp-Profiles</strong>. Use the capstone's names, not your habits.</p></div>
@@ -86,76 +156,96 @@ html[data-present="on"] .pm-dock{position:fixed;left:0;right:0;bottom:0;z-index:
 
 <section class="unit" id="s-walkthrough" data-section="walkthrough" data-label="Build plan" data-part="Do the lab">
 <header><span class="sec-n">03</span><h2>Build plan, objective by objective</h2></header>
-<p class="task-intro">The capstone has no Detailed Lab Steps. Its sections are numbered 1.1 to 1.6; this plan follows them and adds a test checkpoint after each.</p>
-<h3 class="task-head"><span class="tn">1.1</span>Load the starting configuration</h3>
-<ol class="steps-list" start="1">
-<li>Log in to the client and to the firewall at <code>https://192.168.1.254</code> with the credentials in Lab Settings.</li>
-<li>At <span class="path" data-path="Device &gt; Setup &gt; Operations"></span>, load <code>edu-210-11.0a-Capstone-start.xml</code>, confirm the load in Tasks, and <strong>commit</strong>.</li>
-</ol>
+<div class="callout tip"><p class="c-title">Reading the machine bands</p><p>Each coloured band says where the steps under it happen, and it stays in force until the next band:
+<span class="mlabel ml-client">🖥️ Client</span> <span class="mlabel ml-webui">🧱 Firewall web interface</span> <span class="mlabel ml-fwcli">⌨️ Firewall CLI</span> <span class="mlabel ml-extranet">🗄️ Server-Extranet</span>.
+When a single step switches machines, it carries an inline label instead. The capstone has no detailed steps, so section numbers (1.1 to 1.6) match the guide’s objectives; the steps under them are this page’s.</p></div>
+<p class="task-intro">The capstone has no Detailed Lab Steps. Its sections are numbered 1.1 to 1.6; this plan follows them, states each objective as the guide does, and adds the guide’s own tests as checkpoints. It points you back to the lab where you learned each skill rather than handing you the answer.</p>
+<div class="callout fix"><p class="c-title">This guide is older than the others</p><p>The capstone PDF is version 2024-01-15; Labs 1 to 13 are 2025-10-13. Names and wording differ slightly from the labs (for example, the zone is <code>Users</code> here, not <code>Users_Net</code>). Use the capstone’s names exactly; the guide asks for exact spelling and capitalization.</p></div>
+<h3 class="task-head"><span class="tn">1.1</span>Apply a baseline configuration to the firewall</h3>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>On the Zorin desktop, select <strong>lab-user</strong> and enter <code>Pal0Alt0!</code>. Open Firefox to <code>https://192.168.1.254</code>.</li></ol>
+</div>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="2"><li>Log in to the firewall as <code>admin</code> / <code>Pal0Alt0!</code>.</li><li>At <span class="path" data-path="Device &gt; Setup &gt; Operations"></span>, load and commit <code>edu-210-11.0a-Capstone-start.xml</code>: Load named configuration snapshot, confirm the Load task in <strong>Tasks</strong>, then <strong>Commit</strong>. (<a href="lab-01.html">Lab 1</a>, task 2.1)</li></ol>
 <div class="callout tip"><p class="c-title">Snapshot your progress</p><p>After each section passes its tests, save a named snapshot (<a href="lab-02.html">Lab 2</a>), such as <code>capstone-1-3</code>. If a later change breaks something, you can load back to a known-good point instead of starting over.</p></div>
 <p class="shot" id="shot-1"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 1</span> The commit completing after loading the capstone starting configuration.</span></p>
-<h3 class="task-head"><span class="tn">1.2</span>Networking</h3>
-<ol class="steps-list" start="1">
-<li>Configure ethernet1/1, 1/2, and 1/3 as Layer3 with the guide's addresses, <strong>including the /24</strong>. Reopen <a href="lab-04.html">Lab 4</a>, task 2.2.</li>
-<li>Put all three in a virtual router named <code>VR-1</code>, with a default route named <code>Default-Route</code>. <a href="lab-04.html">Lab 4</a>, task 2.3.</li>
-<li>Create the <code>Allow-ping</code> Interface Management Profile and assign it to <strong>ethernet1/2</strong>. <a href="lab-04.html">Lab 4</a>, task 2.7.</li>
-</ol>
-<div class="callout stuck"><p class="c-title">The guide gives the route's name, not its next hop</p><p>Work out where the internet side of the lab sends traffic. Your Lab 4 notes and the first CLI test below both tell you.</p></div>
-<h3 class="task-head"><span class="tn">1.3</span>Security zones</h3>
-<ol class="steps-list" start="1">
-<li>Create <code>Internet</code> (ethernet1/1), <code>Users</code> (ethernet1/2), and <code>Extranet</code> (ethernet1/3), all Layer3. <a href="lab-04.html">Lab 4</a>, task 2.4.</li>
-<li>Enable <strong>User Identification</strong> on Users. <a href="lab-11.html">Lab 11</a>, task 2.4.</li>
-<li>Commit, then run the networking tests.</li>
-</ol>
+</div>
+<h3 class="task-head"><span class="tn">1.2</span>Configure networking</h3>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Configure three Layer 3 interfaces: <strong>Ethernet 1/1</strong> <code>203.0.113.20/24</code>, <strong>Ethernet 1/2</strong> <code>192.168.1.1/24</code>, <strong>Ethernet 1/3</strong> <code>192.168.50.1/24</code>, <strong>including the /24</strong>. (<a href="lab-04.html">Lab 4</a>, task 2.2)</li><li>Create a virtual router called <code>VR-1</code> for all configured interfaces. (<a href="lab-04.html">Lab 4</a>, task 2.3)</li><li>Create a default route for the firewall called <code>Default-Route</code>. (<a href="lab-04.html">Lab 4</a>, task 2.3)</li><li>Create an Interface Management Profile called <code>Allow-ping</code> that allows <strong>ping</strong>, and assign it to <strong>ethernet1/2</strong>. (<a href="lab-04.html">Lab 4</a>, task 2.7)</li></ol>
+<div class="callout stuck"><p class="c-title">The guide gives the route’s name, not its next hop</p><p>Work out where the internet side of the lab sends traffic. Your Lab 4 notes and the first CLI test below both tell you.</p></div>
+</div>
+<h3 class="task-head"><span class="tn">1.3</span>Configure security zones</h3>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Create a zone called <code>Internet</code> and assign <strong>ethernet1/1</strong>. (<a href="lab-04.html">Lab 4</a>, task 2.4)</li><li>Create a zone called <code>Users</code> and assign <strong>ethernet1/2</strong>. Configure the Users zone for <strong>User-ID</strong> (Enable User Identification). (<a href="lab-11.html">Lab 11</a>, task 2.4)</li><li>Create a zone called <code>Extranet</code> and assign <strong>ethernet1/3</strong>.</li><li>Commit, then run the networking tests.</li></ol>
+</div>
 <h4>Checkpoint: networking</h4>
-<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">lab-user@client-a:~/Desktop/Lab-Files$</span> <span class="cmd">ping 192.168.1.1</span>
-<span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">ping source 203.0.113.20 host 203.0.113.1</span>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>Your internal host can ping 192.168.1.1 and receive a response. In the Terminal Emulator:</li></ol>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">lab-user@client-a:~/Desktop/Lab-Files$</span> <span class="cmd">ping 192.168.1.1</span></pre>
+<p class="shot" id="shot-2"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 2</span> The client terminal showing replies from 192.168.1.1.</span></p>
+<ol class="steps-list" start="2"><li>Open <strong>Remmina</strong> and double-click <strong>Firewall-A</strong>.</li></ol>
+</div>
+<div class="mrun mr-fwcli"><p class="mband"><span class="mb-ic" aria-hidden="true">⌨️</span><span>On Firewall CLI</span><span class="mb-sub">SSH to firewall-a (192.168.1.254) from Remmina on the Client. Prompt: admin@firewall-a&gt;</span></p>
+<ol class="steps-list" start="3"><li>From the firewall CLI, these commands must succeed. Press Ctrl+C after a few replies each.</li></ol>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">ping source 203.0.113.20 host 203.0.113.1</span>
 <span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">ping source 203.0.113.20 host 8.8.8.8</span>
 <span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">ping source 192.168.1.1 host 192.168.1.20</span>
 <span class="prompt">admin@firewall-a&gt;</span> <span class="cmd">ping source 192.168.50.1 host 192.168.50.150</span></pre>
-<div class="callout tip"><p class="c-title">Which failure means what</p><p>If only the 8.8.8.8 test fails, it's the default route. If the 203.0.113.1 test fails too, it's the ethernet1/1 address or zone. If the client can't ping 192.168.1.1, check Allow-ping on ethernet1/2 and the commit.</p></div>
-<p class="shot" id="shot-2"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 2</span> The firewall CLI showing all four ping tests succeeding.</span></p>
-<p class="shot" id="shot-3"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 3</span> The client terminal showing replies from 192.168.1.1.</span></p>
-<h3 class="task-head"><span class="tn">1.4</span>NAT policy</h3>
-<ol class="steps-list" start="1">
-<li>Create source NAT rule <code>Users_to_Internet</code>: Users to Internet, translating to ethernet1/1's interface address with Dynamic IP And Port. <a href="lab-06.html">Lab 6</a>, task 2.2.</li>
-<li>Create <code>Extranet_to_Internet</code> the same way for Extranet.</li>
-<li>Give both a helpful description. Commit.</li>
-</ol>
-<div class="callout stuck"><p class="c-title">Same names, different rulebases</p><p>Users_to_Internet and Extranet_to_Internet are names for both NAT rules and Security rules. That's allowed, because they're separate rulebases. Keep track of which one you're editing.</p></div>
-<div class="callout why"><p class="c-title">Why NAT can't be tested yet</p><p>With no Security rules, interzone-default still denies everything between zones. The NAT rules are tested by the next section's tests.</p></div>
-<h3 class="task-head"><span class="tn">1.5</span>Security policy</h3>
-<ol class="steps-list" start="1">
-<li>Override <strong>interzone-default</strong> to log at session end. <a href="lab-05.html">Lab 5</a>, task 2.6.</li>
-<li>Create <code>Block_Bad_URLs</code>, denying the URL categories hacking, phishing, malware, and unknown <strong>as rule match criteria</strong>, for all outbound traffic. <a href="lab-09.html">Lab 9</a>, task 2.3.</li>
-<li>Create <code>Users_to_Extranet</code> (Users to Extranet: ping, ssl, ssh, dns, web-browsing). <a href="lab-07.html">Lab 7</a>, task 2.10.</li>
-<li>Create <code>Users_to_Internet</code> (Users to Internet: ping, dns, web-browsing, ssl) and <code>Extranet_to_Internet</code> (Extranet to Internet: the same four).</li>
-<li>Give every rule a description, check the order, and commit.</li>
-</ol>
-<div class="callout stuck"><p class="c-title">"All outbound traffic" and rule order</p><p>Decide which source zones count as outbound, and put Block_Bad_URLs where it can't be shadowed by the allow rules. <a href="lab-09.html">Lab 9</a> and Module 6 cover both.</p></div>
+<div class="callout tip"><p class="c-title">Which failure means what</p><p>If only the 8.8.8.8 test fails, it’s the default route. If the 203.0.113.1 test fails too, it’s the ethernet1/1 address or zone. If the client can’t ping 192.168.1.1, check Allow-ping on ethernet1/2 and the commit.</p></div>
+<p class="shot" id="shot-3"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 3</span> The firewall CLI showing all four ping tests succeeding.</span></p>
+</div>
+<h3 class="task-head"><span class="tn">1.4</span>Configure NAT policy rules</h3>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Create source NAT rule <code>Users_to_Internet</code>: from source zone <strong>Users</strong> to destination zone <strong>Internet</strong>, using <strong>ethernet1/1</strong> as the source translation address. (<a href="lab-06.html">Lab 6</a>, task 2.2)</li><li>Create source NAT rule <code>Extranet_to_Internet</code>: from <strong>Extranet</strong> to <strong>Internet</strong>, using <strong>ethernet1/1</strong> as the source translation address.</li><li>Give every NAT rule a helpful <strong>Description</strong>. Commit.</li></ol>
+<div class="callout stuck"><p class="c-title">Same names, different rulebases</p><p>Users_to_Internet and Extranet_to_Internet are names for both NAT rules and Security rules. That’s allowed, because they’re separate rulebases. Keep track of which one you’re editing.</p></div>
+<div class="callout why"><p class="c-title">Why NAT can’t be tested yet</p><p>With no Security rules, interzone-default still denies everything between zones. The NAT rules are tested by the next section’s tests.</p></div>
+</div>
+<h3 class="task-head"><span class="tn">1.5</span>Configure Security policy rules</h3>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>For <strong>all</strong> Security policy rules, enter a helpful Description.</li><li>Modify <strong>interzone-default</strong> so traffic is logged at session end. (<a href="lab-05.html">Lab 5</a>, task 2.6)</li><li>Create <code>Block_Bad_URLs</code>: for all outbound traffic, the URL categories <strong>hacking</strong>, <strong>phishing</strong>, <strong>malware</strong>, and <strong>unknown</strong> must be <strong>blocked by a Security policy rule match criterion</strong>. (<a href="lab-09.html">Lab 9</a>, task 2.3)</li><li>Create <code>Users_to_Extranet</code>, Users to Extranet, allowing <code>ping</code>, <code>ssl</code>, <code>ssh</code>, <code>dns</code>, <code>web-browsing</code>. (<a href="lab-07.html">Lab 7</a>, task 2.10)</li><li>Create <code>Users_to_Internet</code>, Users to Internet, allowing <code>ping</code>, <code>dns</code>, <code>web-browsing</code>, <code>ssl</code>.</li><li>Create <code>Extranet_to_Internet</code>, Extranet to Internet, allowing <code>ping</code>, <code>dns</code>, <code>web-browsing</code>, <code>ssl</code>.</li><li>Check the rule order and commit.</li></ol>
+<div class="callout fix"><p class="c-title">“The User zone”</p><p>The guide’s rule descriptions say “From the User zone.” The zone you created in 1.3 is <code>Users</code>.</p></div>
+<div class="callout stuck"><p class="c-title">“All outbound traffic” and rule order</p><p>Decide which source zones count as outbound, and put Block_Bad_URLs where it can’t be shadowed by the allow rules. <a href="lab-09.html">Lab 9</a> and Module 6 cover both.</p></div>
 <div class="callout tip"><p class="c-title">Dependencies</p><p>If the commit warns about application dependencies, add them as you did in <a href="lab-07.html">Lab 7</a>.</p></div>
+</div>
 <h4>Checkpoint: policy and NAT</h4>
-<ul><li>The client pings 8.8.8.8 and google.com.</li><li>The client opens www.paloaltonetworks.com and http://192.168.50.80.</li><li>The client connects by SSH to 192.168.50.150 with the account in the guide.</li><li>The extranet host pings 8.8.8.8 and google.com.</li><li>The client <strong>cannot</strong> open hacker9.com.</li></ul>
-<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">lab-user@client-a:~/Desktop/Lab-Files$</span> <span class="cmd">ping google.com</span>
-<span class="prompt">lab-user@client-a:~/Desktop/Lab-Files$</span> <span class="cmd">ssh paloalto42@192.168.50.150</span></pre>
-<div class="callout tip"><p class="c-title">Pinging from the extranet host</p><p>Use Remmina's Server-Extranet connection to get a shell on the extranet side, as in <a href="lab-08.html">Lab 8</a>, and ping from there.</p></div>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>The client host can ping 8.8.8.8 and google.com.</li></ol>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">lab-user@client-a:~/Desktop/Lab-Files$</span> <span class="cmd">ping 8.8.8.8</span>
+<span class="prompt">lab-user@client-a:~/Desktop/Lab-Files$</span> <span class="cmd">ping google.com</span></pre>
 <p class="shot" id="shot-4"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 4</span> The client terminal showing google.com answering pings.</span></p>
+<ol class="steps-list" start="2"><li>The client can open <code>www.paloaltonetworks.com</code> in Firefox.</li><li>The client can browse to the Extranet web server at <code>http://192.168.50.80</code>.</li><li>The client can use SSH to reach the Extranet host at 192.168.50.150 as <code>paloalto42</code>, password <code>Pal0Alt0!</code>.</li></ol>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">lab-user@client-a:~/Desktop/Lab-Files$</span> <span class="cmd">ssh paloalto42@192.168.50.150</span></pre>
+<ol class="steps-list" start="5"><li>The internal host <strong>cannot</strong> open <code>hacker9.com</code>.</li></ol>
 <p class="shot" id="shot-5"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 5</span> The block page for hacker9.com.</span></p>
+<ol class="steps-list" start="6"><li>For the extranet test, open Remmina and double-click <strong>Server-Extranet</strong> (as in <a href="lab-08.html">Lab 8</a>, task 2.2).</li></ol>
+</div>
+<div class="mrun mr-extranet"><p class="mband"><span class="mb-ic" aria-hidden="true">🗄️</span><span>On Server-Extranet</span><span class="mb-sub">SSH to the extranet server from Remmina on the Client. Prompt: paloalto42@extranet1:~$</span></p>
+<ol class="steps-list" start="7"><li>The Extranet host can ping 8.8.8.8 and google.com.</li></ol>
+<pre class="cli" data-kind="command"><span class="kind">Command</span><span class="prompt">paloalto42@extranet1:~$</span> <span class="cmd">ping 8.8.8.8</span>
+<span class="prompt">paloalto42@extranet1:~$</span> <span class="cmd">ping google.com</span></pre>
+<div class="callout tip"><p class="c-title">Which host is this?</p><p>Server-Extranet is the shell Remmina opens on the extranet side; the guide calls it “the Extranet host.” Its pings must leave through Extranet_to_Internet (Security) and Extranet_to_Internet (NAT).</p></div>
+</div>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
 <p class="shot" id="shot-6"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 6</span> The Security policy rulebase in its final order, with descriptions visible.</span></p>
-<h3 class="task-head"><span class="tn">1.6</span>Security Profiles</h3>
-<ol class="steps-list" start="1">
-<li>Create Corp-URL (from default; <strong>log access to all categories</strong>), Corp-FB (from strict file blocking), Corp-AV (from default), Corp-AS (from strict), Corp-Vuln (from strict), and Corp-WF (all file types to public-cloud). <a href="lab-08.html">Lab 8</a>, <a href="lab-09.html">Lab 9</a>, <a href="lab-10.html">Lab 10</a>.</li>
-<li>Create the <code>Corp-Profiles</code> group with the appropriate profile in each slot. Data Filtering can stay None.</li>
-<li>Apply Corp-Profiles to <strong>all applicable</strong> Security rules, and commit.</li>
-</ol>
-<div class="callout fix"><p class="c-title">Two profile descriptions are swapped</p><p>The guide says Corp-AV should "block vulnerabilities" and Corp-Vuln should "block viruses." Go by the profile type: Antivirus stops viruses and malware; Vulnerability Protection stops exploits. Use the source profiles the guide suggests for each.</p></div>
-<div class="callout stuck"><p class="c-title">"Log access to all web categories"</p><p>allow doesn't write a URL Filtering log entry; alert does. Plan Corp-URL with the last test in mind (<a href="lab-09.html">Lab 9</a>, task 2.5).</p></div>
-<div class="callout stuck"><p class="c-title">"All applicable" rules</p><p>Profiles inspect allowed traffic. Think about which rules the group belongs on (<a href="lab-08.html">Lab 8</a>, task 2.11).</p></div>
+</div>
+<h3 class="task-head"><span class="tn">1.6</span>Create and apply Security Profiles</h3>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Create these profiles (<a href="lab-08.html">Lab 8</a>, <a href="lab-09.html">Lab 9</a>, <a href="lab-10.html">Lab 10</a>): <code>Corp-URL</code>, URL Filtering, to <strong>log access to all web categories</strong> (start from <em>default</em>); <code>Corp-FB</code>, File Blocking, to block dangerous file types (from <em>strict</em>); <code>Corp-AV</code>, Antivirus (from <em>default</em>); <code>Corp-AS</code>, Anti-Spyware, to block spyware (from <em>strict</em>); <code>Corp-Vuln</code>, Vulnerability Protection (from <em>strict</em>); <code>Corp-WF</code>, WildFire, to send all file types to the public cloud (from <em>default</em>).</li><li>Create a Security Profile Group called <code>Corp-Profiles</code> and assign the appropriate profiles. Data Filtering can stay <strong>None</strong>.</li><li>Apply <strong>Corp-Profiles</strong> to all applicable Security policy rules, and commit.</li></ol>
+<div class="callout fix"><p class="c-title">Two profile descriptions are swapped</p><p>The guide says Corp-AV should “block vulnerabilities” and Corp-Vuln should “block viruses.” Go by the profile type: Antivirus stops viruses and malware; Vulnerability Protection stops exploits. Use the source profiles the guide suggests for each.</p></div>
+<div class="callout stuck"><p class="c-title">“Log access to all web categories”</p><p>allow doesn’t write a URL Filtering log entry; alert does. Plan Corp-URL with the last test in mind (<a href="lab-09.html">Lab 9</a>, task 2.5).</p></div>
+<div class="callout stuck"><p class="c-title">“All applicable” rules</p><p>Profiles inspect allowed traffic. Think about which rules the group belongs on (<a href="lab-08.html">Lab 8</a>, task 2.11).</p></div>
+</div>
 <h4>Checkpoint: profiles</h4>
-<ul><li>The client <strong>cannot</strong> download the test virus from http://192.168.50.80.</li><li>The client <strong>cannot</strong> download http://192.168.50.80/badtarfile.tar.</li><li>Browsing https://www.paloaltonetworks.com creates a URL Filtering log entry.</li></ul>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>The internal host <strong>cannot</strong> download a test virus from <code>http://192.168.50.80</code> over HTTP.</li></ol>
 <p class="shot" id="shot-7"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 7</span> The block page (or reset) when downloading the test virus over HTTP.</span></p>
+<ol class="steps-list" start="2"><li>The internal host <strong>cannot</strong> download <code>http://192.168.50.80/badtarfile.tar</code>.</li></ol>
 <p class="shot" id="shot-8"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 8</span> The File Transfer Blocked page for badtarfile.tar.</span></p>
+<ol class="steps-list" start="3"><li>Browse to <code>https://www.paloaltonetworks.com</code>. <span class="mlabel ml-webui">On Firewall web interface:</span> A URL Filtering log entry appears in <span class="path" data-path="Monitor &gt; Logs &gt; URL Filtering"></span>.</li></ol>
 <p class="shot" id="shot-9"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 9</span> The URL Filtering log entry for www.paloaltonetworks.com.</span></p>
+<ol class="steps-list" start="4"><li>The lab is now complete; you may end your reservation.</li></ol>
+</div>
 </section>
 
 <section class="unit" id="s-reference" data-section="reference" data-label="Reference" data-part="Understand">
@@ -197,7 +287,7 @@ html[data-present="on"] .pm-dock{position:fixed;left:0;right:0;bottom:0;z-index:
 <section class="unit" id="s-evidence" data-section="evidence" data-label="What to submit" data-part="Wrap up">
 <header><span class="sec-n">08</span><h2>Screenshots to capture</h2></header>
 <p>Take each screenshot at its checkpoint. They double as proof that every acceptance test passed. Name the files by lab and number (for example <code>lab14-shot5.png</code>) and submit them in Canvas as your instructor directs.</p>
-<ul class="checklist evidence" data-save="lab14-evidence"><li><input type="checkbox" id="ev14-0"><div><label for="ev14-0">Screenshot 1: The commit completing after loading the capstone starting configuration.</label><a class="ev-where" href="#shot-1">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev14-1"><div><label for="ev14-1">Screenshot 2: The firewall CLI showing all four ping tests succeeding.</label><a class="ev-where" href="#shot-2">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev14-2"><div><label for="ev14-2">Screenshot 3: The client terminal showing replies from 192.168.1.1.</label><a class="ev-where" href="#shot-3">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev14-3"><div><label for="ev14-3">Screenshot 4: The client terminal showing google.com answering pings.</label><a class="ev-where" href="#shot-4">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev14-4"><div><label for="ev14-4">Screenshot 5: The block page for hacker9.com.</label><a class="ev-where" href="#shot-5">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev14-5"><div><label for="ev14-5">Screenshot 6: The Security policy rulebase in its final order, with descriptions visible.</label><a class="ev-where" href="#shot-6">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev14-6"><div><label for="ev14-6">Screenshot 7: The block page (or reset) when downloading the test virus over HTTP.</label><a class="ev-where" href="#shot-7">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev14-7"><div><label for="ev14-7">Screenshot 8: The File Transfer Blocked page for badtarfile.tar.</label><a class="ev-where" href="#shot-8">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev14-8"><div><label for="ev14-8">Screenshot 9: The URL Filtering log entry for www.paloaltonetworks.com.</label><a class="ev-where" href="#shot-9">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev14-9"><div><label for="ev14-9">Export a named snapshot of your finished configuration</label><span class="ev-where">Device &gt; Setup &gt; Operations. Keep it in case you need to show your work.</span></div></li></ul>
+<ul class="checklist evidence" data-save="lab14-evidence"><li><input type="checkbox" id="ev14-0"><div><label for="ev14-0">Screenshot 1: The commit completing after loading the capstone starting configuration.</label><a class="ev-where" href="#shot-1">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev14-1"><div><label for="ev14-1">Screenshot 2: The client terminal showing replies from 192.168.1.1.</label><a class="ev-where" href="#shot-2">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev14-2"><div><label for="ev14-2">Screenshot 3: The firewall CLI showing all four ping tests succeeding.</label><a class="ev-where" href="#shot-3">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev14-3"><div><label for="ev14-3">Screenshot 4: The client terminal showing google.com answering pings.</label><a class="ev-where" href="#shot-4">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev14-4"><div><label for="ev14-4">Screenshot 5: The block page for hacker9.com.</label><a class="ev-where" href="#shot-5">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev14-5"><div><label for="ev14-5">Screenshot 6: The Security policy rulebase in its final order, with descriptions visible.</label><a class="ev-where" href="#shot-6">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev14-6"><div><label for="ev14-6">Screenshot 7: The block page (or reset) when downloading the test virus over HTTP.</label><a class="ev-where" href="#shot-7">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev14-7"><div><label for="ev14-7">Screenshot 8: The File Transfer Blocked page for badtarfile.tar.</label><a class="ev-where" href="#shot-8">Find it in the walkthrough</a></div></li><li><input type="checkbox" id="ev14-8"><div><label for="ev14-8">Screenshot 9: The URL Filtering log entry for www.paloaltonetworks.com.</label><a class="ev-where" href="#shot-9">Find it in the walkthrough</a></div></li></ul>
 <p class="box-note">Checkmarks are saved in this browser only. They help you keep track; the screenshots themselves go to Canvas.</p>
 </section>
 

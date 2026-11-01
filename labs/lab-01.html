@@ -34,6 +34,34 @@ html[data-present="on"] .pm-dock{position:fixed;left:0;right:0;bottom:0;z-index:
 .pm-dock .pm-where{flex:1 1 auto;text-align:center;min-width:0;font-size:.78rem;color:var(--ink-2)}
 .pm-dock .pm-where b{color:var(--ink);display:block;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media print{.pm-dock,.pm-toggle{display:none!important}}
+</style><style id="mb-css">
+/* Machine bands: which VM / session each run of steps happens on. Page-local; uses site.css colour tokens. */
+.mrun{--mb:var(--accent);--mb-soft:var(--accent-soft);border-left:4px solid var(--mb);margin:1rem 0 1.2rem;padding:0 0 .2rem .9rem}
+.mrun.mr-client{--mb:var(--ok);--mb-soft:var(--ok-soft)}
+.mrun.mr-webui{--mb:var(--accent);--mb-soft:var(--accent-soft)}
+.mrun.mr-fwcli{--mb:var(--warn);--mb-soft:var(--warn-soft)}
+.mrun.mr-extranet{--mb:var(--focus);--mb-soft:var(--surface-2)}
+.mband{display:flex;flex-wrap:wrap;align-items:baseline;gap:.2rem .6rem;margin:0 0 .6rem -.9rem;padding:.4rem .8rem;
+  background:var(--mb-soft);border-radius:0 var(--radius-m) var(--radius-m) 0;font-weight:700;font-size:var(--step--1)}
+.mband .mb-ic{font-size:1.05rem}
+.mband .mb-sub{font-weight:400;color:var(--ink-2);font-size:.85em}
+.mlabel{display:inline-block;margin-right:.35rem;padding:0 .45rem;border-radius:var(--radius-s);font-weight:700;font-size:.85em;
+  border-left:3px solid var(--accent);background:var(--surface-2)}
+.mlabel.ml-client{border-left-color:var(--ok)}.mlabel.ml-webui{border-left-color:var(--accent)}
+.mlabel.ml-fwcli{border-left-color:var(--warn)}.mlabel.ml-extranet{border-left-color:var(--focus)}
+.mrun .shot{margin-left:.6rem}
+.topo{width:100%;max-width:760px;height:auto;display:block;margin:.4rem 0 .3rem}
+.topo .bx{fill:var(--surface);stroke:var(--rule);stroke-width:1.5}
+.topo .fw{fill:var(--accent-soft);stroke:var(--accent);stroke-width:2}
+.topo .ln{stroke:var(--ink-2);stroke-width:2;fill:none}
+.topo .ln.mg{stroke-dasharray:5 4}
+.topo .dim{opacity:.45}
+.topo text{fill:var(--ink);font-family:var(--font-body);font-size:13px}
+.topo .h{font-weight:700;font-size:14px}
+.topo .m{font-family:var(--font-mono);font-size:12px}
+.topo .s{fill:var(--ink-2);font-size:12px}
+.diverge{border-left-color:var(--warn)}
+@media print{.mrun{border-left-color:#666}.mband{background:#eee}}
 </style></head>
 <body data-root=".." data-lab="1" data-page="labs/index.html">
 <a class="skip-link" href="#main">Skip to main content</a>
@@ -67,18 +95,60 @@ html[data-present="on"] .pm-dock{position:fixed;left:0;right:0;bottom:0;z-index:
 <section class="unit" id="s-setup" data-section="setup" data-label="Before you begin" data-part="Prepare">
 <header><span class="sec-n">02</span><h2>Before you begin</h2></header>
 <p>This lab happens entirely in the firewall's web interface from the client's Firefox browser. You will not need the Terminal or Remmina yet.</p>
+<h4>Lab Settings (from the NDG guide)</h4>
 <div class="table-wrap"><table>
-<caption class="visually-hidden">Hosts in the lab network</caption>
-<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th><th scope="col">Sign-in</th></tr></thead>
+<caption class="visually-hidden">Lab Settings: virtual machines, addresses, and sign-ins</caption>
+<thead><tr><th scope="col">Virtual Machine</th><th scope="col">IP Address</th><th scope="col">Account</th><th scope="col">Password</th></tr></thead>
 <tbody>
-<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td><td><code>lab-user / Pal0Alt0!</code></td></tr>
-<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td><td><code>admin / Pal0Alt0!</code></td></tr>
-<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td><td><code>root / Pal0Alt0</code></td></tr>
-<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td><td>—</td></tr>
-<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td><td>—</td></tr>
-<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td><td>—</td></tr>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td><code>lab-user</code></td><td><code>Pal0Alt0!</code></td></tr>
+<tr><td>DMZ</td><td><code>192.168.50.10</code></td><td><code>root</code></td><td><code>Pal0Alt0!</code></td></tr>
+<tr><td>Firewall</td><td><code>192.168.1.254</code></td><td><code>admin</code></td><td><code>Pal0Alt0!</code></td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td><code>root</code></td><td><code>Pal0Alt0</code></td></tr>
 </tbody></table></div>
-<p class="box-note">Sign-in credentials are shown above (the fixed NETLAB+ pod logins, case-sensitive). </p>
+<p class="box-note">Passwords are case-sensitive and use zeros, not the letter O. The vRouter password has no exclamation point.</p>
+<p class="box-note"><strong>Currency note:</strong> these labs run PAN-OS 11.0, which reached end-of-life on November 17, 2024 and no longer receives security fixes. Everything here still works in the lab; on a real firewall you would run a supported release (11.1, 11.2, or 12.1), where most screens are the same.</p>
+<h4>Pod topology</h4>
+<svg class="topo" viewBox="0 0 760 360" role="img" aria-labelledby="topo-t topo-d">
+<title id="topo-t">Pod topology</title>
+<desc id="topo-d">The firewall firewall-a sits between the Internet zone (ethernet1/1, 203.0.113.20/24, next hop 203.0.113.1), the Users_Net zone (ethernet1/2, 192.168.1.1/24, with the Client at 192.168.1.20, the vRouter at 192.168.1.10, and the firewall management port at 192.168.1.254), and the Extranet zone (ethernet1/3, 192.168.50.1/24, servers including web 192.168.50.80, DNS 192.168.50.53 and DMZ 192.168.50.10).</desc>
+<g class="dim"><rect class="bx" x="250" y="8" width="260" height="74" rx="8"/>
+<text class="h" x="266" y="32">Internet zone</text>
+<text class="m" x="266" y="54">ISP router 203.0.113.1</text>
+<text class="s" x="266" y="72">8.8.8.8 and real websites beyond</text>
+<path class="ln" d="M380 82V128"/><text class="m" x="388" y="110">ethernet1/1 203.0.113.20/24</text></g>
+<rect class="fw" x="20" y="128" width="720" height="56" rx="8"/>
+<text class="h" x="36" y="152">firewall-a (PA-VM)</text>
+<text class="m" x="36" y="172">MGT 192.168.1.254 · default gateway 192.168.1.10 (vRouter)</text>
+<path class="ln mg" d="M70 184V240"/>
+<g class="dim"><path class="ln" d="M190 184V240"/><text class="m" x="198" y="224">e1/2 192.168.1.1</text></g>
+<rect class="bx" x="20" y="240" width="236" height="112" rx="8"/>
+<text class="h" x="34" y="264">Users_Net zone</text>
+<text class="m" x="34" y="284">192.168.1.0/24</text>
+<text class="m" x="34" y="306">Client 192.168.1.20</text>
+<text class="m" x="34" y="326">vRouter 192.168.1.10</text>
+<text class="s" x="34" y="344">MGT port is on this subnet</text>
+<g class="dim"><rect class="bx" x="272" y="240" width="238" height="112" rx="8"/>
+<text class="h" x="286" y="264">Extranet zone</text>
+<text class="m" x="286" y="284">192.168.50.0/24</text>
+<text class="m" x="286" y="306">Web .80 · DNS .53 · DMZ .10</text>
+<text class="s" x="286" y="326">Other lab servers on .50.x</text>
+<path class="ln" d="M390 184V240"/><text class="m" x="398" y="224">e1/3 192.168.50.1</text></g>
+
+</svg>
+<p class="box-note">Faded parts exist in the pod but are not configured yet; Lab 4 builds the data interfaces and zones.</p>
+<h4>Addresses you’ll use</h4>
+<div class="table-wrap"><table>
+<caption class="visually-hidden">Addresses in the lab network</caption>
+<thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Role</th></tr></thead>
+<tbody>
+<tr><td>Client</td><td><code>192.168.1.20</code></td><td>Your workstation (Zorin Linux). Firefox, Terminal Emulator, and Remmina live here.</td></tr>
+<tr><td>Firewall MGT</td><td><code>192.168.1.254</code></td><td>Web interface and SSH (hostname firewall-a)</td></tr>
+<tr><td>vRouter</td><td><code>192.168.1.10</code></td><td>Gateway for the management interface</td></tr>
+<tr><td>Firewall data ports</td><td><code>203.0.113.20</code>, <code>192.168.1.1</code>, <code>192.168.50.1</code></td><td>ethernet1/1 (Internet), ethernet1/2 (users), ethernet1/3 (extranet), once Lab 4 builds them</td></tr>
+<tr><td>Extranet servers</td><td><code>192.168.50.0/24</code></td><td>Web server .80, DNS .53, LDAP .89, RADIUS .150, DMZ host .10</td></tr>
+<tr><td>Internet side</td><td><code>203.0.113.1</code></td><td>The ISP router; 8.8.8.8 and real websites are beyond it</td></tr>
+</tbody></table></div>
+
 <h4>What's already in the baseline</h4>
 <p>The snapshot <code>edu-210-11.0a-01.xml</code> gives you a firewall with its management interface addressed (192.168.1.254/24) and a hostname of firewall-a. There are no data interfaces, zones, or policy yet. Those arrive in Labs 4 and 5.</p>
 <h4>Which half of the guide to use</h4>
@@ -87,51 +157,50 @@ html[data-present="on"] .pm-dock{position:fixed;left:0;right:0;bottom:0;z-index:
 
 <section class="unit" id="s-walkthrough" data-section="walkthrough" data-label="Walkthrough" data-part="Do the lab">
 <header><span class="sec-n">03</span><h2>Walkthrough of the detailed steps</h2></header>
-<h3 class="task-head"><span class="tn">2.1</span>Load the lab configuration</h3>
+<div class="callout tip"><p class="c-title">Reading the machine bands</p><p>Each coloured band says where the steps under it happen, and it stays in force until the next band:
+<span class="mlabel ml-client">🖥️ Client</span> <span class="mlabel ml-webui">🧱 Firewall web interface</span> <span class="mlabel ml-fwcli">⌨️ Firewall CLI</span> <span class="mlabel ml-extranet">🗄️ Server-Extranet</span>.
+When a single step switches machines, it carries an inline label instead. Step numbers match the guide’s Detailed Lab Steps exactly.</p></div>
+<h3 class="task-head"><span class="tn">2.1</span>Load lab configuration</h3>
 <p class="task-intro">Every lab starts from a known baseline, so your firewall matches the guide no matter what you did last time.</p>
-<ol class="steps-list" start="1"><li>On the client desktop, log in as <code>lab-user</code>, open Firefox, and browse to <code>https://192.168.1.254</code>. Log in as <code>admin</code> with the password from Lab Settings. If the login page does not appear, wait 1 to 3 minutes for the firewall to finish booting and refresh.</li><li>Go to <span class="path" data-path="Device > Setup > Operations"></span> and click <strong>Load named configuration snapshot</strong>. Choose <code>edu-210-11.0a-01.xml</code> and click OK, then Close.</li><li>Open <strong>Tasks</strong> (lower right) and confirm the Load task shows completed.</li><li>Click <strong>Commit</strong> (upper right), then <strong>Commit</strong> in the dialog, and wait for it to finish.</li></ol>
-<div class="callout stuck"><p class="c-title">Loading is not committing</p><p>A loaded snapshot replaces only the candidate configuration. Until you commit, the firewall is still running whatever was there before, and nothing in the lab will match the guide.</p></div>
+<div class="mrun mr-client"><p class="mband"><span class="mb-ic" aria-hidden="true">🖥️</span><span>On Client</span><span class="mb-sub">Zorin desktop (192.168.1.20), signed in as lab-user. Firefox, Terminal Emulator and Remmina live here.</span></p>
+<ol class="steps-list" start="1"><li>Click the <strong>Client</strong> tab in NETLAB+ to access the Client PC.</li><li>On the <em>Zorin</em> desktop, click <strong>lab-user</strong>.</li><li>For the lab-user password, enter <code>Pal0Alt0!</code> and press <strong>Enter</strong>.</li><li>Double-click the <strong>Firefox Web Browser</strong> icon on the Desktop.</li><li>In the Firefox address field, type <code>https://192.168.1.254</code> and press <strong>Enter</strong>.</li></ol>
+</div>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="6"><li>Log in to the firewall web interface as username <code>admin</code>, password <code>Pal0Alt0!</code>. If the login page does not appear, wait an additional 1 to 3 minutes for the firewall to initialize and refresh the page.</li><li>Navigate to <span class="path" data-path="Device &gt; Setup &gt; Operations"></span> and click <strong>Load named configuration snapshot</strong> in the <em>Configuration Management</em> section.</li><li>In the <em>Load Named Configuration</em> window, select <code>edu-210-11.0a-01.xml</code> from the <strong>Name</strong> drop-down and click <strong>OK</strong>.</li><li>The <em>Loading Configuration</em> window says the configuration is being loaded and to check the Task Manager. Click <strong>Close</strong>.</li><li>Click the <strong>Tasks</strong> icon at the bottom-right of the web interface.</li><li>In <em>Task Manager – All Tasks</em>, verify the <strong>Load</strong> task shows <strong>Completed</strong>. Click <strong>Close</strong>.</li><li>Click the <strong>Commit</strong> link at the top-right of the web interface.</li><li>In the <em>Commit</em> window, click <strong>Commit</strong>.</li><li>When the commit operation completes, click <strong>Close</strong>.</li><li>Leave the Palo Alto Networks Firewall open and continue to the next task.</li></ol>
+<div class="callout stuck"><p class="c-title">Loading is not committing</p><p>A loaded snapshot replaces only the candidate configuration. Until you commit (steps 12 to 14), the firewall is still running whatever was there before, and nothing in the lab will match the guide.</p></div>
 <p class="shot" id="shot-1"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 1</span> The Task Manager showing the Load task as Completed, and the commit succeeding.</span></p>
+</div>
 <h3 class="task-head"><span class="tn">2.2</span>Configure the DNS and NTP servers</h3>
 <p class="task-intro">DNS lets the firewall turn names into addresses for updates, FQDN address objects, and logging. NTP keeps its clock honest.</p>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Device &gt; Setup &gt; Services"></span> and click the gear icon on the <strong>Services</strong> panel.</li>
-<li>On the <strong>Services</strong> tab, confirm the Update Server is <code>updates.paloaltonetworks.com</code>. Set <strong>Primary DNS Server</strong> to <code>8.8.8.8</code> and <strong>Secondary DNS Server</strong> to <code>192.168.50.53</code>.</li>
-<li>Select the <strong>NTP</strong> tab. Set the primary NTP server to <code>0.pool.ntp.org</code> and the secondary to <code>1.pool.ntp.org</code>. Click OK.</li>
-<li>Check that the Services panel now shows your four values.</li>
-</ol>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Device &gt; Setup &gt; Services"></span>. Click the <strong>Services</strong> gear icon to open the <em>Services</em> window.</li><li>In the <em>Services</em> window, verify that the <strong>Update Server</strong> is <code>updates.paloaltonetworks.com</code>. Set the <strong>Primary DNS Server</strong> to <code>8.8.8.8</code> and the <strong>Secondary DNS Server</strong> to <code>192.168.50.53</code>.</li><li>Select the <strong>NTP</strong> tab. Set the <strong>Primary NTP Server</strong> to <code>0.pool.ntp.org</code> and the <strong>Secondary NTP Server</strong> to <code>1.pool.ntp.org</code>. Click <strong>OK</strong>.</li><li>Verify the settings have been updated in the <em>Services</em> panel: both DNS servers and both NTP server addresses.</li><li>Leave the firewall open and continue to the next task.</li></ol>
 <div class="callout why"><p class="c-title">Why two DNS servers from different places</p><p>8.8.8.8 is a public resolver on the internet; 192.168.50.53 is a lab DNS server in the extranet. If one path is down, the other still answers. In production you would normally point the firewall at your own internal resolvers first.</p></div>
 <p class="shot" id="shot-2"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 2</span> The Services panel showing both DNS servers and both NTP servers.</span></p>
+</div>
 <h3 class="task-head"><span class="tn">2.3</span>Configure general settings</h3>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Device &gt; Setup &gt; Management"></span> and click the gear icon on the <strong>General Settings</strong> panel.</li>
-<li>Confirm the hostname is <code>firewall-a</code>. Set <strong>Domain</strong> to <code>lab.local</code> and <strong>Login Banner</strong> to <code>Authorized Access Only</code>.</li>
-<li>Pick a <strong>Time Zone</strong>. The guide uses <code>Etc/UTC</code>; use the same so your timestamps match the screenshots in later labs.</li>
-<li>Enter <strong>Latitude</strong> <code>37.00</code> and <strong>Longitude</strong> <code>122.00</code>, then click OK.</li>
-</ol>
-<div class="callout fix"><p class="c-title">The detailed steps say "Services gear icon"</p><p>In step 1 of this task the guide says to click the Services gear icon. On the Management tab the panel you want is <strong>General Settings</strong>.</p></div>
-<div class="callout fix"><p class="c-title">Longitude has the wrong sign</p><p>Longitudes west of Greenwich are negative. Santa Clara, California is about 37.35, -121.96. A positive 122.00 puts the firewall in eastern Asia on the ACC threat map. Enter the guide's values (37.00 and 122.00) so your work matches what is graded, but know the real answer.</p></div>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Select <span class="path" data-path="Device &gt; Setup &gt; Management"></span>. Click the gear icon on the <strong>General Settings</strong> panel to open the <em>General Settings</em> window.</li><li>Verify the <strong>Hostname</strong> is <code>firewall-a</code>. For <strong>Domain</strong>, enter <code>lab.local</code>. For <strong>Login Banner</strong>, enter <code>Authorized Access Only</code>. Choose the <strong>Time Zone</strong>; the guide uses <code>Etc/UTC</code>, so use the same and your timestamps will match later screenshots. For <strong>Latitude</strong> enter <code>37.00</code> and for <strong>Longitude</strong> enter <code>122.00</code>. Click <strong>OK</strong>.</li><li>Leave the firewall open and continue to the next task.</li></ol>
+<div class="callout fix"><p class="c-title">The guide says “Services gear icon”</p><p>Step 1 of this task in the guide says to click the Services gear icon. On the Management tab, the panel you want is <strong>General Settings</strong>.</p></div>
+<div class="callout fix"><p class="c-title">Longitude has the wrong sign</p><p>Longitudes west of Greenwich are negative. Santa Clara, California is about 37.35, -121.96. A positive 122.00 puts the firewall in eastern Asia on the ACC threat map. Enter the guide’s values (37.00 and 122.00) so your work matches the guide, but know the real answer.</p></div>
 <p class="shot" id="shot-3"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 3</span> The General Settings panel showing the domain, banner, time zone, latitude, and longitude.</span></p>
+</div>
 <h3 class="task-head"><span class="tn">2.4</span>Modify the management interface</h3>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Device &gt; Setup &gt; Interfaces"></span> and click <strong>Management</strong>.</li>
-<li>Verify, but don't change, the IP address <code>192.168.1.254</code>, netmask <code>255.255.255.0</code>, and default gateway <code>192.168.1.10</code>.</li>
-<li>At the bottom of <strong>Permitted IP Addresses</strong>, click <strong>Add</strong>. Enter <code>192.168.1.20/24</code> with the description <code>MGT access from this host only</code>. Click OK.</li>
-</ol>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Navigate to <span class="path" data-path="Device &gt; Setup &gt; Interfaces"></span> and click the interface name <strong>Management</strong>.</li><li>In the <em>Management Interface Settings</em> window, verify <code>192.168.1.254</code> for the IP Address, <code>255.255.255.0</code> for the Netmask, and <code>192.168.1.10</code> for the Default Gateway. At the bottom of the <strong>Permitted IP Addresses</strong> area, click <strong>Add</strong>.</li><li>In <strong>Permitted IP Addresses</strong>, type <code>192.168.1.20/24</code> for the IP Address and <code>MGT access from this host only</code> for the Description. Click <strong>OK</strong>.</li><li>Leave the firewall open and continue to the next task.</li></ol>
 <div class="callout fix"><p class="c-title">Two different gateways</p><p>The high-level steps (Task 1.4) say the management gateway is 192.168.1.1. The detailed steps and the Lab Settings table say 192.168.1.10, the vRouter. Expect 192.168.1.10. This step is verify-only.</p></div>
-<div class="callout fix"><p class="c-title">"This host only" is not what a /24 does</p><p><code>192.168.1.20/24</code> permits the whole 192.168.1.0/24 network, not just your client. To permit one host you would enter <code>192.168.1.20</code> or <code>192.168.1.20/32</code>. Use the guide's entry so you aren't locked out, and notice the mismatch between the value and its description.</p></div>
-<div class="callout stuck"><p class="c-title">Don't remove the last permitted entry you're connecting from</p><p>Once the Permitted IP list has any entry, everything not on the list is refused. If you mistype the network and commit, your own browser session is cut off. If that happens, end the reservation and start the lab again.</p></div>
+<div class="callout fix"><p class="c-title">“This host only” is not what a /24 does</p><p><code>192.168.1.20/24</code> permits the whole 192.168.1.0/24 network, not just your client. To permit one host you would enter <code>192.168.1.20</code> or <code>192.168.1.20/32</code>. Use the guide’s entry so you aren’t locked out, and notice the mismatch between the value and its description.</p></div>
+<div class="callout stuck"><p class="c-title">Don’t lock yourself out</p><p>Once the Permitted IP list has any entry, everything not on the list is refused. If you mistype the network and commit, your own browser session is cut off. If that happens, end the reservation and start the lab again.</p></div>
 <p class="shot" id="shot-4"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 4</span> The Management Interface Settings window showing the address, gateway, and your permitted IP entry.</span></p>
-<h3 class="task-head"><span class="tn">2.5</span>Check for new PAN-OS software and commit</h3>
-<ol class="steps-list" start="1">
-<li>Go to <span class="path" data-path="Device &gt; Software"></span> and click <strong>Check Now</strong> (lower left).</li>
-<li>Wait for the list to refresh. The versions you see will differ from the guide's screenshot, and there may be nothing newer.</li>
-<li><strong>Do not download or install anything.</strong> An upgrade in the lab can break the labs that follow.</li>
-<li>Click <strong>Commit</strong>, review the commit scope, click <strong>Commit</strong>, and wait for it to finish.</li>
-</ol>
+</div>
+<h3 class="task-head"><span class="tn">2.5</span>Check for new PAN-OS software</h3>
+<p class="task-intro">You check for new PAN-OS software and commit all of this lab’s changes.</p>
+<div class="mrun mr-webui"><p class="mband"><span class="mb-ic" aria-hidden="true">🧱</span><span>On Firewall web interface</span><span class="mb-sub">firewall-a at https://192.168.1.254, in Firefox on the Client</span></p>
+<ol class="steps-list" start="1"><li>Navigate to <span class="path" data-path="Device &gt; Software"></span>. If needed, use the scroll bar in the left pane to find <strong>Software</strong>.</li><li>In the <em>Software</em> window, click <strong>Check Now</strong> in the bottom-left corner.</li><li>The firewall contacts the update server and completes a software check. When it finishes, it displays an updated list of available software. The versions you see will differ from the guide’s screenshot, and there may be nothing newer. <strong>Do not upgrade the firewall.</strong></li></ol>
 <div class="callout why"><p class="c-title">Why the check works at all</p><p>Check Now contacts Palo Alto Networks over the internet by name. It succeeds because you just gave the firewall DNS servers. If it fails, recheck 2.2 before anything else.</p></div>
 <p class="shot" id="shot-5"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 5</span> The Software page after Check Now, showing the list of available versions.</span></p>
+<ol class="steps-list" start="4"><li>Commit your changes by clicking <strong>Commit</strong> at the upper right of the web interface.</li><li>In the <em>Commit</em> window, view the commit scope (<em>device-and-network</em>). Click <strong>Commit</strong>.</li><li>Wait until the commit process is complete. Click <strong>Close</strong>.</li><li>The lab is now complete; you may end your reservation.</li></ol>
 <p class="shot" id="shot-6"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span><span class="shot-k">Screenshot 6</span> The commit completing successfully after your changes.</span></p>
+</div>
 </section>
 
 <section class="unit" id="s-reference" data-section="reference" data-label="Settings reference" data-part="Understand">
